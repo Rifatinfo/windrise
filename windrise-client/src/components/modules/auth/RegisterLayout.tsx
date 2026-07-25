@@ -2,13 +2,14 @@
 
 import { useRouter } from 'next/navigation'
 import { SignupForm } from '@/components/modules/auth/SignupForm'
+import { useState } from 'react'
 
 const SIGNUP_HERO_IMAGE =
   'https://cdn.magicpatterns.com/uploads/hdpQfr8a7F8iXA3deMepbj/register.png'
 
 export function RegisterLayout() {
   const router = useRouter()
-
+  const [isLoading, setIsLoading] = useState(false);
   return (
     <div className="w-full min-h-screen flex flex-col lg:flex-row">
       <aside className="relative hidden lg:block lg:w-1/2 xl:w-[52%]">
@@ -28,7 +29,8 @@ export function RegisterLayout() {
 
       <div className="flex-1 flex flex-col bg-gradient-to-b from-[#CCD2D4] to-white">
         <main className="flex-1 flex items-center justify-center px-6 py-10 sm:py-14">
-          <SignupForm onSignIn={() => router.push('/login')} />
+          <SignupForm  isLoading={isLoading}
+          setIsLoading={setIsLoading}onSignIn={() => router.push('/login')} />
         </main>
 
         <div className="relative lg:hidden h-64 sm:h-72 w-full">

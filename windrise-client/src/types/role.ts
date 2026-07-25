@@ -1,0 +1,1 @@
+export type UserRole = "ADMIN" | "SHOP_MANAGER" | "customer" | "COMMON"

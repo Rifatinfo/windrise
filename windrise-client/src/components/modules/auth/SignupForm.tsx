@@ -1,20 +1,36 @@
-import React, { useState } from "react";
-import { EyeIcon, EyeOffIcon } from "lucide-react";
+import React, { useActionState, useEffect, useState } from "react";
+import { ArrowRight, EyeIcon, EyeOffIcon } from "lucide-react";
 import { AppleIcon, FacebookIcon, GoogleIcon } from "./LoginForm";
+import { Toast } from "@/components/shared/Toast/Toast";
+import { registerUser } from "@/services/auth/registerUser";
 
-type SignupFormProps = {
-  onSignIn: () => void;
-};
-
-export function SignupForm({ onSignIn }: SignupFormProps) {
+// type SignupFormProps = {
+//   onSignIn: () => void;
+// };
+interface SignupFormProps {
+  isLoading: boolean;
+  setIsLoading: (loading: boolean) => void;
+   onSignIn: () => void;
+}
+export function SignupForm({ isLoading, setIsLoading , onSignIn} :SignupFormProps ) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-  };
+
+  const [state, formAction, isPending] = useActionState(registerUser, null);
+
+  // sync server pending → parent loader (NO UI change)
+  useEffect(() => {
+    if (state && !state.success && state.message) {
+      Toast.fire({
+        icon: "error",
+        title: state?.message || "Login failed",
+      });
+    }
+    setIsLoading(isPending);
+  }, [isPending, setIsLoading]);
 
   return (
     <div className="w-full max-w-[360px] mx-auto">
@@ -28,7 +44,7 @@ export function SignupForm({ onSignIn }: SignupFormProps) {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+      <form action={formAction} className="mt-8 space-y-4">
         <div>
           <label
             htmlFor="name"
@@ -38,6 +54,7 @@ export function SignupForm({ onSignIn }: SignupFormProps) {
           </label>
           <input
             id="name"
+            name="name"
             type="text"
             autoComplete="name"
             value={name}
@@ -56,6 +73,7 @@ export function SignupForm({ onSignIn }: SignupFormProps) {
           </label>
           <input
             id="signup-email"
+            name="email"
             type="email"
             autoComplete="email"
             value={email}
@@ -75,6 +93,7 @@ export function SignupForm({ onSignIn }: SignupFormProps) {
           <div className="relative">
             <input
               id="signup-password"
+              name="password"
               type={showPassword ? "text" : "password"}
               autoComplete="new-password"
               value={password}
@@ -101,7 +120,10 @@ export function SignupForm({ onSignIn }: SignupFormProps) {
           type="submit"
           className="w-full h-12 rounded-full bg-black text-white text-[14px] font-semibold hover:bg-gray-900 transition"
         >
-          Sign Up
+          <span >
+          {isPending ? "Processing..." : "Sign In"}
+        
+        </span>
         </button>
       </form>
 

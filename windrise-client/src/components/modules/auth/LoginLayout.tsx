@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { LoginForm } from '@/components/modules/auth/LoginForm'
 
 const LOGIN_HERO_IMAGE =
@@ -8,6 +9,7 @@ const LOGIN_HERO_IMAGE =
 
 export function LoginLayout() {
   const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
 
   return (
     <div className="w-full min-h-screen flex flex-col lg:flex-row">
@@ -28,7 +30,7 @@ export function LoginLayout() {
 
       <div className="flex-1 flex flex-col bg-gradient-to-b from-[#CCD2D4] to-white">
         <main className="flex-1 flex items-center justify-center px-6 py-10 sm:py-14">
-          <LoginForm onSignUp={() => router.push('/register')} />
+          <LoginForm isLoading={isLoading} setIsLoading={setIsLoading} />
         </main>
 
         <div className="relative lg:hidden h-64 sm:h-72 w-full">
