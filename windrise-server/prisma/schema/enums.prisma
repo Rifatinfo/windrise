@@ -1,0 +1,69 @@
+
+enum StockStatus {
+  IN_STOCK
+  OUT_OF_STOCK
+  LOW_STOCK
+}
+
+
+enum AuthType {
+  CREDENTIALS
+  GOOGLE
+}
+
+// ========= User Related ========//
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+  SHOP_MANAGER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  DELETED
+}
+
+
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  CANCELED
+  FAILED
+  EXPIRED
+
+  PLACED       
+  PROCESSING   
+  SHIPPED
+  DELIVERED
+}
+
+// ========= Payment Related ========//
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  FAILED
+  CANCELED
+}
+
+enum PaymentMethod {
+  COD
+  ONLINE
+}
+
+enum DeliveryType {
+  INSIDE_DHAKA
+  OUTSIDE_DHAKA
+}
+
+enum ShipmentStatus {
+  ORDER_CONFIRMED
+  PACKAGE_SHIPPED
+  ARRIVED_AT_LOCAL_SORT_FACILITY
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELED 
+}
