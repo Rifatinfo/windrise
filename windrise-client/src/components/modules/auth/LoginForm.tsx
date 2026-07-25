@@ -1,5 +1,8 @@
-import React, { useState } from 'react'
-import { EyeIcon, EyeOffIcon } from 'lucide-react'
+"use client";
+import React, { useActionState, useEffect, useState } from 'react'
+import { ArrowRight, EyeIcon, EyeOffIcon } from 'lucide-react'
+import { loginUser } from '@/services/auth/loginUser'
+import { Toast } from '@/components/shared/Toast/Toast'
 
 export function GoogleIcon() {
   return (
@@ -50,18 +53,37 @@ export function AppleIcon() {
   )
 }
 
-type LoginFormProps = {
-  onSignUp: () => void
+// type LoginFormProps = {
+//   onSignUp: () => void
+// }
+interface LoginFormProps {
+  isLoading: boolean;
+  setIsLoading: (loading: boolean) => void;
+  redirect?: string;
 }
 
-export function LoginForm({ onSignUp }: LoginFormProps) {
+export function LoginForm({ 
+  isLoading,
+  setIsLoading,
+  redirect,
+  } : LoginFormProps) {
+
+    const [state, formAction, isPending] = useActionState(loginUser, null);
+ 
+  // sync server pending → parent loader (NO UI change)
+  useEffect(() => {
+    if (state && !state.success && state.message) {
+      Toast.fire({
+        icon: "error",
+        title: state?.message || "Login failed",
+      });
+    }
+    setIsLoading(isPending);
+  }, [isPending, setIsLoading]);
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-  }
 
   return (
     <div className="w-full max-w-[360px] mx-auto">
@@ -75,7 +97,8 @@ export function LoginForm({ onSignUp }: LoginFormProps) {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+      <form action={formAction}  className="mt-8 space-y-4">
+         {redirect && <input type="hidden" name="redirect" value={redirect} />}
         <div>
           <label
             htmlFor="email"
@@ -85,6 +108,7 @@ export function LoginForm({ onSignUp }: LoginFormProps) {
           </label>
           <input
             id="email"
+            name="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -103,6 +127,7 @@ export function LoginForm({ onSignUp }: LoginFormProps) {
           <div className="relative">
             <input
               id="password"
+              name="password"
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -136,7 +161,9 @@ export function LoginForm({ onSignUp }: LoginFormProps) {
           type="submit"
           className="w-full h-12 rounded-full bg-black text-white text-[14px] font-semibold hover:bg-gray-900 transition"
         >
-          Sign In
+         <span>
+          {isPending ? "Processing..." : "Sign In"}
+        </span>
         </button>
       </form>
 
@@ -165,7 +192,6 @@ export function LoginForm({ onSignUp }: LoginFormProps) {
         Don&apos;t you have an account?{' '}
         <button
           type="button"
-          onClick={onSignUp}
           className="font-semibold text-gray-900 hover:underline focus:outline-none focus:underline"
         >
           Sign Up
