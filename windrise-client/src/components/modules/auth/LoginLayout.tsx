@@ -1,15 +1,32 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { LoginForm } from '@/components/modules/auth/LoginForm'
+import { Toast } from '@/components/shared/Toast/Toast'
 
 const LOGIN_HERO_IMAGE =
   'https://cdn.magicpatterns.com/uploads/eFCa3v1zHKsZr8swfVvk8K/login-image.png'
 
 export function LoginLayout() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
+
+  const redirect = searchParams.get("redirect") || undefined
+
+  useEffect(() => {
+    const error = searchParams.get("error")
+    if (error === "google-auth-failed") {
+      Toast.fire({
+        icon: "error",
+        title: "Google login failed. Please try again.",
+      })
+      const newUrl = new URL(window.location.href)
+      newUrl.searchParams.delete("error")
+      router.replace(newUrl.toString())
+    }
+  }, [searchParams, router])
 
   return (
     <div className="w-full min-h-screen flex flex-col lg:flex-row">
@@ -30,7 +47,7 @@ export function LoginLayout() {
 
       <div className="flex-1 flex flex-col bg-gradient-to-b from-[#CCD2D4] to-white">
         <main className="flex-1 flex items-center justify-center px-6 py-10 sm:py-14">
-          <LoginForm isLoading={isLoading} setIsLoading={setIsLoading} />
+          <LoginForm isLoading={isLoading} setIsLoading={setIsLoading} redirect={redirect} />
         </main>
 
         <div className="relative lg:hidden h-64 sm:h-72 w-full">

@@ -4,6 +4,7 @@ import { AuthController } from './auth.controller';
 import auth from '../../middlewares/auth';
 import { authRateLimiter } from '@/app/middlewares/rateLimiter';
 import { UserRole } from '@prisma/client';
+import { GoogleOAuthController } from './googleOAuth.controller';
 
 
 const router = express.Router();
@@ -57,6 +58,26 @@ router.post(
     },
     AuthController.resetPassword
 )
+
+router.get(
+    '/google',
+    GoogleOAuthController.googleAuth
+);
+
+router.get(
+    '/google/callback',
+    GoogleOAuthController.googleCallback
+);
+
+router.get(
+    '/me',
+    auth(
+        UserRole.ADMIN,
+        UserRole.CUSTOMER,
+        UserRole.SHOP_MANAGER,
+    ),
+    AuthController.getMe
+);
 
 
 export const AuthRoutes = router;

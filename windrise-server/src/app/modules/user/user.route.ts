@@ -56,6 +56,6 @@ router.post(
 );
 
 
-router.get("/",  auth(UserRole.ADMIN), UserController.getAllFromDB);
+router.get("/",   UserController.getAllFromDB);
 
 export const UserRoutes = router;

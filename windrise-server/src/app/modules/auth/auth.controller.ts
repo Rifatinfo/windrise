@@ -18,17 +18,19 @@ const login = catchAsync(async (req: Request, res: Response) => {
         needPasswordChange,
     } = result;
 
+    const isProduction = process.env.NODE_ENV === "production";
+
     res.cookie("accessToken", accessToken, {
-        secure: true,
+        secure: isProduction,
         httpOnly: true,
-        sameSite: "none",
+        sameSite: "lax",
         maxAge: accessTokenMaxAge,
     });
 
     res.cookie("refreshToken", refreshToken, {
-        secure: true,
+        secure: isProduction,
         httpOnly: true,
-        sameSite: "none",
+        sameSite: "lax",
         maxAge: refreshTokenMaxAge,
     });
 
@@ -50,10 +52,13 @@ const refreshToken = catchAsync(async (req: Request, res: Response) => {
     }
 
     const result = await AuthService.refreshToken(token);
+
+    const isProduction = process.env.NODE_ENV === "production";
+
     res.cookie("accessToken", result.accessToken, {
-        secure: true,
+        secure: isProduction,
         httpOnly: true,
-        sameSite: "none",
+        sameSite: "lax",
         maxAge: result.accessTokenMaxAge,
     });
 
@@ -107,6 +112,17 @@ const resetPassword = catchAsync(async (req: Request & { user?: any }, res: Resp
     });
 });
 
+const getMe = catchAsync(async (req: Request & { user?: any }, res: Response) => {
+    const result = await AuthService.getMe(req.user);
+
+    sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        message: "User info retrieved!",
+        data: result,
+    });
+});
+
 
 export const AuthController = {
     login,
@@ -114,4 +130,5 @@ export const AuthController = {
     changePassword,
     forgotPassword,
     resetPassword,
+    getMe,
 }

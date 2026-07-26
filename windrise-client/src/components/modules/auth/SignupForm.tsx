@@ -134,8 +134,17 @@ export function SignupForm({ isLoading, setIsLoading , onSignIn} :SignupFormProp
       </div>
 
       <div className="mt-5 flex items-center justify-center gap-3.5">
+        <button
+          type="button"
+          aria-label="Sign up with Google"
+          onClick={() => {
+            window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/google`;
+          }}
+          className="flex-1 h-11 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition"
+        >
+          <GoogleIcon />
+        </button>
         {[
-          <GoogleIcon key="g" />,
           <FacebookIcon key="f" />,
           <AppleIcon key="a" />,
         ].map((icon, i) => (
