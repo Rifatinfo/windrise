@@ -42,17 +42,7 @@ export const isRouteMatches = (pathname: string, routes: RouteConfig): boolean =
     
 }
 
-// export const getRouteOwner = (pathname: string): "ADMIN" |  "COMMON" | null => {
-    
-//     if (isRouteMatches(pathname, adminProtectedRoutes)) {
-//         return "ADMIN";
-//     }
 
-//     if (isRouteMatches(pathname, commonProtectedRoutes)) {
-//         return "COMMON";
-//     }
-//     return null;
-// }
 
 export const getRouteOwner = (pathname: string): "ADMIN" | "SHOP_MANAGER" | "CUSTOMER" | "COMMON" | null => {
     if (isRouteMatches(pathname, adminProtectedRoutes)) {
@@ -70,16 +60,6 @@ export const getRouteOwner = (pathname: string): "ADMIN" | "SHOP_MANAGER" | "CUS
     return null;
 }
 
-// export const getDefaultDashboardRoute = (role: UserRole): string => {
-
-//     if (role === "ADMIN") {
-//         return "/dashboard";
-//     }
-//     if (role === "CUSTOMER") {
-//         return "/checkout";
-//     }
-//     return "/";
-// }
 
 export const getDefaultDashboardRoute = (role: UserRole): string => {
     if (role === "ADMIN") {

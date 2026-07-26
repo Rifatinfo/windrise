@@ -174,7 +174,20 @@ export function LoginForm({
       </div>
 
       <div className="mt-5 flex items-center justify-center gap-3.5">
-        {[<GoogleIcon key="g" />, <FacebookIcon key="f" />, <AppleIcon key="a" />].map(
+        <button
+          type="button"
+          aria-label="Sign in with Google"
+          onClick={() => {
+            const params = new URLSearchParams();
+            if (redirect) params.set("redirect", redirect);
+            const qs = params.toString();
+            window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/google${qs ? `?${qs}` : ""}`;
+          }}
+          className="flex-1 h-11 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition"
+        >
+          <GoogleIcon />
+        </button>
+        {[<FacebookIcon key="f" />, <AppleIcon key="a" />].map(
           (icon, i) => (
             <button
               key={i}

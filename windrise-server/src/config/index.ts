@@ -38,6 +38,7 @@ interface EnvConfig {
   REFRESH_TOKEN_EXPIRY : string;
   GOOGLE_CLIENT_SECRET : string;
   GOOGLE_CLIENT_ID :  string;
+  GOOGLE_CALLBACK_URL : string;
 
 }
 
@@ -76,7 +77,8 @@ const loadEnvVariable = (): EnvConfig => {
     "ACCESS_TOKEN_EXPIRY",
     "REFRESH_TOKEN_EXPIRY",
     "GOOGLE_CLIENT_ID",
-    "GOOGLE_CLIENT_SECRET"
+    "GOOGLE_CLIENT_SECRET",
+    "GOOGLE_CALLBACK_URL"
   ];
 
   requiredEnvVariable.forEach((key) => {
@@ -120,6 +122,7 @@ const loadEnvVariable = (): EnvConfig => {
     REFRESH_TOKEN_EXPIRY : process.env.REFRESH_TOKEN_EXPIRY as  string,
     GOOGLE_CLIENT_SECRET  : process.env.GOOGLE_CLIENT_SECRET as  string,
     GOOGLE_CLIENT_ID : process.env.GOOGLE_CLIENT_ID as string,
+    GOOGLE_CALLBACK_URL : process.env.GOOGLE_CALLBACK_URL as string,
   };
 };
 
