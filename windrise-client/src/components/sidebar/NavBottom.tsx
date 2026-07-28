@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { ChevronRightIcon, LogOutIcon, UserIcon } from "lucide-react";
+import Image from "next/image";
 import { NavItem } from "./nav-config";
 
 function SectionLabel({ label }: { label: string }) {
@@ -27,7 +28,6 @@ export function NavBottom({
 }) {
   const pathname = usePathname();
   const roleLabel = user.role === "ADMIN" ? "Admin" : user.role === "SHOP_MANAGER" ? "Shop Manager" : user.role === "MEDIA_MANAGER" ? "Media Manager" : "User";
-  console.log("user.avatar", user.avatar)
   return (
     <section className="shrink-0 px-[18px] pb-4 pt-3" aria-label={`${title} navigation`}>
       {items?.length > 0 && (
@@ -62,9 +62,11 @@ export function NavBottom({
       <div className="mt-3">
         <div className="flex items-center gap-3 rounded-lg py-2">
           {user?.avatar ? (
-            <img
+            <Image
               src={user.avatar}
               alt={user.name}
+              width={36}
+              height={36}
               className="h-9 w-9 rounded-full object-cover"
             />
           ) : (
@@ -79,7 +81,7 @@ export function NavBottom({
           <button
             type="button"
             onClick={onLogout}
-            className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-black"
+            className="cursor-pointer rounded-md p-1.5 text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-black"
             aria-label="Log out"
           >
             <LogOutIcon className="h-4 w-4" />
