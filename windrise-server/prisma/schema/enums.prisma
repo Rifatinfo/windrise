@@ -17,6 +17,7 @@ enum UserRole {
   CUSTOMER
   ADMIN
   SHOP_MANAGER
+  MEDIA_MANAGER
 }
 
 enum UserStatus {

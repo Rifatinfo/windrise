@@ -2,14 +2,10 @@
 "use server"
 
 import { serverFetch } from "@/lib/server-fetch";
-import { getCookie } from "@/services/auth/tokenHandlers";
 import { UserInfo } from "@/types/user.interface";
-
-import jwt, { JwtPayload } from "jsonwebtoken";
 
 
 export const getUserInfo = async (): Promise<UserInfo | any> => {
-    let userInfo: UserInfo | any;
     try {
 
         const response = await serverFetch.get("/api/v1/auth/me", {
@@ -18,39 +14,20 @@ export const getUserInfo = async (): Promise<UserInfo | any> => {
         })
 
         const result = await response.json();
+        console.log("user : ", result);
+        if (result.success && result.data) {
+            const userInfo: UserInfo = {
+                name: result.data.name || result.data.admin?.name || result.data.customer?.name || result.data.shopManager?.name || result.data.mediaManager?.name || "Unknown User",
+                ...result.data
+            };
 
-        if (result.success) {
-            const accessToken = await getCookie("accessToken");
-
-            if (!accessToken) {
-                throw new Error("No access token found");
-            }
-
-            const verifiedToken = jwt.verify(accessToken, process.env.JWT_SECRET as string) as JwtPayload;
-
-            userInfo = {
-                name: verifiedToken.name || "Unknown User",
-                email: verifiedToken.email,
-                role: verifiedToken.role,
-            }
+            return userInfo;
         }
 
-        userInfo = {
-            name: result.data.user?.name || result.data.customer?.name || result.data.name || "Unknown User",
-            ...result.data
-        };
-
-
-
-        return userInfo;
+        return null;
     } catch (error: any) {
         console.log(error);
-        return {
-            id: "",
-            name: "Unknown User",
-            email: "",
-            role: "PATIENT",
-        };
+        return null;
     }
 
 }
