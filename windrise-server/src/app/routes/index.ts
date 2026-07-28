@@ -15,14 +15,14 @@ const moduleRoutes = [
   {
     path: "/auth",
     route: AuthRoutes,
-    middlewares: [authRateLimiter], // Apply only here
+    // middlewares: [authRateLimiter], // Apply only here
   }
 ];
 
 moduleRoutes.forEach((route) => {
   router.use(
     route.path,
-    ...(route.middlewares || []),
+    // ...(route.middlewares || []),
     route.route
   );
 });

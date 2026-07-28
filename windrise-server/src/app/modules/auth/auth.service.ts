@@ -116,20 +116,20 @@ const refreshToken = async (token: string) => {
   };
 };
 const getMe = async (session: any) => {
-  const accessToken = session.accessToken;
-  const decodedData = jwtHelper.verifyToken(
-    accessToken,
-    envVars.JWT_SECRET as Secret,
-  );
-
   const userData = await prisma.user.findUniqueOrThrow({
     where: {
-      email: decodedData.email,
+      email: session.email,
       status: UserStatus.ACTIVE,
+    },
+    include: {
+      admin: true,
+      customer: true,
+      shopManager: true,
+      mediaManager: true,
     },
   });
 
-  const { id, email, role, needPasswordChange, status } = userData;
+  const { id, email, role, needPasswordChange, status, admin, customer, shopManager, mediaManager } = userData;
 
   return {
     id,
@@ -137,6 +137,11 @@ const getMe = async (session: any) => {
     role,
     needPasswordChange,
     status,
+    name: userData.name || admin?.name || customer?.name || shopManager?.name || mediaManager?.name,
+    admin,
+    customer,
+    shopManager,
+    mediaManager,
   };
 };
 

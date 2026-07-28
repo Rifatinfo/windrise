@@ -1,5 +1,5 @@
 
-export type UserRole = "ADMIN" | "CUSTOMER" | "SHOP_MANAGER";
+export type UserRole = "ADMIN" | "CUSTOMER" | "SHOP_MANAGER" | "MEDIA_MANAGER";
 
 export type RouteConfig = {
     exact: string[],
@@ -21,12 +21,17 @@ export const customerProtectedRoutes: RouteConfig = {
 }
 
 export const adminProtectedRoutes: RouteConfig = {
-    patterns: [/^\/dashboard/], // Routes starting with /dashboard/*
+    patterns: [/^\/admin/], // Routes starting with /dashboard/*
     exact: [], // "/dashboard"
 }
 
 export const shopManagerProtectedRoutes: RouteConfig = {
     patterns: [/^\/dashboard/],
+    exact: []
+}
+
+export const mediaManagerProtectedRoutes: RouteConfig = {
+    patterns: [/^\/media-dashboard/],
     exact: []
 }
 
@@ -44,12 +49,15 @@ export const isRouteMatches = (pathname: string, routes: RouteConfig): boolean =
 
 
 
-export const getRouteOwner = (pathname: string): "ADMIN" | "SHOP_MANAGER" | "CUSTOMER" | "COMMON" | null => {
+export const getRouteOwner = (pathname: string): "ADMIN" | "SHOP_MANAGER" | "MEDIA_MANAGER" | "CUSTOMER" | "COMMON" | null => {
     if (isRouteMatches(pathname, adminProtectedRoutes)) {
         return "ADMIN"
     }
     if (isRouteMatches(pathname, shopManagerProtectedRoutes)) {
         return "SHOP_MANAGER"
+    }
+    if (isRouteMatches(pathname, mediaManagerProtectedRoutes)) {
+        return "MEDIA_MANAGER"
     }
     if (isRouteMatches(pathname, customerProtectedRoutes)) {
         return "CUSTOMER"
@@ -68,6 +76,9 @@ export const getDefaultDashboardRoute = (role: UserRole): string => {
     if (role === "SHOP_MANAGER") {
         return "/dashboard"
     }
+    if (role === "MEDIA_MANAGER") {
+        return "/media-dashboard"
+    }
     if (role === "CUSTOMER") {
         return "/my-profile"
     }
@@ -82,6 +93,12 @@ export const isValidRedirectForRole = (redirectPath: string, role: UserRole): bo
     }
 
     if (routeOwner === role) {
+        return true;
+    }
+
+    // Dashboard routes are shared between ADMIN, SHOP_MANAGER, and MEDIA_MANAGER
+    const dashboardRoles: UserRole[] = ["ADMIN", "SHOP_MANAGER", "MEDIA_MANAGER"];
+    if (routeOwner && dashboardRoles.includes(routeOwner) && dashboardRoles.includes(role)) {
         return true;
     }
 

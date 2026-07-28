@@ -81,7 +81,7 @@ export const loginUser = async (_currentState: any, formData: any): Promise<any>
             maxAge: parseInt(accessTokenObject['Max-Age']) || 1000 * 60 * 60 * 24 * 90,
             path: refreshTokenObject.Path || "/",
         });
-        type UserRole = "ADMIN" | "CUSTOMER";
+        type UserRole = "ADMIN" | "CUSTOMER" | "SHOP_MANAGER" | "MEDIA_MANAGER";
 
 
         // 1. Wrap the verification in a try-catch block

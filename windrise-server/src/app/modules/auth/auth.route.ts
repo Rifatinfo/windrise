@@ -27,6 +27,7 @@ router.post(
         UserRole.ADMIN,
         UserRole.CUSTOMER,
         UserRole.SHOP_MANAGER,
+        UserRole.MEDIA_MANAGER,
     ),
     AuthController.changePassword
 );
@@ -48,6 +49,7 @@ router.post(
                 UserRole.ADMIN,
                 UserRole.CUSTOMER,
                 UserRole.SHOP_MANAGER,
+                UserRole.MEDIA_MANAGER,
             ) 
             
             (req, res, next);
@@ -75,6 +77,7 @@ router.get(
         UserRole.ADMIN,
         UserRole.CUSTOMER,
         UserRole.SHOP_MANAGER,
+        UserRole.MEDIA_MANAGER,
     ),
     AuthController.getMe
 );

@@ -32,25 +32,28 @@ export async function proxy(request: NextRequest) {
         return NextResponse.redirect(url);
     }
 
-    // const accessToken = request.cookies.get("accessToken")?.value || null;
-
     const accessToken = await getCookie("accessToken") || null;
 
     let userRole: UserRole | null = null;
     if (accessToken) {
-        const verifiedToken: JwtPayload | string = jwt.verify(accessToken, process.env.JWT_SECRET as string);
+        try {
+            const verifiedToken: JwtPayload | string = jwt.verify(accessToken, process.env.JWT_SECRET as string);
 
-        if (typeof verifiedToken === "string") {
+            if (typeof verifiedToken === "string") {
+                await deleteCookie("accessToken");
+                await deleteCookie("refreshToken");
+                return NextResponse.redirect(new URL('/login', request.url));
+            }
+
+            userRole = verifiedToken.role;
+        } catch {
             await deleteCookie("accessToken");
             await deleteCookie("refreshToken");
             return NextResponse.redirect(new URL('/login', request.url));
         }
-
-        userRole = verifiedToken.role;
     }
 
     const routerOwner = getRouteOwner(pathname);
-
 
     const isAuth = isAuthRoute(pathname)
 
@@ -60,14 +63,11 @@ export async function proxy(request: NextRequest) {
     }
 
     // Rule 2: Handle /reset-password route BEFORE checking authentication
-    // This route has two valid cases:
-    // 1. User coming from email reset link (has email + token in query params)
-    // 2. Authenticated user with needPasswordChange=true
     if (pathname === "/reset-password") {
         const email = request.nextUrl.searchParams.get("email");
         const token = request.nextUrl.searchParams.get("token");
 
-        // Case 1: User has needPasswordChange (newly created admin/doctor)
+        // Case 1: User has needPasswordChange (newly created admin/shop_manager/media_manager)
         if (accessToken) {
             const userInfo = await getUserInfo();
             if (userInfo.needPasswordChange) {
@@ -101,8 +101,6 @@ export async function proxy(request: NextRequest) {
             }
         }
 
-
-
         // No access token and no valid reset token, redirect to login
         const loginUrl = new URL("/login", request.url);
         loginUrl.searchParams.set("redirect", pathname);
@@ -115,31 +113,12 @@ export async function proxy(request: NextRequest) {
         return NextResponse.next();
     }
 
-    // Rule 1 & 2 for open public routes and auth routes
-
+    // Rule 4: User not authenticated trying to access protected route
     if (!accessToken) {
         const loginUrl = new URL("/login", request.url);
         loginUrl.searchParams.set("redirect", pathname);
         return NextResponse.redirect(loginUrl);
     }
-
-    // Rule 4 : User need password change
-
-    // if (accessToken) {
-    //     const userInfo = await getUserInfo();
-    //     if (userInfo.needPasswordChange) {
-    //         if (pathname !== "/reset-password") {
-    //             const resetPasswordUrl = new URL("/reset-password", request.url);
-    //             resetPasswordUrl.searchParams.set("redirect", pathname);
-    //             return NextResponse.redirect(resetPasswordUrl);
-    //         }
-    //         return NextResponse.next();
-    //     }
-
-    //     if (userInfo && !userInfo.needPasswordChange && pathname === '/reset-password') {
-    //         return NextResponse.redirect(new URL(getDefaultDashboardRoute(userRole as UserRole), request.url));
-    //     }
-    // }
 
     // Rule 5 : User is trying to access common protected route
     if (routerOwner === "COMMON") {
@@ -147,7 +126,13 @@ export async function proxy(request: NextRequest) {
     }
 
     // Rule 6 : User is trying to access role based protected route
-    if (routerOwner === "ADMIN" || routerOwner === "CUSTOMER") {
+    const dashboardRoles: UserRole[] = ["ADMIN", "SHOP_MANAGER", "MEDIA_MANAGER"];
+
+    if (routerOwner === "ADMIN" || routerOwner === "CUSTOMER" || routerOwner === "SHOP_MANAGER" || routerOwner === "MEDIA_MANAGER") {
+        // For dashboard routes, allow any dashboard role (ADMIN, SHOP_MANAGER, MEDIA_MANAGER)
+        if (dashboardRoles.includes(routerOwner as UserRole) && userRole && dashboardRoles.includes(userRole)) {
+            return NextResponse.next();
+        }
         if (userRole !== routerOwner) {
             return NextResponse.redirect(new URL(getDefaultDashboardRoute(userRole as UserRole), request.url))
         }
