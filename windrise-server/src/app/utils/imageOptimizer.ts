@@ -1,21 +1,20 @@
 import sharp from "sharp";
 import path from "path";
-import fs from "fs";
+import fs from "fs/promises";
+
+sharp.concurrency(4);
+
+export const ensureDir = async (dir: string) => {
+  await fs.mkdir(dir, { recursive: true });
+};
 
 export const optimizeAndSaveImage = async (
   file: Express.Multer.File,
-  folder: string //  dynamic folder
+  folder: string
 ): Promise<string> => {
   const uploadDir = path.join(process.cwd(), "uploads", folder);
 
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-  }
-
-  const filename = `${Date.now()}-${Math.round(
-    Math.random() * 1e9
-  )}.webp`;
-
+  const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}.webp`;
   const filepath = path.join(uploadDir, filename);
 
   await sharp(file.buffer)

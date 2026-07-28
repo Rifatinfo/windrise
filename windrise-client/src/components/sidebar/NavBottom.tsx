@@ -35,9 +35,7 @@ export function NavBottom({
           <SectionLabel label={title} />
           <div className="space-y-1">
             {items?.map((item) => {
-              const isActive = item.path
-                ? pathname === item.path || pathname.startsWith(item.path + "/")
-                : false;
+              const isActive = item.path ? pathname === item.path : false;
               return (
                 <Link
                   key={item.id}
