@@ -27,7 +27,7 @@ export function Header() {
                 <UserIcon className="h-5 w-5 text-gray-500" />
               </div>
             )}
-            <span className="hidden text-sm font-medium text-gray-700 sm:inline">{user.name}</span>
+            {/* <span className="hidden text-sm font-medium text-gray-700 sm:inline">{user.name}</span> */}
           </div>
         )}
       </div>

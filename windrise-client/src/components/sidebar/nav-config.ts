@@ -2,19 +2,26 @@
 
 import {
   LayoutDashboardIcon,
-  ShoppingCartIcon,
   BarChart3,
-  Plus,
-  StoreIcon,
+  UserPlusIcon,
   UsersIcon,
+  UserIcon,
+  ShoppingCartIcon,
+  PackageIcon,
+  BoxesIcon,
+  PackagePlusIcon,
   SettingsIcon,
-  SearchIcon,
-  UserCogIcon,
   ShieldCheckIcon,
+  StoreIcon,
   ImageIcon,
   VideoIcon,
   FileTextIcon,
   FolderOpenIcon,
+  SearchIcon,
+  UserCogIcon,
+  ClipboardListIcon,
+  BadgeDollarSignIcon,
+  WarehouseIcon,
 } from "lucide-react";
 import { UserRole } from "@/types/role";
 
@@ -30,53 +37,94 @@ export type NavItem = {
 // Dashboard Section
 // =====================
 export const NAV_MAIN: NavItem[] = [
-  {
-    id: "overview",
-    label: "Overview",
-    icon: LayoutDashboardIcon,
-    roles: ["ADMIN", "SHOP_MANAGER", "MEDIA_MANAGER"],
-    path: "/dashboard",
-  },
+ {
+  id: "overview",
+  label: "Sales Overview",
+  icon: LayoutDashboardIcon,
+  roles: ["ADMIN", "SHOP_MANAGER", "MEDIA_MANAGER"],
+  path: "/admin",
+},
 
-  {
-    id: "analytics",
-    label: "Analytics",
-    icon: BarChart3,
-    roles: ["ADMIN"],
-    path: "/dashboard/analytics",
-  },
+{
+  id: "analytics",
+  label: "Analytics",
+  icon: BarChart3,
+  roles: ["ADMIN"],
+  path: "/admin/analytics",
+},
 
-  {
-    id: "products",
-    label: "Add Products",
-    icon: Plus,
-    roles: ["ADMIN", "SHOP_MANAGER"],
-    path: "/dashboard/add-product",
-  },
+{
+  id: "add-admin",
+  label: "Add Admin",
+  icon: ShieldCheckIcon,
+  roles: ["ADMIN", "SHOP_MANAGER"],
+  path: "/admin/add-admin",
+},
 
-  {
-    id: "all-products",
-    label: "All Products",
-    icon: StoreIcon,
-    roles: ["ADMIN", "SHOP_MANAGER"],
-    path: "/dashboard/all-products",
-  },
+{
+  id: "add-shop-manager",
+  label: "Add Shop Manager",
+  icon: UserCogIcon,
+  roles: ["ADMIN", "SHOP_MANAGER"],
+  path: "/admin/add-shop-manager",
+},
 
-  {
-    id: "orders",
-    label: "Orders",
-    icon: ShoppingCartIcon,
-    roles: ["ADMIN", "SHOP_MANAGER"],
-    path: "/dashboard/orders",
-  },
+{
+  id: "add-media-manager",
+  label: "Add Media Manager",
+  icon: UserPlusIcon,
+  roles: ["ADMIN", "SHOP_MANAGER"],
+  path: "/admin/add-media-manager",
+},
 
-  {
-    id: "media-library",
-    label: "Media Library",
-    icon: FolderOpenIcon,
-    roles: ["ADMIN", "MEDIA_MANAGER"],
-    path: "/dashboard/media-library",
-  },
+{
+  id: "all-user",
+  label: "Users",
+  icon: UsersIcon,
+  roles: ["ADMIN", "SHOP_MANAGER"],
+  path: "/admin/all-users",
+},
+
+{
+  id: "customer",
+  label: "Customers",
+  icon: UserIcon,
+  roles: ["ADMIN", "SHOP_MANAGER"],
+  path: "/admin/customer",
+},
+
+{
+  id: "orders",
+  label: "Orders",
+  icon: ShoppingCartIcon,
+  roles: ["ADMIN", "SHOP_MANAGER"],
+  path: "/admin/orders",
+},
+
+{
+  id: "inventory",
+  label: "Inventory Management",
+  icon: WarehouseIcon,
+  roles: ["ADMIN", "MEDIA_MANAGER"],
+  path: "/admin/inventory",
+},
+
+{
+  id: "all-product",
+  label: "All Product",
+  icon: BoxesIcon,
+  roles: ["ADMIN", "MEDIA_MANAGER"],
+  path: "/admin/all-product",
+},
+
+{
+  id: "add-product",
+  label: "Add Product",
+  icon: PackagePlusIcon,
+  roles: ["ADMIN", "MEDIA_MANAGER"],
+  path: "/admin/add-product",
+},
+
 ];
 
 // =====================
@@ -92,8 +140,8 @@ export const NAV_SECONDARY: NavItem[] = [
   },
 
   {
-    id: "search",
-    label: "Search",
+    id: "help-center",
+    label: "Help Center",
     icon: SearchIcon,
     roles: ["ADMIN", "SHOP_MANAGER", "MEDIA_MANAGER"],
     path: "/dashboard/search",
@@ -109,7 +157,7 @@ export const NAV_ROLE: NavItem[] = [
   // =====================
   {
     id: "admin-create",
-    label: "Create Admin",
+    label: "Admin Role",
     icon: UserCogIcon,
     roles: ["ADMIN"],
     path: "/admin/create-admin",
@@ -121,14 +169,6 @@ export const NAV_ROLE: NavItem[] = [
     icon: ShieldCheckIcon,
     roles: ["ADMIN"],
     path: "/admin/control-authority",
-  },
-
-  {
-    id: "manage-managers",
-    label: "Manage Managers",
-    icon: UsersIcon,
-    roles: ["ADMIN"],
-    path: "/admin/managers",
   },
 
   // =====================

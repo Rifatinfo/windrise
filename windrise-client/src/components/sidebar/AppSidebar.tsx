@@ -35,9 +35,10 @@ export function AppSidebar() {
   const navAdmin = filterNavByRole(NAV_ROLE, role);
   const navSecondary = filterNavByRole(NAV_SECONDARY, role);
 
+
   // Section label adapts to who's logged in
   const adminSectionTitle = getRoleLabel(role);
-
+  
   return (
     <Sidebar collapsible="offcanvas">
       <SidebarHeader>
@@ -58,7 +59,7 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent className="flex flex-col overflow-y-auto pt-2">
+      <SidebarContent className="flex flex-col scrollbar-auto pt-2">
 
         <NavMain items={navMain} title="Dashboards" />
         {navAdmin.length > 0 && (

@@ -144,3 +144,26 @@ body {
     @apply font-sans;
   }
 }
+
+@utility scrollbar-auto {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.708 0 0 / 40%) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    display: block;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: oklch(0.708 0 0 / 40%);
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: oklch(0.556 0 0 / 60%);
+  }
+}
