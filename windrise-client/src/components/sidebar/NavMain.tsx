@@ -23,9 +23,7 @@ export function NavMain({ items, title }: { items: NavItem[]; title?: string }) 
       {title && <SectionLabel label={title} />}
       <nav className="space-y-1">
         {items.map((item) => {
-          const isActive = item.path
-            ? pathname === item.path || pathname.startsWith(item.path + "/")
-            : false;
+          const isActive = item.path ? pathname === item.path : false;
           return (
             <Link
               key={item.id}

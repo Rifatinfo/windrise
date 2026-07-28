@@ -1,35 +1,39 @@
-// import { prisma } from "@/shared";
-// import slugify from "slugify";
+import { prisma } from "@/shared";
+import slugify from "slugify";
 
+export const generateUniqueSlug = async (
+  name: string
+): Promise<string> => {
+  const baseSlug = slugify(name, {
+    lower: true,
+    strict: true,
+    trim: true,
+  });
 
-// export const generateUniqueSlug = async (
-//     name: string
-// ): Promise<string> => {
-//     const baseSlug = slugify(name, {
-//         lower: true,
-//         strict: true, // removes special chars
-//         trim: true,
-//     });
+  const count = await prisma.product.count({
+    where: {
+      slug: {
+        startsWith: baseSlug,
+      },
+    },
+  });
 
-//     // Find all similar slugs
-//     const existingSlugs = await prisma.product.findMany({
-//         where: {
-//             slug: {
-//                 startsWith: baseSlug,
-//             },
-//         },
-//         select: { slug: true },
-//     });
+  if (count === 0) return baseSlug;
 
-//     if (existingSlugs.length === 0) {
-//         return baseSlug;
-//     }
-//     const numbers = existingSlugs
-//         .map((p : any) => {
-//             const match = p.slug.match(new RegExp(`^${baseSlug}-(\\d+)$`));
-//             return match ? Number(match[1]) : null;
-//         })
-//         .filter((n : any): n is number => n !== null);
-//     const nextNumber = numbers.length ? Math.max(...numbers) + 1 : 1;
-//     return `${baseSlug}-${nextNumber}`;
-// };
+  // Find the actual max suffix to avoid collisions
+  const latest = await prisma.product.findFirst({
+    where: {
+      slug: {
+        startsWith: `${baseSlug}-`,
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    select: { slug: true },
+  });
+
+  if (!latest) return `${baseSlug}-1`;
+
+  const match = latest.slug.match(new RegExp(`^${baseSlug}-(\\d+)$`));
+  const nextNumber = match ? Number(match[1]) + 1 : count + 1;
+  return `${baseSlug}-${nextNumber}`;
+};

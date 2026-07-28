@@ -1,5 +1,3 @@
-
-
 import {
   LayoutDashboardIcon,
   BarChart3,
@@ -22,8 +20,11 @@ import {
   ClipboardListIcon,
   BadgeDollarSignIcon,
   WarehouseIcon,
+  CarIcon,
 } from "lucide-react";
 import { UserRole } from "@/types/role";
+import { PiInvoice } from "react-icons/pi";
+import { FaShippingFast } from "react-icons/fa";
 
 export type NavItem = {
   id: string;
@@ -37,94 +38,81 @@ export type NavItem = {
 // Dashboard Section
 // =====================
 export const NAV_MAIN: NavItem[] = [
- {
-  id: "overview",
-  label: "Sales Overview",
-  icon: LayoutDashboardIcon,
-  roles: ["ADMIN", "SHOP_MANAGER", "MEDIA_MANAGER"],
-  path: "/admin",
-},
+  {
+    id: "overview",
+    label: "Sales Overview",
+    icon: LayoutDashboardIcon,
+    roles: ["ADMIN", "SHOP_MANAGER", "MEDIA_MANAGER"],
+    path: "/admin",
+  },
 
-{
-  id: "analytics",
-  label: "Analytics",
-  icon: BarChart3,
-  roles: ["ADMIN"],
-  path: "/admin/analytics",
-},
+  {
+    id: "analytics",
+    label: "Analytics",
+    icon: BarChart3,
+    roles: ["ADMIN"],
+    path: "/admin/analytics",
+  },
 
-{
-  id: "add-admin",
-  label: "Add Admin",
-  icon: ShieldCheckIcon,
-  roles: ["ADMIN", "SHOP_MANAGER"],
-  path: "/admin/add-admin",
-},
+  {
+    id: "all-user",
+    label: "Users",
+    icon: UsersIcon,
+    roles: ["ADMIN", "SHOP_MANAGER"],
+    path: "/admin/all-users",
+  },
 
-{
-  id: "add-shop-manager",
-  label: "Add Shop Manager",
-  icon: UserCogIcon,
-  roles: ["ADMIN", "SHOP_MANAGER"],
-  path: "/admin/add-shop-manager",
-},
+  {
+    id: "customer",
+    label: "Customers",
+    icon: UserIcon,
+    roles: ["ADMIN", "SHOP_MANAGER"],
+    path: "/admin/customer",
+  },
 
-{
-  id: "add-media-manager",
-  label: "Add Media Manager",
-  icon: UserPlusIcon,
-  roles: ["ADMIN", "SHOP_MANAGER"],
-  path: "/admin/add-media-manager",
-},
+  {
+    id: "orders",
+    label: "Orders",
+    icon: ShoppingCartIcon,
+    roles: ["ADMIN", "SHOP_MANAGER"],
+    path: "/admin/orders",
+  },
 
-{
-  id: "all-user",
-  label: "Users",
-  icon: UsersIcon,
-  roles: ["ADMIN", "SHOP_MANAGER"],
-  path: "/admin/all-users",
-},
-
-{
-  id: "customer",
-  label: "Customers",
-  icon: UserIcon,
-  roles: ["ADMIN", "SHOP_MANAGER"],
-  path: "/admin/customer",
-},
-
-{
-  id: "orders",
-  label: "Orders",
-  icon: ShoppingCartIcon,
-  roles: ["ADMIN", "SHOP_MANAGER"],
-  path: "/admin/orders",
-},
-
-{
-  id: "inventory",
-  label: "Inventory Management",
-  icon: WarehouseIcon,
-  roles: ["ADMIN", "MEDIA_MANAGER"],
-  path: "/admin/inventory",
-},
-
-{
-  id: "all-product",
-  label: "All Product",
-  icon: BoxesIcon,
-  roles: ["ADMIN", "MEDIA_MANAGER"],
-  path: "/admin/all-product",
-},
-
-{
-  id: "add-product",
-  label: "Add Product",
-  icon: PackagePlusIcon,
-  roles: ["ADMIN", "MEDIA_MANAGER"],
-  path: "/admin/add-product",
-},
-
+  {
+    id: "inventory",
+    label: "Inventory Management",
+    icon: WarehouseIcon,
+    roles: ["ADMIN", "MEDIA_MANAGER"],
+    path: "/admin/inventory",
+  },
+  {
+    id: "all-product",
+    label: "All Product",
+    icon: BoxesIcon,
+    roles: ["ADMIN", "MEDIA_MANAGER"],
+    path: "/admin/all-product",
+  },
+  {
+    id: "add-product",
+    label: "Add Product",
+    icon: PackagePlusIcon,
+    roles: ["ADMIN", "MEDIA_MANAGER"],
+    path: "/admin/add-product",
+  },
+  {
+    id: "invoices",
+    label: "Invoices",
+    icon: PiInvoice,
+    roles: ["ADMIN", "MEDIA_MANAGER"],
+    path: "/admin/invoices",
+  },
+  {
+    id: "shipping",
+    label: "Shipping",
+    icon: FaShippingFast,
+    roles: ["ADMIN", "MEDIA_MANAGER"],
+    path: "/admin/shipping",
+  },
 ];
 
 // =====================
@@ -169,6 +157,29 @@ export const NAV_ROLE: NavItem[] = [
     icon: ShieldCheckIcon,
     roles: ["ADMIN"],
     path: "/admin/control-authority",
+  },
+  {
+    id: "add-admin",
+    label: "Add Admin",
+    icon: ShieldCheckIcon,
+    roles: ["ADMIN", "SHOP_MANAGER"],
+    path: "/admin/add-admin",
+  },
+
+  {
+    id: "add-shop-manager",
+    label: "Add Shop Manager",
+    icon: UserCogIcon,
+    roles: ["ADMIN", "SHOP_MANAGER"],
+    path: "/admin/add-shop-manager",
+  },
+
+  {
+    id: "add-media-manager",
+    label: "Add Media Manager",
+    icon: UserPlusIcon,
+    roles: ["ADMIN", "SHOP_MANAGER"],
+    path: "/admin/add-media-manager",
   },
 
   // =====================
