@@ -69,6 +69,11 @@ export const updateProductSchema = z.object({
       })
     )
     .optional(),
+  existingGalleryImages: z.array(z.string()).optional(),
+  existingThumbnail: z.string().optional(),
+  existingSizeGuide: z.string().optional(),
+  removeThumbnail: z.boolean().optional(),
+  removeSizeGuide: z.boolean().optional(),
 });
 export const ProductSchema = {
   createProductSchema,

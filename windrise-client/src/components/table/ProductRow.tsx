@@ -152,7 +152,7 @@ const ProductRow = ({ product, index }: any) => {
                     <button onClick={() => setOpenView(true)} className="p-1.5 text-slate-400  hover:bg-blue-50 rounded-md transition-colors cursor-pointer" title="View">
                         <Eye className="w-4 h-4" />
                     </button>
-                    <button  onClick={() => router.push(`/dashboard/update-product/${product.slug}`)}  className="p-1.5 text-slate-400  hover:bg-orange-50 rounded-md transition-colors cursor-pointer" title="Edit">
+                    <button  onClick={() => router.push(`/admin/update-product/${product.slug}`)}  className="p-1.5 text-slate-400  hover:bg-orange-50 rounded-md transition-colors cursor-pointer" title="Edit">
                         <Edit className="w-4 h-4" />
                     </button>
 

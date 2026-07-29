@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Dispatch, SetStateAction } from "react";
 import { X } from "lucide-react";
@@ -13,7 +13,7 @@ export interface Product {
     sku: string;
     regularPrice: number;
     salePrice?: number;
-    thumbnailImage: string;
+    thumbnailImage: string | null;
     fullDescription?: string;
     variants?: Variant[];
     images?: ProductImage[];
@@ -22,14 +22,23 @@ export interface Product {
 interface Props { product: Product; open: boolean; setOpen: Dispatch<SetStateAction<boolean>>; }
 
 const ProductViewModal = ({ product, open, setOpen }: Props) => {
+    // ✅ Hooks must run unconditionally on EVERY render — never after an
+    // early return, otherwise React resets the state (this is what made the
+    // main image revert a moment after clicking a thumbnail)
+    const [mainImage, setMainImage] = useState<string | null>(product?.thumbnailImage ?? null);
+
+    // Reset the main image every time the modal is opened / product changes
+    useEffect(() => {
+        if (open) {
+            setMainImage(product?.thumbnailImage ?? product?.images?.[0]?.url ?? null);
+        }
+    }, [open, product]);
+
     if (!open) return null;
 
     const variants = product?.variants ?? [];
     const images = product?.images ?? [];
     const additionalInfo = product?.additionalInformation ?? [];
-
-    //  State for main image
-    const [mainImage, setMainImage] = useState(product.thumbnailImage);
 
     return (
         <div
@@ -51,32 +60,35 @@ const ProductViewModal = ({ product, open, setOpen }: Props) => {
                 {/* Left: Gallery */}
                 <div className="flex flex-col items-center gap-4">
                     {/* Main Image */}
-                    <Image
-                        width={300}
-                        height={300}
-                        src={mainImage}
-                        alt={product.name}
-                        className="rounded-xl border border-gray-200 object-cover shadow-md"
-                    />
+                    {mainImage ? (
+                        <Image
+                            width={300}
+                            height={300}
+                            src={mainImage}
+                            alt={product.name}
+                            className="rounded-xl border border-gray-200 object-cover shadow-md"
+                        />
+                    ) : (
+                        <div className="w-[300px] h-[300px] flex items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-gray-400 text-sm shadow-md">
+                            No Image
+                        </div>
+                    )}
 
                     {/* Thumbnails */}
                     {images.length > 0 && (
                         <div className="flex gap-2 flex-wrap mt-2 justify-center ">
-                            {images.map((img) => {
-                                const imgUrl = `${process.env.NEXT_PUBLIC_API_URL}${img.url}`;
-                                return (
-                                    <Image
-                                        key={img.id}
-                                        width={60}
-                                        height={60}
-                                        src={img.url}
-                                        alt="gallery"
-                                        className={`rounded-lg border object-cover shadow-sm hover:scale-105 transition-transform cursor-pointer ${imgUrl === mainImage ? "border-blue-500" : ""
-                                            }`}
-                                        onClick={() => setMainImage(imgUrl)}
-                                    />
-                                );
-                            })}
+                            {images.map((img) => (
+                                <Image
+                                    key={img.id}
+                                    width={60}
+                                    height={60}
+                                    src={img.url}
+                                    alt="gallery"
+                                    className={`rounded-lg border object-cover shadow-sm hover:scale-105 transition-transform cursor-pointer ${img.url === mainImage ? "border-black-500" : ""
+                                        }`}
+                                    onClick={() => setMainImage(img.url)}
+                                />
+                            ))}
                         </div>
                     )}
                 </div>
@@ -143,7 +155,6 @@ const ProductViewModal = ({ product, open, setOpen }: Props) => {
                             </div>
                         )
                     }
-
                 </div>
             </div>
         </div>
@@ -151,5 +162,3 @@ const ProductViewModal = ({ product, open, setOpen }: Props) => {
 };
 
 export default ProductViewModal;
-
-
