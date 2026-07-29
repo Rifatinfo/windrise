@@ -25,16 +25,18 @@ type Props = {
         categories: { categoryId: string }[];
         subCategories: { subCategoryId: string }[];
     }) => void;
+    defaultCategories?: string[];
+    defaultSubcategories?: string[];
 };
-const CategoriesSection = ({ onChange }: Props) => {
+const CategoriesSection = ({ onChange, defaultCategories, defaultSubcategories }: Props) => {
     //============== Categories ===============//
     const [categories, setCategories] = useState<Category[]>([]);
     const [newCategory, setNewCategory] = useState('');
-    const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+    const [selectedCategories, setSelectedCategories] = useState<string[]>(defaultCategories || []);
     //=============== Subcategories ============// 
     const [subcategories, setSubcategories] = useState<Category[]>([]);
     const [newSubcategory, setNewSubcategory] = useState('');
-    const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
+    const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>(defaultSubcategories || []);
 
 
     // ================= loading ================// 

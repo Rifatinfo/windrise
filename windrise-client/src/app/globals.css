@@ -145,6 +145,14 @@ body {
   }
 }
 
+@utility no-scrollbar {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @utility scrollbar-auto {
   scrollbar-width: thin;
   scrollbar-color: oklch(0.708 0 0 / 40%) transparent;

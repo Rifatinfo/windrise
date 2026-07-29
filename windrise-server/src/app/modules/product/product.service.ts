@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import path from "path";
+import fs from "fs/promises";
 
 import prisma from "../../../shared/prisma";
 
@@ -343,9 +344,15 @@ const updateProduct = async (
   slug: string,
   req: ExpressRequest & { files?: Express.Multer.File[] },
 ) => {
-  const data = req.body as Partial<CreateProductInput>;
+  const data = req.body as Partial<CreateProductInput> & {
+    existingGalleryImages?: string[];
+    existingThumbnail?: string;
+    existingSizeGuide?: string;
+    removeThumbnail?: boolean;
+    removeSizeGuide?: boolean;
+  };
 
-  // 1. Find existing product
+  // 1. Find existing product with images
   const existingProduct = await prisma.product.findUnique({
     where: { slug },
     include: { images: true },
@@ -357,21 +364,26 @@ const updateProduct = async (
 
   const productFolder = `products/${slug}`;
 
-  // 2. Files from request
+  // 2. Files from request (multer attaches these via route middleware)
   const files = (req as any).galleryFiles;
   const thumbnailFile = (req as any).thumbnailImage;
   const sizeGuidFile = (req as any).sizeGuidImage;
+
+  // 3. Ensure upload directory exists, then process new files
+  const imageCount = (thumbnailFile ? 1 : 0) + (sizeGuidFile ? 1 : 0) + (files?.length || 0);
+  if (imageCount > 0) {
+    const uploadDir = path.join(process.cwd(), "uploads", productFolder);
+    await ensureDir(uploadDir);
+  }
 
   const imagePromises: Promise<string>[] = [];
 
   if (thumbnailFile) {
     imagePromises.push(optimizeAndSaveImage(thumbnailFile, productFolder));
   }
-
   if (sizeGuidFile) {
     imagePromises.push(optimizeAndSaveImage(sizeGuidFile, productFolder));
   }
-
   if (files?.length) {
     files.forEach((file: any) => {
       imagePromises.push(optimizeAndSaveImage(file, productFolder));
@@ -379,32 +391,73 @@ const updateProduct = async (
   }
 
   const filenames = await Promise.all(imagePromises);
-
   let idx = 0;
 
-  // 3. Thumbnail & Size Guide (keep old if not updated)
-  const thumbnailUrl = thumbnailFile
-    ? `/uploads/${productFolder}/${filenames[idx++]}`
-    : existingProduct.thumbnailImage;
+  // 4. Thumbnail — replace old file on disk when new one uploaded,
+  //    or delete it entirely when the client explicitly removed it
+  let thumbnailUrl = existingProduct.thumbnailImage;
+  if (thumbnailFile) {
+    thumbnailUrl = `/uploads/${productFolder}/${filenames[idx++]}`;
+    if (existingProduct.thumbnailImage) {
+      const oldPath = path.join(process.cwd(), existingProduct.thumbnailImage);
+      await fs.unlink(oldPath).catch(() => {});
+    }
+  } else if (data.removeThumbnail && existingProduct.thumbnailImage) {
+    const oldPath = path.join(process.cwd(), existingProduct.thumbnailImage);
+    await fs.unlink(oldPath).catch(() => {});
+    thumbnailUrl = null;
+  }
 
-  const sizeGuidUrl = sizeGuidFile
-    ? `/uploads/${productFolder}/${filenames[idx++]}`
-    : existingProduct.sizeGuidImage;
+  // 5. Size Guide — replace old file on disk when new one uploaded,
+  //    or delete it entirely when the client explicitly removed it
+  let sizeGuidUrl = existingProduct.sizeGuidImage;
+  if (sizeGuidFile) {
+    sizeGuidUrl = `/uploads/${productFolder}/${filenames[idx++]}`;
+    if (existingProduct.sizeGuidImage) {
+      const oldPath = path.join(process.cwd(), existingProduct.sizeGuidImage);
+      await fs.unlink(oldPath).catch(() => {});
+    }
+  } else if (data.removeSizeGuide && existingProduct.sizeGuidImage) {
+    const oldPath = path.join(process.cwd(), existingProduct.sizeGuidImage);
+    await fs.unlink(oldPath).catch(() => {});
+    sizeGuidUrl = null;
+  }
 
-  // 4. Existing images (keep from DB)
-  const existingGalleryUrls = existingProduct.images.map((img) => img.url);
-
-  // 5. New uploaded images
+  // 6. Gallery images logic
   const newGalleryUrls = files?.length
     ? filenames.slice(idx).map((f) => `/uploads/${productFolder}/${f}`)
     : [];
 
-  // 6. Combined (copy of both)
-  const allGalleryUrls = [...existingGalleryUrls, ...newGalleryUrls];
-  console.log("allGalleryUrls", allGalleryUrls);
-  console.log("newGalleryUrls", newGalleryUrls);
-  console.log("files", files);
-  // 6. DELETE ONLY RELATIONS (NOT IMAGES)
+  // The keep-list ALWAYS comes from the client (images the user kept in the
+  // UI). Newly uploaded files are ADDED on top of it — uploading a new image
+  // must NOT wipe the existing gallery.
+  const keepGalleryUrls =
+    data.existingGalleryImages ??
+    existingProduct.images.map((img) => img.url);
+
+  // Find old gallery records to delete (exist in DB but not in keep list)
+  const deleteGalleryRecords = existingProduct.images.filter(
+    (img) => !keepGalleryUrls.includes(img.url),
+  );
+
+  // Delete old gallery files from disk (silently ignore if file missing)
+  await Promise.all(
+    deleteGalleryRecords.map((img) => {
+      const filePath = path.join(process.cwd(), img.url);
+      return fs.unlink(filePath).catch(() => {});
+    }),
+  );
+
+  // Delete old gallery records from database
+  if (deleteGalleryRecords.length > 0) {
+    await prisma.productImage.deleteMany({
+      where: {
+        id: { in: deleteGalleryRecords.map((img) => img.id) },
+      },
+    });
+  }
+
+  // 7. DELETE ONLY RELATIONS (not the product itself)
   await Promise.all([
     prisma.productCategory.deleteMany({
       where: { productId: existingProduct.id },
@@ -420,7 +473,7 @@ const updateProduct = async (
     }),
   ]);
 
-  // 7. UPDATE PRODUCT
+  // 8. UPDATE PRODUCT
   const updatedProduct = await prisma.product.update({
     where: { slug },
 
@@ -438,12 +491,10 @@ const updateProduct = async (
       thumbnailImage: thumbnailUrl,
       sizeGuidImage: sizeGuidUrl,
 
-      //  ADD NEW IMAGES ONLY (old stay in DB)
-      images: allGalleryUrls.length
+      // Create only NEW gallery records (old ones already deleted above)
+      images: newGalleryUrls.length
         ? {
-            create: newGalleryUrls.map((url) => ({
-              url,
-            })),
+            create: newGalleryUrls.map((url) => ({ url })),
           }
         : undefined,
 

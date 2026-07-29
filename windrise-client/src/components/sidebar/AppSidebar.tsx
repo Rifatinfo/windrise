@@ -59,7 +59,7 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent className="flex flex-col scrollbar-auto pt-2">
+      <SidebarContent className="flex flex-col pt-2">
 
         <NavMain items={navMain} title="Dashboards" />
         {navAdmin.length > 0 && (

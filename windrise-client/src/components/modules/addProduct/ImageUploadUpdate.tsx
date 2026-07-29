@@ -78,13 +78,17 @@ const ImageUploadUpdate = ({
         const newPreviews = galleryPreview.filter((_, i) => i !== index)
         setGalleryPreview?.(newPreviews)
 
-        // find and remove the matching original
-        const newOriginals = originalGalleryUrls.filter((orig) => {
-            const resolved = orig.startsWith("http")
-                ? orig
-                : `${process.env.NEXT_PUBLIC_API_URL}${orig}`
-            return resolved !== removedResolved
-        })
+        // Resolve originals with the SAME rules used to build the previews
+        // (must mirror resolveUrl() in ProductUpdateClient.tsx, otherwise
+        //  relative "/uploads/..." URLs never match and deletion is lost)
+        const resolveOriginal = (orig: string): string => {
+            if (orig.startsWith("http")) return orig
+            if (orig.startsWith("/")) return orig
+            return `${process.env.NEXT_PUBLIC_API_URL}${orig}`
+        }
+        const newOriginals = originalGalleryUrls.filter(
+            (orig) => resolveOriginal(orig) !== removedResolved
+        )
         onGalleryPreviewChange?.(newOriginals)
     }
 
