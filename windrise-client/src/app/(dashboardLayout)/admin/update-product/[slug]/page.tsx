@@ -10,23 +10,26 @@ type Props = {
 };
 
 const ProductUpdatePage = async ({ params }: Props) => {
-  const {slug} = await params;
-  console.log("slug", slug);
+  const { slug } = await params;
 
-  const res = await serverFetch.get(`/api/v1/product/slug/${slug}`);
-  const data = await res.json();
-  console.log("data" , data, res);
+  let data: { success?: boolean; message?: string; data?: unknown } = {};
+  try {
+    const res = await serverFetch.get(
+      `/api/v1/product/slug/${encodeURIComponent(slug)}`,
+    );
+    data = await res.json();
+  } catch (error) {
+    console.error("Failed to fetch product for update:", error);
+  }
 
   if (!data.success) {
     return (
       <div className="p-10 text-center text-red-500 text-lg font-semibold">
-        Product not found
+        {data.message || "Product not found"}
       </div>
     );
   }
 
-//   const product = await data.json();
-  console.log("Product" , data);
   return <ProductUpdateClient product={data.data} slug={slug} />;
 };
 

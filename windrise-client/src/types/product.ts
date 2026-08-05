@@ -37,7 +37,7 @@ export interface ProductVariant {
 
 export interface AdditionalInfo {
   id: string;
-  key: string;
+  label: string;
   value: string;
 }
 
@@ -52,13 +52,13 @@ export interface Product {
   slug: string;
   sku: string;
   regularPrice: number;
-  salePrice: number;
-  stockQuantity: number;
+  salePrice: number | null;
+  stockQuantity: number | null;
   stockStatus: "IN_STOCK" | "OUT_OF_STOCK" | "LOW_STOCK";
-  shortDescription: string;
-  fullDescription: string;
-  sizeGuidImage: string;
-  thumbnailImage: string;
+  shortDescription: string | null;
+  fullDescription: string | null;
+  sizeGuidImage: string | null;
+  thumbnailImage: string | null;
   isDeleted: boolean;
   isActive: boolean;
   createdAt: string;
