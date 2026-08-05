@@ -11,4 +11,13 @@ export const productFilterableFields = [
   "priceRange",
   "color",
   "stockStatus",
+  "sale",
+];
+
+export const productSortableFields = [
+  "createdAt",
+  "updatedAt",
+  "name",
+  "salePrice",
+  "regularPrice",
 ];

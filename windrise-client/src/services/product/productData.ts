@@ -1,72 +1,53 @@
+export type ProductQueryParams = {
+  page?: string;
+  limit?: string;
+  sortBy?: string;
+  sortOrder?: string;
+  color?: string;
+  priceRange?: string;
+  stockStatus?: string;
+  sale?: string;
+};
+
+const buildQuery = (
+  base: Record<string, string>,
+  params: ProductQueryParams,
+) =>
+  new URLSearchParams({
+    ...base,
+    ...(params.page && { page: params.page }),
+    ...(params.limit && { limit: params.limit }),
+    ...(params.sortBy && { sortBy: params.sortBy }),
+    ...(params.sortOrder && { sortOrder: params.sortOrder }),
+    ...(params.color && { color: params.color }),
+    ...(params.priceRange && { priceRange: params.priceRange }),
+    ...(params.stockStatus && { stockStatus: params.stockStatus }),
+    ...(params.sale && { sale: params.sale }),
+  }).toString();
+
+const fetchProducts = async (query: string) => {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/api/v1/product?${query}`,
+    { cache: "no-store" },
+  );
+
+  if (!res.ok) {
+    return { success: false, meta: null, data: [] };
+  }
+
+  return res.json();
+};
 
 //================= Category Service =================//
 
 export const fetchProductsByCategory = async (
-    category: string,
-    searchParams: Promise<{
-        page?: string;
-        limit?: string;
-        sortBy?: string;
-        sortOrder?: string;
-        color?: string;
-        priceRange?: string;
-        stockStatus?: string;
-    }>
-) => {
-    const sp = await searchParams;
+  categoryId: string,
+  params: ProductQueryParams = {},
+) => fetchProducts(buildQuery({ category: categoryId }, params));
 
-    const query = new URLSearchParams({
-        category,
-        ...(sp.page        && { page: sp.page }),
-        ...(sp.limit       && { limit: sp.limit }),
-        ...(sp.sortBy      && { sortBy: sp.sortBy }),
-        ...(sp.sortOrder   && { sortOrder: sp.sortOrder }),
-        ...(sp.color       && { color: sp.color }),           // ✅ added
-        ...(sp.priceRange  && { priceRange: sp.priceRange }), // ✅ added
-        ...(sp.stockStatus && { stockStatus: sp.stockStatus }),// ✅ added
-    }).toString();
-
-    const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/product?${query}`,
-        { cache: "no-store" }
-    );
-    return res.json();
-};
 //================= Sub-Category Service =================//
 
 export const fetchProductsBySubCategory = async (
-    subCategory: string,
-    searchParams: Promise<{
-        page?: string;
-        limit?: string;
-        sortBy?: string;
-        sortOrder?: string;
-        color?: string;
-        priceRange?: string;
-        stockStatus?: string;
-    }>
-) => {
-    const sp = await searchParams;
-
-    const query = new URLSearchParams({
-        subCategory,
-        ...(sp.page && { page: sp.page }),
-        ...(sp.limit && { limit: sp.limit }),
-        ...(sp.sortBy && { sortBy: sp.sortBy }),
-        ...(sp.sortOrder && { sortOrder: sp.sortOrder }),
-
-        // additional filters
-        ...(sp.color && { color: sp.color }),
-        ...(sp.priceRange && { priceRange: sp.priceRange }),
-        ...(sp.stockStatus && { stockStatus: sp.stockStatus }),
-    }).toString();
-
-    const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/product?${query}`,
-        {
-            cache: "no-store",
-        }
-    );
-
-    return res.json();
-};
+  subCategoryId: string,
+  params: ProductQueryParams = {},
+) => fetchProducts(buildQuery({ subCategory: subCategoryId }, params));

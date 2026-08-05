@@ -7,7 +7,10 @@ import prisma from "../../../shared/prisma";
 
 import { CreateProductInput } from "./product.interface";
 import { Request as ExpressRequest } from "express";
-import { productSearchableFields } from "./product.constant";
+import {
+  productSearchableFields,
+  productSortableFields,
+} from "./product.constant";
 import ApiError from "../../errors/ApiError";
 import { StatusCodes } from "http-status-codes";
 
@@ -187,6 +190,7 @@ const getProducts = async (params: any, options: IOptions) => {
     subCategory,
     priceRange,
     color,
+    sale,
     ...filterData
   } = params;
 
@@ -251,6 +255,14 @@ const getProducts = async (params: any, options: IOptions) => {
       },
     });
   }
+  if (sale) {
+    andConditions.push({
+      salePrice: {
+        not: null,
+        lt: prisma.product.fields.regularPrice,
+      },
+    });
+  }
   if (Object.keys(filterData).length > 0) {
     andConditions.push({
       AND: Object.keys(filterData).map((key) => ({
@@ -263,10 +275,26 @@ const getProducts = async (params: any, options: IOptions) => {
 
   const whereCondition: Prisma.ProductWhereInput =
     andConditions.length > 0 ? { AND: andConditions } : {};
+
+  const safeSortBy = productSortableFields.includes(sortBy)
+    ? sortBy
+    : "createdAt";
+  const safeSortOrder: Prisma.SortOrder = sortOrder === "asc" ? "asc" : "desc";
+
+  const orderBy:
+    | Prisma.ProductOrderByWithRelationInput
+    | Prisma.ProductOrderByWithRelationInput[] =
+    safeSortBy === "salePrice"
+      ? [
+          { salePrice: { sort: safeSortOrder, nulls: "last" } },
+          { regularPrice: safeSortOrder },
+        ]
+      : { [safeSortBy]: safeSortOrder };
+
   const result = await prisma.product.findMany({
     skip,
     take: limit,
-    orderBy: sortBy ? { [sortBy]: sortOrder || "desc" } : { createdAt: "desc" },
+    orderBy,
     where: whereCondition,
     include: {
       categories: {
