@@ -124,9 +124,13 @@ const SubCategoryPage = async ({ params, searchParams }: PageProps) => {
           <ProductFiltercategorySubCategory
             breadcrumbs={[
               { label: "Home", href: "/" },
-              { label: matchedCategory.name },
-            ]}
-            title={matchedCategory.name}
+               {
+                 label: matchedCategory?.name || categoryName,
+                 href: matchedCategory ? `/${encodeURIComponent(categoryName)}` : undefined,
+               },
+               { label: matchedSubCategory.name },
+             ]}
+             title={matchedSubCategory.name}
             shown={products.length}
           />
         )}
@@ -138,6 +142,7 @@ const SubCategoryPage = async ({ params, searchParams }: PageProps) => {
                 key={product.id}
                 product={product}
                 category={categoryName}
+                subCategory={subCategoryName}
               />
             ))}
           </div>
