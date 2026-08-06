@@ -28,10 +28,6 @@ const ProductDetailsPage = async ({ params }: PageProps) => {
   const product = await getProductBySlug(productSlug);
 
 
-  console.log("productSlug:", productSlug);
-  console.log("product:", product);
-
-
   if (!product) {
     notFound();
   }
