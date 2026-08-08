@@ -47,14 +47,14 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full px-6 lg:px-0">
       {/* ── mobile / tablet ─────────────────────────────────────────── */}
       <div className="lg:hidden">
         <div className="relative w-full overflow-hidden bg-neutral-100">
           <div
             ref={trackRef}
             {...trackDragProps}
-            className="gallery-track flex aspect-[4/5] w-full overflow-x-auto"
+            className="gallery-track flex aspect-[4/5] w-full  overflow-x-auto "
           >
             {images.map((image, index) => (
               <button
@@ -63,13 +63,13 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
                  tabIndex={index === activeIndex ? 0 : -1}
                 onClick={() => setLightboxOpen(true)}
                 aria-label={`Open ${name} image ${index + 1} in full screen`}
-                className="gallery-slide block h-full w-full min-w-full"
+                className="gallery-slide block h-full w-full min-w-full "
               >
                 <img
                   src={image.url}
                   alt={name}
                   draggable={false}
-                  className="h-full w-full select-none object-cover"
+                  className="h-full w-full  select-none object-cover"
                 />
               </button>
             ))}
@@ -159,12 +159,10 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
           onMouseEnter={() => setHovering(true)}
           onMouseLeave={() => setHovering(false)}
           onMouseMove={handleMouseMove}
-          style={{
-            // 800 × 1000 at full size, scaled down so the whole section fits the viewport
-            width: 'min(800px, calc((100vh - 190px) * 0.8))',
-            height: 'min(1000px, calc(100vh - 190px))',
-          }}
-           className="relative min-w-0 flex-1 cursor-zoom-in overflow-hidden bg-neutral-100 outline-none focus-visible:ring-1 focus-visible:ring-ink"
+           style={{
+             width: 'min(585px, calc((100vh - 190px) * 0.8003))',
+           }}
+            className="relative aspect-[585/731] min-w-0 flex-none cursor-zoom-in overflow-hidden bg-neutral-100 outline-none focus-visible:ring-1 focus-visible:ring-ink"
         >
           <AnimatePresence initial={false} mode="wait">
             <motion.img
@@ -176,7 +174,7 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
-              className="h-full w-full select-none object-cover"
+              className="h-full w-full  select-none object-cover rounded-sm"
               style={{
                 transform: `scale(${hovering ? HOVER_ZOOM : 1})`,
                 transformOrigin: `${origin.x}% ${origin.y}%`,
