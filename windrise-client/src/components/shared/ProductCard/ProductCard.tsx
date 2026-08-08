@@ -38,7 +38,7 @@ export function ProductCard({
 
   const price = product.salePrice ?? product.regularPrice;
   const hasDiscount =
-    product.salePrice !== null && product.salePrice < product.regularPrice;
+    product.salePrice != null && product.salePrice !== product.regularPrice;
 
   const badge = hasDiscount
     ? `-${Math.round(
