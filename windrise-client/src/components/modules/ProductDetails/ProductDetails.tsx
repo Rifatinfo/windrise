@@ -133,7 +133,7 @@ const ProductDetails = ({
   return (
     <div className="">
       <div className="min-h-full w-full">
-        <main className="mx-auto w-full max-w-[1460px] px-4 pb-14 pt-4 sm:px-6 sm:pt-5 lg:px-10 lg:pb-20 lg:pt-6">
+        <main className="mx-auto w-full max-w-[1460px] px-6 pb-14 pt-4 sm:px-6 sm:pt-5 lg:px-10 lg:pb-20 lg:pt-6">
           <nav aria-label="Breadcrumb">
             <ol className="flex flex-wrap items-center gap-1 text-[12px] font-light lg:text-lg text-[#9E9E9E]">
               {breadcrumb.map((crumb) => (
@@ -179,7 +179,7 @@ const ProductDetails = ({
                   {price.toLocaleString("en-BD", { minimumFractionDigits: 2 })}
                 </p>
               </div>
-              <div className="mt-5 flex flex-wrap items-center gap-4  md:mt-8">
+              <div className="mt-5 flex flex-wrap items-center gap-3.5  md:mt-8">
                 {sizes.length > 0 && (
                   <Select
                     value={size}
@@ -187,7 +187,7 @@ const ProductDetails = ({
                   >
                     <SelectTrigger
                       aria-label="Select size"
-                      className="!h-9 w-[130px] rounded-none border-line text-[12px] lg:!h-12 border lg:w-[190px] lg:text-[14px]"
+                      className="!h-10 w-[130px] rounded-none border-line text-[12px] lg:!h-12 border lg:w-[190px] lg:text-[14px]"
                     >
                       <SelectValue placeholder="Size" />
                     </SelectTrigger>
@@ -200,13 +200,8 @@ const ProductDetails = ({
                     </SelectContent>
                   </Select>
                 )}
-                {/* <div className="flex h-9 items-center gap-2 border border-line px-3 lg:h-12 lg:gap-3 lg:px-4">
-                  <span className="text-[10px] uppercase tracking-[0.08em] text-muted lg:text-[12px]">Qty</span>
-                  <button type="button" aria-label="Decrease quantity" onClick={() => setQuantity((value) => Math.max(1, value - 1))} className="px-1 text-[15px] leading-none text-muted hover:text-ink lg:text-[20px]">−</button>
-                  <span aria-live="polite" className="min-w-[16px] text-center text-[13px] text-ink lg:text-[15px]">{quantity}</span>
-                  <button type="button" aria-label="Increase quantity" onClick={() => setQuantity((value) => Math.min(10, value + 1))} className="px-1 text-[15px] leading-none text-muted hover:text-ink lg:text-[20px]">+</button>
-                </div> */}
-                <div className="flex h-9 w-[130px] lg:h-12 lg:w-[190px] items-center justify-between border border-line px-4">
+               
+                <div className="flex h-10 w-[126px] lg:h-12 lg:w-[190px] items-center justify-between border border-line px-4">
                   <span className="text-[10px] uppercase tracking-[0.08em] text-muted lg:text-[12px]">
                     Qty
                   </span>
@@ -239,7 +234,7 @@ const ProductDetails = ({
                 </div>
               </div>
 
-              <div className="mt-5 flex flex-row items-center gap-3 lg:gap-4  md:mt-8">
+              <div className="mt-5 flex flex-row items-center gap-3.5 lg:gap-4  md:mt-8">
                 <button
                   type="button"
                   onClick={addToCart}
@@ -254,7 +249,7 @@ const ProductDetails = ({
                   type="button"
                   onClick={toggleWishlist}
                   aria-pressed={wishlisted}
-                  className="flex h-10 w-[150px] items-center justify-center gap-2 bg-neutral-200 text-[13px] font-medium text-neutral-500 hover:bg-neutral-300 lg:h-12 lg:w-[190px] lg:text-[15px]"
+                  className="flex h-10 w-[126px] items-center justify-center gap-2 bg-neutral-200 text-[13px] font-medium text-neutral-500 hover:bg-neutral-300 lg:h-12 lg:w-[190px] lg:text-[15px]"
                 >
                   <HeartIcon
                     className={
@@ -281,7 +276,7 @@ const ProductDetails = ({
                 <div
                   role="tablist"
                   aria-label="Product information"
-                  className="flex gap-6 lg:gap-10"
+                  className="flex gap-5 lg:gap-10"
                 >
                   {TABS.map((item) => {
                     const active = item === tab;
@@ -292,7 +287,7 @@ const ProductDetails = ({
                         role="tab"
                         aria-selected={active}
                         onClick={() => setTab(item)}
-                        className={`relative cursor-pointer pb-2 text-[13px] lg:text-[16px] ${active ? "font-medium text-ink" : "font-light text-muted hover:text-ink"}`}
+                        className={`relative cursor-pointer pb-2 text-[11px] lg:text-[16px] ${active ? "font-medium text-ink" : "font-light text-muted hover:text-ink"}`}
                       >
                         {item}
                         {active && (

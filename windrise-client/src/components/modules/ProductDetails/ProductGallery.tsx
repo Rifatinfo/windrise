@@ -47,10 +47,10 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
   }
 
   return (
-    <div className="w-full px-6 lg:px-0">
+    <div className="w-full">
       {/* ── mobile / tablet ─────────────────────────────────────────── */}
       <div className="lg:hidden">
-        <div className="relative w-full overflow-hidden bg-neutral-100">
+        <div className="relative w-full overflow-hidden bg-neutral-100 ">
           <div
             ref={trackRef}
             {...trackDragProps}
@@ -69,7 +69,7 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
                   src={image.url}
                   alt={name}
                   draggable={false}
-                  className="h-full w-full  select-none object-cover"
+                  className="h-full w-full  select-none object-cover rounded-sm"
                 />
               </button>
             ))}
@@ -106,8 +106,8 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
                 type="button"
                 onClick={() => select(index)}
                 aria-label={`Show image ${index + 1}`}
-                 aria-current={index === activeIndex}
-                className={`block h-[42px] w-[37px] overflow-hidden border transition-colors ${
+                aria-current={index === activeIndex}
+                className={`block h-[42px] w-[37px] overflow-hidden border transition-colors rounded-sm ${
                      index === activeIndex ? 'border-[1px] border-[#585858] ' : ''
                 }`}
               >
@@ -115,7 +115,7 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
                    src={image.url}
                   alt=""
                   aria-hidden="true"
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover "
                 />
               </button>
             </li>
