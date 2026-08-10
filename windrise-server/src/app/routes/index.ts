@@ -4,6 +4,8 @@ import { authRateLimiter } from "../middlewares/rateLimiter";
 import { AuthRoutes } from "../modules/auth/auth.route";
 import { UserRoutes } from "../modules/user/user.route";
 import { ProductRoutes } from "../modules/product/product.routes";
+import { OrderRoutes } from "../modules/order/order.routes";
+import { PaymentRoutes } from "../modules/payment/payment.routes";
 
 
 const router = express.Router();
@@ -21,6 +23,14 @@ const moduleRoutes = [
   {
     path: "/product",
     route: ProductRoutes,
+  },
+  {
+    path: "/order",
+    route: OrderRoutes,
+  },
+  {
+    path: "/payment",
+    route: PaymentRoutes,
   }
 ];
 

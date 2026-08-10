@@ -9,7 +9,7 @@ model User {
     needPasswordChange Boolean        @default(true)
     status             UserStatus     @default(ACTIVE)
     auths              AuthProvider[]
-    // orders      Order[]
+    orders      Order[]
 
     customer    Customer?
     shopManager ShopManager?

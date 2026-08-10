@@ -7,6 +7,8 @@ import { HeartIcon, RulerIcon } from "lucide-react";
 import { Product } from "@/types/product";
 import { SizeGuideModal } from "./SizeGuideModal";
 import { ProductGallery } from "./ProductGallery";
+import { AddToCartModal, AddedProduct } from "@/components/modules/addToCart/AddToCartModal";
+import { useCart } from "@/contexts/CartContext";
 import {
   Select,
   SelectContent,
@@ -23,7 +25,6 @@ type ProductDetailsProps = {
 
 const TABS = ["Description", "Fit & Sizing", "Shipping", "Reviews"] as const;
 type Tab = (typeof TABS)[number];
-const CART_STORAGE_KEY = "windrise-cart";
 const WISHLIST_STORAGE_KEY = "windrise-wishlist";
 
 const ProductDetails = ({
@@ -37,6 +38,9 @@ const ProductDetails = ({
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [wishlisted, setWishlisted] = useState(false);
   const [cartMessage, setCartMessage] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [addedProduct, setAddedProduct] = useState<AddedProduct | null>(null);
+  const { addItem } = useCart();
 
   const images = useMemo(() => {
     if (product.images?.length) return product.images;
@@ -104,23 +108,37 @@ const ProductDetails = ({
       return;
     }
 
-    const cart = JSON.parse(
-      localStorage.getItem(CART_STORAGE_KEY) ?? "[]",
-    ) as Array<{
-      productId: string;
-      quantity: number;
-      size?: string;
-    }>;
-    const existing = cart.find(
-      (item) => item.productId === product.id && item.size === size,
+    const selectedVariant = product.variants?.find(
+      (variant) => variant.size === size
     );
-    if (existing)
-      existing.quantity = Math.min(10, existing.quantity + quantity);
-    else
-      cart.push({ productId: product.id, quantity, ...(size ? { size } : {}) });
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
-    window.dispatchEvent(new CustomEvent("windrise-cart-changed"));
+    const productColor =
+      selectedVariant?.color ?? product.variants?.[0]?.color ?? "Charcoal Black";
+    const itemPrice = salePrice ?? regularPrice;
+    const imageUrl =
+      product.thumbnailImage ?? product.images?.[0]?.url ?? "/placeholder.png";
+
+    addItem({
+      productId: product.id,
+      name: product.name,
+      sku: product.sku,
+      size: size || undefined,
+      color: productColor,
+      price: itemPrice,
+      image: imageUrl,
+      quantity,
+    });
+
+    setAddedProduct({
+      name: product.name,
+      sku: product.sku,
+      size: size || undefined,
+      color: productColor,
+      quantity,
+      price: itemPrice,
+      image: imageUrl,
+    });
     setCartMessage("Added to cart.");
+    setModalOpen(true);
   };
 
   const description =
@@ -159,7 +177,7 @@ const ProductDetails = ({
                 {product.name}
               </h1>
               <p className="mt-1 text-[14px] md:text-xl font-medium text-ink md:mt-3">
-                {"Charcoal Black"}
+                {product.variants?.[0]?.color ?? "Charcoal Black"}
               </p>
               <p className="mt-1.5 text-[11px] md:text-[14px] font-light text-muted">
                 SKU: {product.sku}
@@ -364,6 +382,14 @@ const ProductDetails = ({
             />
           )}
         </AnimatePresence>
+
+        {addedProduct && (
+          <AddToCartModal
+            open={modalOpen}
+            product={addedProduct}
+            onClose={() => setModalOpen(false)}
+          />
+        )}
       </div>
     </div>
   );

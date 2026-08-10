@@ -20,7 +20,7 @@ model Product {
     updatedAt DateTime @updatedAt
 
     //============ Relations =============//
-    // orderItems OrderItem[]
+    orderItems OrderItem[]
     categories            ProductCategory[]
     subCategories         ProductSubCategory[]
     variants              Variant[]
@@ -104,7 +104,7 @@ model Variant {
     size     String?
     quantity Int     @default(0)
 
-    // orderItems OrderItem[]
+    orderItems OrderItem[]
 }
 
 //============ Tag =============//

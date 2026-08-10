@@ -58,42 +58,7 @@ const CategoryPage = async ({ params, searchParams }: PageProps) => {
   const total = response?.meta?.total ?? 0;
 
   return (
-    // <div className="mt-16">
-    //   <div className="space-y-6 px-4 sm:px-6 lg:px-8">
-    //     <ProductFiltercategorySubCategory
-    //       breadcrumbs={[
-    //         { label: "Home", href: "/" },
-    //         { label: matchedCategory.name },
-    //       ]}
-    //       title={matchedCategory.name}
-    //       shown={products.length}
-    //     />
 
-    //     {products.length === 0 ? (
-    //       <div>
-    //         <div>
-    //           <ComingSoon />
-    //         </div>
-    //       </div>
-    //     ) : (
-    //       <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-7 sm:mt-5 sm:gap-x-4 sm:gap-y-8 lg:grid-cols-4 lg:gap-4 lg:gap-y-10">
-    //         {products.map((product: any) => (
-    //           <ProductCard
-    //             key={product.id}
-    //             product={product}
-    //             category={categoryName}
-    //           />
-    //         ))}
-    //       </div>
-    //     )}
-    //   </div>
-
-    //   <div className="px-4 sm:px-6 lg:px-8">
-    //     <Suspense fallback={null}>
-    //       <LoadMoreButton total={total} shown={products.length} />
-    //     </Suspense>
-    //   </div>
-    // </div>
     <div>
       <div className="space-y-6 px-4 sm:px-6 lg:px-8">
         {products.length > 0 && (
