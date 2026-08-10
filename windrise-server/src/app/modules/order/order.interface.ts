@@ -16,8 +16,17 @@ export interface DeliveryInfoDTO {
   address: string;
 }
 
+export interface BillingInfoDTO {
+  name: string;
+  phone: string;
+  email?: string | null;
+  state: string;
+  address: string;
+}
+
 export interface CreateOrderDTO {
   deliveryInfo: DeliveryInfoDTO;
+  billingInfo?: BillingInfoDTO;
   deliveryType: DeliveryType;
   cartItems: CartItemDTO[];
   paymentMethod: "ONLINE" | "COD";

@@ -6,7 +6,7 @@ import { LoginForm } from '@/components/modules/auth/LoginForm'
 import { Toast } from '@/components/shared/Toast/Toast'
 
 const LOGIN_HERO_IMAGE =
-  'https://cdn.magicpatterns.com/uploads/eFCa3v1zHKsZr8swfVvk8K/login-image.png'
+  '/assets/login-image.png'
 
 export function LoginLayout() {
   const router = useRouter()

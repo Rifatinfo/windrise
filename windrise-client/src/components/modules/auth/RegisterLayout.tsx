@@ -5,7 +5,7 @@ import { SignupForm } from '@/components/modules/auth/SignupForm'
 import { useState } from 'react'
 
 const SIGNUP_HERO_IMAGE =
-  'https://cdn.magicpatterns.com/uploads/hdpQfr8a7F8iXA3deMepbj/register.png'
+  '/assets/register.png'
 
 export function RegisterLayout() {
   const router = useRouter()

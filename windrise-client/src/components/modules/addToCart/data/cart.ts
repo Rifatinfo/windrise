@@ -23,7 +23,7 @@ export const shippingOptions = [
 ];
 
 export const disclaimers = [
-  "Delivery charge is calculated based on your selected shipping location.",
-  "Orders are processed within 1-2 business days.",
-  "Cash on Delivery is available for selected locations.",
+  "Please accept only properly sealed and intact packages. Do not accept damaged or tampered packages.",
+  "For Cash on Delivery (COD), make payment only after receiving your package.",
+  "While we strive for accuracy, any errors or discrepancies on our website are unintentional and subject to correction.",
 ];
