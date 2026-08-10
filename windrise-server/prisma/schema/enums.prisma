@@ -56,8 +56,9 @@ enum PaymentMethod {
 }
 
 enum DeliveryType {
-  INSIDE_DHAKA
+  DHAKA_CITY
   OUTSIDE_DHAKA
+  DHAKA_SUBURB
 }
 
 enum ShipmentStatus {

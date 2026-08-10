@@ -1,5 +1,6 @@
 'use client';
 import  { useEffect, useState, useRef } from 'react'
+import Link from 'next/link'
 import {
   HeartIcon,
   SearchIcon,
@@ -10,6 +11,7 @@ import { AnimatePresence } from 'framer-motion'
 import { DesktopNav } from '@/components/modules/home/navbar/DesktopNav'
 import { IconButton } from '@/components/modules/home/navbar/IconButton'
 import { MobileHeader } from '@/components/modules/home/navbar/MobileHeader'
+import { useCart } from '@/contexts/CartContext'
 import { MegaMenu } from '@/components/modules/home/navbar/MegaMenu'
 import { MobileDrawer } from '@/components/modules/home/navbar/MobileDrawer'
 import { getNavigationCategory, NavigationCategoryId } from '@/components/modules/home/navbar/Navigationdataset'
@@ -17,6 +19,7 @@ import WhiteLogo from '../logo/WhiteLogo';
 
 
 export function Header() {
+  const { itemCount } = useCart()
   const [hasScrolled, setHasScrolled] = useState(false)
   const [activeCategoryId, setActiveCategoryId] =
     useState<NavigationCategoryId | null>(null)
@@ -81,7 +84,14 @@ export function Header() {
           <div className="flex justify-end gap-0.5  md:-mr-4 lg:-mr-4">
             <IconButton icon={SearchIcon} label="Search" />
             <IconButton icon={HeartIcon} label="Wishlist" />
-            <IconButton icon={ShoppingBagIcon} label="Shopping bag" />
+            <Link href="/shoppingBag" className="relative inline-flex">
+              <IconButton icon={ShoppingBagIcon} label="Shopping bag" />
+              {itemCount > 0 && (
+                <span className="absolute right-0 top-0 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-white px-1 text-[9px] font-semibold text-black">
+                  {itemCount > 99 ? "99+" : itemCount}
+                </span>
+              )}
+            </Link>
             <IconButton icon={UserRoundIcon} label="Account" />
           </div>
         </div>

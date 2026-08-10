@@ -79,45 +79,6 @@ const SubCategoryPage = async ({ params, searchParams }: PageProps) => {
 
   return (
     <div>
-      {/* <div className="space-y-6 px-4 sm:px-6 lg:px-8">
-        <ProductFiltercategorySubCategory
-          breadcrumbs={[
-            { label: "Home", href: "/" },
-            {
-              label: matchedCategory?.name || categoryName,
-              href: matchedCategory ? `/${categoryName}` : undefined,
-            },
-            { label: matchedSubCategory.name },
-          ]}
-          title={matchedSubCategory.name}
-          shown={products.length}
-        />
-
-        {products.length === 0 ? (
-          <div>
-            <div>
-              <ComingSoon />
-            </div>
-          </div>
-        ) : (
-          <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-7 sm:mt-5 sm:gap-x-4 sm:gap-y-8 lg:grid-cols-4 lg:gap-4 lg:gap-y-10">
-            {products.map((product: any) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                category={categoryName}
-                subCategory={subCategoryName}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="px-4 sm:px-6 lg:px-8">
-        <Suspense fallback={null}>
-          <LoadMoreButton total={total} shown={products.length} />
-        </Suspense>
-      </div> */}
        <div>
       <div className="space-y-6 px-4 sm:px-6 lg:px-8">
         {products.length > 0 && (
@@ -175,3 +136,5 @@ const SubCategoryPage = async ({ params, searchParams }: PageProps) => {
 };
 
 export default SubCategoryPage;
+
+

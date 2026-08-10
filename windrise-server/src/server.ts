@@ -1,38 +1,71 @@
 import app from "./app";
 import { envVars } from "./config";
-
+import { startRestoreStockCron } from "./cron/restoreStock.cron";
+import { Server } from "http";
 
 const PORT = envVars.PORT;
 
-const server = app.listen(PORT, () => {
-  console.log(`Realo Server is running on port ${PORT}`);
-  console.log(`Environment: ${envVars.NODE_ENV}`);
-  console.log(`Health check: http://localhost:${PORT}`);
-  console.log(`API base: http://localhost:${PORT}/api/v1`);
-});
+// const server = app.listen(PORT, () => {
+//   console.log(`Windrise Server is running on port ${PORT}`);
+//   console.log(`Environment: ${envVars.NODE_ENV}`);
+//   console.log(`Health check: http://localhost:${PORT}`);
+//   console.log(`API base: http://localhost:${PORT}/api/v1`);
+// });
 
-// Graceful shutdown
-process.on("SIGTERM", () => {
-  console.log("SIGTERM received. Shutting down gracefully...");
-  server.close(() => {
-    console.log("Process terminated.");
-  });
-});
+async function bootstrap() {
+  // This variable will hold our server instance
+  let server: Server;
 
-process.on("SIGINT", () => {
-  console.log("SIGINT received. Shutting down gracefully...");
-  server.close(() => {
-    console.log("Process terminated.");
-  });
-});
+  try {
+    // Start the server
+    server = app.listen(envVars.PORT, () => {
+      console.log(`🚀 Server is running on http://localhost:${envVars.PORT}`);
+      startRestoreStockCron();
+    });
 
-// Unhandled rejection
-process.on("unhandledRejection", (reason: any, promise) => {
-  console.error("Unhandled Rejection at:", promise, "reason:", reason);
-});
+    // Function to gracefully shut down the server
+    const exitHandler = () => {
+      if (server) {
+        server.close(() => {
+          console.log("Server closed gracefully.");
+          process.exit(1); // Exit with a failure code
+        });
+      } else {
+        process.exit(1);
+      }
+    };
 
-// Uncaught exception
-process.on("uncaughtException", (error) => {
-  console.error("Uncaught Exception:", error);
-  process.exit(1);
-});
+    // Handle unhandled promise rejections
+    // Graceful shutdown
+    process.on("SIGTERM", () => {
+      console.log("SIGTERM received. Shutting down gracefully...");
+      server.close(() => {
+        console.log("Process terminated.");
+      });
+    });
+
+    process.on("SIGINT", () => {
+      console.log("SIGINT received. Shutting down gracefully...");
+      server.close(() => {
+        console.log("Process terminated.");
+      });
+    });
+
+    // Unhandled rejection
+    process.on("unhandledRejection", (reason: any, promise) => {
+      console.error("Unhandled Rejection at:", promise, "reason:", reason);
+    });
+
+    // Uncaught exception
+    process.on("uncaughtException", (error) => {
+      console.error("Uncaught Exception:", error);
+      process.exit(1);
+    });
+  } catch (error) {
+    console.error("Error during server startup:", error);
+    process.exit(1);
+  }
+}
+
+
+bootstrap();
