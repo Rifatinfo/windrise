@@ -17,8 +17,17 @@ export type DeliveryInfoDTO = {
   address: string;
 };
 
+export type BillingInfoDTO = {
+  name: string;
+  phone: string;
+  email?: string | null;
+  state: string;
+  address: string;
+};
+
 export type CreateOrderPayload = {
   deliveryInfo: DeliveryInfoDTO;
+  billingInfo?: BillingInfoDTO;
   deliveryType: string;
   cartItems: CartItemDTO[];
   paymentMethod: "ONLINE" | "COD";

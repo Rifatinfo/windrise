@@ -5,10 +5,10 @@ import { BackToHomeButton } from './BackToHomeButton';
 
 
 const CLOUD_SRC =
-  'https://cdn.magicpatterns.com/uploads/nPv1yKaTPVE2E2bHAS8Yzu/Cloud-Not_found.png'
-const NUMBER_SRC = 'https://cdn.magicpatterns.com/uploads/tVbnuBSsecCgSAz53djbFD/404.png'
+  '/assets/Cloud-Not_found.png'
+const NUMBER_SRC = '/assets/404.png'
 const CHARACTER_SRC =
-  'https://cdn.magicpatterns.com/uploads/pwKWbfcKUEgurKwZw3ixEQ/Character.png'
+  '/assets/Character.png'
 
 const rise = {
   hidden: { opacity: 0, y: 18 },

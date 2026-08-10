@@ -161,6 +161,7 @@ const createOrderService = async ({
 }) => {
   const {
     deliveryInfo,
+    billingInfo,
     cartItems,
     paymentMethod,
     deliveryType,
@@ -258,13 +259,19 @@ const createOrderService = async ({
     // Create Order
     const order = await tx.order.create({
       data: {
-        userId: userId ?? null,
         orderNo: orderSerialId,
+        user: userId ? { connect: { id: userId } } : undefined,
 
         name: deliveryInfo.name,
         phone: deliveryInfo.phone,
         state: deliveryInfo.state,
         address: deliveryInfo.address,
+
+        billingName: billingInfo?.name ?? null,
+        billingPhone: billingInfo?.phone ?? null,
+        billingEmail: billingInfo?.email ?? null,
+        billingState: billingInfo?.state ?? null,
+        billingAddress: billingInfo?.address ?? null,
 
         deliveryCharge,
 
@@ -523,6 +530,13 @@ const getOrderByIdService = async (orderId: string) => {
     address:        order.address,
     orderNote:      order.orderNote   ?? null,
     checkoutEmail:  order.checkoutEmail ?? null,
+
+    // Billing info
+    billingName:    order.billingName   ?? null,
+    billingPhone:   order.billingPhone  ?? null,
+    billingEmail:   order.billingEmail  ?? null,
+    billingState:   order.billingState  ?? null,
+    billingAddress: order.billingAddress ?? null,
  
     // Financials
     subtotal:       order.subtotal,

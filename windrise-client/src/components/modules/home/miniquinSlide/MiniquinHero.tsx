@@ -150,7 +150,7 @@ export function MiniquinHero() {
           /> */}
         </div>
         <img
-          src="https://cdn.magicpatterns.com/uploads/dhbGLHSMuu9HSs3nKXbDvm/W.svg"
+          src="/assets/dhbGLHSMuu9HSs3nKXbDvm/W.svg"
           alt=""
           aria-hidden="true"
           className="pointer-events-none absolute left-1/2 lg:top-[40%] z-0 w-[100%] -translate-x-1/2 select-none opacity-[2.12] top-[36%] sm:w-[48%] sm:opacity-[2.12]"

@@ -2,7 +2,7 @@
 import { motion } from 'framer-motion'
 
 const DEFAULT_CLOUD_SRC =
-  'https://cdn.magicpatterns.com/uploads/jm7cCfyxQR4Mt92rPikxhW/Cloud.png'
+  '/assets/Cloud.png'
 
 type CloudDriftProps = {
   /** Cloud artwork to traverse the stage */

@@ -125,7 +125,7 @@ const DetailsContactSection = () => {
           </div>
 
           <img
-            src="https://cdn.magicpatterns.com/uploads/qrNPXWagLxBErYu3oqEsjg/connect.png"
+            src="/assets/connect.png"
             alt=""
             aria-hidden="true"
             draggable={false}

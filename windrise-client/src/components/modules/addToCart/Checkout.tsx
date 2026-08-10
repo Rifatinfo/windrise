@@ -36,9 +36,13 @@ export function Checkout() {
   const isPlacingOrderRef = useRef(false)
   const [payment, setPayment] = useState<'online' | 'cod'>('cod')
   const [sameAddress, setSameAddress] = useState(true)
+  const [showBilling, setShowBilling] = useState(false)
   const [division, setDivision] = useState('')
   const [district, setDistrict] = useState('')
   const [zip, setZip] = useState('')
+  const [billingDivision, setBillingDivision] = useState('')
+  const [billingDistrict, setBillingDistrict] = useState('')
+  const [billingZip, setBillingZip] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -52,8 +56,21 @@ export function Checkout() {
     notes: '',
   })
 
+  const [billingForm, setBillingForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    contact: '',
+    address1: '',
+    address2: '',
+  })
+
   const updateForm = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const updateBillingForm = (field: keyof typeof billingForm, value: string) => {
+    setBillingForm((prev) => ({ ...prev, [field]: value }))
   }
 
   function handleDivisionChange(next: string) {
@@ -73,14 +90,38 @@ export function Checkout() {
     else if (codes && !codes.includes(zip)) setZip('')
   }
 
+  function handleBillingDivisionChange(next: string) {
+    setBillingDivision(next)
+    if (billingDistrict && divisionForDistrict(billingDistrict) !== next) {
+      setBillingDistrict('')
+      setBillingZip('')
+    }
+  }
+
+  function handleBillingDistrictChange(next: string) {
+    setBillingDistrict(next)
+    const parent = divisionForDistrict(next)
+    if (parent && parent !== billingDivision) setBillingDivision(parent)
+    const codes = postcodesByDistrict[next]
+    if (codes && codes.length === 1) setBillingZip(codes[0])
+    else if (codes && !codes.includes(billingZip)) setBillingZip('')
+  }
+
   async function handlePlaceOrder() {
     if (items.length === 0) {
       setError('Your bag is empty.')
       return
     }
     if (!form.firstName || !form.contact || !form.address1 || !division || !district) {
-      setError('Please fill in all required fields.')
+      setError('Please fill in all required shipping fields.')
       return
+    }
+
+    if (showBilling) {
+      if (!billingForm.firstName || !billingForm.contact || !billingForm.address1 || !billingDivision || !billingDistrict) {
+        setError('Please fill in all required billing fields.')
+        return
+      }
     }
 
     isPlacingOrderRef.current = true
@@ -93,6 +134,11 @@ export function Checkout() {
         .filter(Boolean)
         .join(', ')
 
+      const billingName = `${billingForm.firstName} ${billingForm.lastName}`.trim()
+      const billingFullAddress = [billingForm.address1, billingForm.address2, billingDistrict, billingZip]
+        .filter(Boolean)
+        .join(', ')
+
       const payload = {
         deliveryInfo: {
           name,
@@ -100,6 +146,15 @@ export function Checkout() {
           state: division,
           address: fullAddress,
         },
+        ...(showBilling && {
+          billingInfo: {
+            name: billingName,
+            phone: billingForm.contact,
+            email: billingForm.email || null,
+            state: billingDivision,
+            address: billingFullAddress,
+          },
+        }),
         deliveryType: shippingId,
         cartItems: items.map((item) => ({
           productId: item.productId,
@@ -291,6 +346,8 @@ export function Checkout() {
                       division ? `Type or select a district in ${division}` : 'Type your district or city'
                     }
                     emptyMessage="No district matches"
+                    disabled={!division}
+                    disabledHint="Select a division first"
                     hint={
                       division
                         ? undefined
@@ -324,7 +381,11 @@ export function Checkout() {
                   <input
                     type="checkbox"
                     checked={sameAddress}
-                    onChange={(event) => setSameAddress(event.target.checked)}
+                    onChange={(event) => {
+                      const checked = event.target.checked
+                      setSameAddress(checked)
+                      setShowBilling(!checked)
+                    }}
                     className="sr-only"
                   />
                   <span
@@ -343,15 +404,179 @@ export function Checkout() {
 
                 <button
                   type="button"
+                  onClick={() => {
+                    setShowBilling((prev) => !prev)
+                    setSameAddress((prev) => !prev)
+                  }}
                   className="flex items-center gap-2 text-[11px] text-[#8f8f8f] transition-colors hover:text-[#1a1a1a]"
                 >
                   <PlusIcon
                     className="h-[15px] w-[15px] rounded-full border border-[#b8b8b8] p-[2px]"
                     strokeWidth={1.5}
                   />
-                  Add billing address
+                  {showBilling ? 'Hide billing address' : 'Add billing address'}
                 </button>
               </div>
+
+              {showBilling && (
+                <div className="mt-8">
+                  <h2 className="border-b border-[#e6e6e6] pb-3 text-[13px] tracking-[0.06em] text-[#1a1a1a]">
+                    BILLING DETAILS
+                  </h2>
+
+                  <div className="mt-5 grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="billingFirstName" className={labelClass}>
+                        First Name
+                        <Required />
+                      </label>
+                      <input
+                        id="billingFirstName"
+                        required
+                        value={billingForm.firstName}
+                        onChange={(e) => updateBillingForm('firstName', e.target.value)}
+                        placeholder="Your First Name"
+                        className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="billingLastName" className={labelClass}>
+                        Last Name
+                      </label>
+                      <input
+                        id="billingLastName"
+                        value={billingForm.lastName}
+                        onChange={(e) => updateBillingForm('lastName', e.target.value)}
+                        placeholder="Your Last Name"
+                        className={inputClass}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <label htmlFor="billingEmail" className={labelClass}>
+                      Email Address
+                    </label>
+                    <input
+                      id="billingEmail"
+                      type="email"
+                      value={billingForm.email}
+                      onChange={(e) => updateBillingForm('email', e.target.value)}
+                      placeholder="example.email.com"
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div className="mt-4">
+                    <label htmlFor="billingContact" className={labelClass}>
+                      Contact Number
+                      <Required />
+                    </label>
+                    <input
+                      id="billingContact"
+                      required
+                      value={billingForm.contact}
+                      onChange={(e) => updateBillingForm('contact', e.target.value)}
+                      inputMode="tel"
+                      placeholder="XXXXXXXXXX"
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div className="mt-5">
+                    <label htmlFor="billingAddress1" className={labelClass}>
+                      Address Line
+                      <Required />
+                    </label>
+                    <input
+                      id="billingAddress1"
+                      required
+                      value={billingForm.address1}
+                      onChange={(e) => updateBillingForm('address1', e.target.value)}
+                      className={inputClass}
+                    />
+                    <input
+                      id="billingAddress2"
+                      aria-label="Billing address line 2"
+                      value={billingForm.address2}
+                      onChange={(e) => updateBillingForm('address2', e.target.value)}
+                      className={`${inputClass} mt-3`}
+                    />
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="billingCountry" className={labelClass}>
+                        Country
+                      </label>
+                      <input
+                        id="billingCountry"
+                        readOnly
+                        value="Bangladesh"
+                        aria-readonly="true"
+                        className="mt-2 h-[30px] w-full cursor-default border border-[#dcdcdc] bg-[#fafafa] px-3 text-[11px] text-[#8f8f8f] outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="billingDivision" className={labelClass}>
+                        Division / Province
+                        <Required />
+                      </label>
+                      <Combobox
+                        id="billingDivision"
+                        value={billingDivision}
+                        onChange={handleBillingDivisionChange}
+                        options={divisionNames}
+                        placeholder="Type or select your division"
+                        emptyMessage="No division matches"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="billingDistrict" className={labelClass}>
+                        District / City
+                        <Required />
+                      </label>
+                      <Combobox
+                        id="billingDistrict"
+                        value={billingDistrict}
+                        onChange={handleBillingDistrictChange}
+                        options={districtsForDivision(billingDivision)}
+                        placeholder={
+                          billingDivision
+                            ? `Type or select a district in ${billingDivision}`
+                            : 'Type your district or city'
+                        }
+                        emptyMessage="No district matches"
+                        disabled={!billingDivision}
+                        disabledHint="Select a division first"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="billingZip" className={labelClass}>
+                        Zip / Postal Code
+                      </label>
+                      <Combobox
+                        id="billingZip"
+                        value={billingZip}
+                        onChange={(next) => setBillingZip(next.split('—')[0].trim())}
+                        options={postcodesForDistrict(billingDistrict)}
+                        placeholder={
+                          billingDistrict
+                            ? `Postal codes for ${billingDistrict}`
+                            : 'Type your zip/postal code'
+                        }
+                        emptyMessage="No matching code — you can still use what you typed"
+                        allowCustom
+                        inputMode="numeric"
+                        maxLength={12}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <fieldset className="mt-8">
                 <legend className="text-[12px] tracking-[0.06em] text-[#1a1a1a]">

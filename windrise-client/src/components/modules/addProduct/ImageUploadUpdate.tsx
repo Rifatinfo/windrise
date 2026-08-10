@@ -80,7 +80,7 @@ const ImageUploadUpdate = ({
 
         // Resolve originals with the SAME rules used to build the previews
         // (must mirror resolveUrl() in ProductUpdateClient.tsx, otherwise
-        //  relative "/uploads/..." URLs never match and deletion is lost)
+        
         const resolveOriginal = (orig: string): string => {
             if (orig.startsWith("http")) return orig
             if (orig.startsWith("/")) return orig

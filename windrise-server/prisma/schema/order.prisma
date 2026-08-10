@@ -11,6 +11,12 @@ model Order {
   orderNote String?
   checkoutEmail String?
 
+  billingName    String?
+  billingPhone   String?
+  billingEmail   String?
+  billingState   String?
+  billingAddress String?
+
   subtotal    Float
   totalAmount Float
   
