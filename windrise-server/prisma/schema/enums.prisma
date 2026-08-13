@@ -27,7 +27,6 @@ enum UserStatus {
 }
 
 
-
 enum OrderStatus {
   PENDING
   CONFIRMED
@@ -36,8 +35,8 @@ enum OrderStatus {
   EXPIRED
 
   PLACED       
-  PROCESSING   
-  SHIPPED
+  PROCESSED   
+  ON_THE_WAY
   DELIVERED
 }
 
