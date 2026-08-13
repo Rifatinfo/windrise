@@ -82,8 +82,8 @@ export const NAV_MAIN: NavItem[] = [
     id: "inventory",
     label: "Inventory Management",
     icon: WarehouseIcon,
-    roles: ["ADMIN", "MEDIA_MANAGER"],
-    path: "/admin/inventory",
+    roles: ["ADMIN", "SHOP_MANAGER"],
+    path: "/admin/inventory-management",
   },
   {
     id: "all-product",
