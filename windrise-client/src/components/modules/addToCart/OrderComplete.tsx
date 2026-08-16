@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { DownloadIcon } from "lucide-react";
-import { getOrderById } from "@/services/order/order";
+import { DownloadIcon, TruckIcon } from "lucide-react";
+import { getOrderById, getOrderByTransactionId } from "@/services/order/order";
+import { buildGatewayLabel, normalizeGatewayLabelString } from "@/utils/orderFlow";
 import { Breadcrumb } from "./Breadcrumb";
 
 type OrderItem = {
@@ -15,6 +16,14 @@ type OrderItem = {
   quantity: number;
   total: number;
   productImage: string | null;
+};
+
+type OrderPayment = {
+  paymentMethod?: string | null;
+  paymentStatus?: "UNPAID" | "PAID" | "FAILED" | "CANCELED" | string;
+  cardType?: string | null;
+  cardIssuer?: string | null;
+  paymentGatewayData?: Record<string, any> | null;
 };
 
 type Order = {
@@ -38,6 +47,7 @@ type Order = {
   billingState?: string | null;
   billingAddress?: string | null;
   items: OrderItem[];
+  payment?: OrderPayment | null;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
@@ -50,15 +60,24 @@ export function OrderComplete() {
   const statusMessage = searchParams.get("message") ?? "";
   const queryInvoiceUrl = searchParams.get("invoiceUrl") ?? "";
 
+  const transactionId = searchParams.get("transactionId") ?? "";
+
   const [order, setOrder] = useState<Order | null>(null);
-  const [loading, setLoading] = useState(Boolean(orderId));
+  const [loading, setLoading] = useState(Boolean(orderId || transactionId));
   const [error, setError] = useState("");
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
-    if (!orderId) return;
+    if (!orderId && !transactionId) {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
-    getOrderById(orderId)
+    const fetcher = orderId
+      ? getOrderById(orderId)
+      : getOrderByTransactionId(transactionId);
+
+    fetcher
       .then((res) => {
         if (!cancelled) setOrder(res.data as Order);
       })
@@ -73,7 +92,7 @@ export function OrderComplete() {
     return () => {
       cancelled = true;
     };
-  }, [orderId]);
+  }, [orderId, transactionId]);
 
   const isSuccess = status !== "fail" && status !== "cancel";
 
@@ -107,12 +126,31 @@ export function OrderComplete() {
 
   const orderNumber = order?.orderNo || order?.id || "-";
 
-  const paymentLabel =
-    order?.paymentMethod === "COD"
-      ? "Cash on Delivery"
-      : order?.paymentMethod === "ONLINE"
-        ? "SSLCommerz Online"
-        : order?.paymentMethod || "-";
+  const paymentLabel = (() => {
+    if (!order) return "-";
+    if (order.paymentMethod === "COD") return "Cash on Delivery";
+
+    const gatewayData = order.payment?.paymentGatewayData;
+    const gatewayInfo = {
+      cardType:
+        order.payment?.cardType?.trim() ||
+        gatewayData?.card_type?.toString().trim(),
+      cardIssuer:
+        order.payment?.cardIssuer?.trim() ||
+        gatewayData?.card_issuer?.toString().trim(),
+      cardBrand: gatewayData?.card_brand?.toString().trim(),
+      cardNo: gatewayData?.card_no?.toString().trim(),
+    };
+
+    const fromData = buildGatewayLabel(gatewayInfo);
+    if (fromData) return fromData;
+
+    const stored = order.payment?.paymentMethod || order.paymentMethod;
+    const normalized = normalizeGatewayLabelString(stored);
+    if (normalized) return normalized;
+
+    return "SSLCommerz Online";
+  })();
 
   const paymentStatusText =
     order?.paymentStatus === "PAID"
@@ -307,8 +345,11 @@ export function OrderComplete() {
           <div className="mt-8 flex items-center justify-center gap-4 lg:mt-14 lg:gap-10">
             <button
               type="button"
-              className="h-[38px] w-full max-w-[150px] bg-[#0b0b0b] text-[10px] tracking-[0.1em] text-white transition-opacity hover:opacity-90 lg:h-[46px] lg:max-w-[210px] lg:text-[12px]"
+              disabled={!order}
+              onClick={() => order && router.push(`/order-tracking/${order.id}`)}
+              className="inline-flex h-[38px] w-full max-w-[150px] items-center justify-center gap-2 bg-[#0b0b0b] text-[10px] tracking-[0.1em] text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 lg:h-[46px] lg:max-w-[210px] lg:text-[12px]"
             >
+              <TruckIcon className="h-4 w-4" />
               TRACK YOUR ORDER
             </button>
             <button

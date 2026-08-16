@@ -41,7 +41,7 @@ export function AppSidebar() {
   
   return (
     <Sidebar collapsible="offcanvas">
-      <SidebarHeader>
+      <SidebarHeader className="bg-white">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton>
@@ -59,7 +59,7 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent className="flex flex-col pt-2">
+      <SidebarContent className="flex flex-col pt-2 bg-white">
 
         <NavMain items={navMain} title="Dashboards" />
         {navAdmin.length > 0 && (
@@ -69,7 +69,7 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="bg-white">
         <NavBottom
           items={navSecondary}
           title="More"

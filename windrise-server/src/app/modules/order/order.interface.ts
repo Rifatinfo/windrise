@@ -32,3 +32,16 @@ export interface CreateOrderDTO {
   paymentMethod: "ONLINE" | "COD";
   checkoutEmail?: string;
 }
+
+export interface UpdateOrderInfoDTO {
+  name?: string;
+  phone?: string;
+  state?: string;
+  address?: string;
+  orderNote?: string | null;
+  billingName?: string | null;
+  billingPhone?: string | null;
+  billingEmail?: string | null;
+  billingState?: string | null;
+  billingAddress?: string | null;
+}
