@@ -31,8 +31,25 @@ const createAdminValidationSchema = z.object({
   
 });
 
+const updateAdminValidationSchema = z.object({
+  name: z
+    .string()
+    .min(2, "Name must be at least 2 characters long" )
+    .optional(),
+  email: z
+    .string()
+    .email("Invalid email address")
+    .optional(),
+});
+
+const updateAdminStatusValidationSchema = z.object({
+  status: z.enum(["ACTIVE", "INACTIVE", "DELETED"]),
+});
+
 export const UserValidation = {
   createUserValidationSchema,
-  createAdminValidationSchema
+  createAdminValidationSchema,
+  updateAdminValidationSchema,
+  updateAdminStatusValidationSchema,
 };
 

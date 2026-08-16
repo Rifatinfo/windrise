@@ -17,7 +17,11 @@ const connectionString =
 
 console.log("DB --", connectionString);
 
-const adapter = new PrismaPg({ connectionString });
+const adapter = new PrismaPg({
+    connectionString,
+    max: 20,
+    connectionTimeoutMillis: 15000,
+});
 
 const prisma = new PrismaClient({
   adapter,
