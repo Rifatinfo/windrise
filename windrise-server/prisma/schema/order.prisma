@@ -22,7 +22,7 @@ model Order {
   
   invoiceUrl String?
 
-  orderStatus   OrderStatus   @default(PENDING)
+  orderStatus   OrderStatus   @default(PLACED)
   paymentStatus PaymentStatus @default(UNPAID)
   paymentMethod PaymentMethod
   deliveryCharge Decimal?

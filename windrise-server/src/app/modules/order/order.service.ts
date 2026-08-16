@@ -285,7 +285,7 @@ const createOrderService = async ({
         paymentMethod:
           paymentMethod === "ONLINE" ? PaymentMethod.ONLINE : PaymentMethod.COD,
 
-        orderStatus: "PENDING",
+        orderStatus: "PLACED",
         paymentStatus: "UNPAID",
 
         items: {
@@ -458,6 +458,7 @@ const updateOrderStatusService = async (
   return prisma.order.update({
     where: { id: orderId },
     data: { orderStatus: status },
+    include: { items: true, payment: true },
   });
 };
 
@@ -467,7 +468,7 @@ const getOrderTrackingService = async (orderId: string, userId: string) => {
       id: orderId,
       userId, //  user can see only own order
     },
-    
+
   });
 
   if (!order) {
@@ -477,6 +478,216 @@ const getOrderTrackingService = async (orderId: string, userId: string) => {
   return {
     orderStatus: order.orderStatus,
     createdAt: order.createdAt,
+  };
+};
+
+const getMyOrdersService = async (userId: string, options: any) => {
+  const { page, limit, skip, sortBy, sortOrder } =
+    paginationHelper.calculatePagination(options);
+
+  const orders = await prisma.order.findMany({
+    skip,
+    take: limit,
+    orderBy: {
+      [sortBy]: sortOrder,
+    },
+    where: {
+      userId,
+    },
+    include: {
+      items: true,
+      payment: true,
+    },
+  });
+
+  const total = await prisma.order.count({ where: { userId } });
+
+  return {
+    meta: {
+      page,
+      limit,
+      total,
+    },
+    data: orders,
+  };
+};
+
+const updateOrderPaymentStatusService = async (
+  orderId: string,
+  paymentStatus: PaymentStatus,
+) => {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { payment: true },
+  });
+
+  if (!order) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "Order not found");
+  }
+
+  const now = new Date();
+  const paymentData: any = { paymentStatus };
+  if (paymentStatus === PaymentStatus.PAID) paymentData.paidAt = now;
+  if (paymentStatus === PaymentStatus.FAILED) paymentData.failedAt = now;
+  if (paymentStatus === PaymentStatus.CANCELED) paymentData.cancelledAt = now;
+
+  const [updatedOrder] = await prisma.$transaction([
+    prisma.order.update({
+      where: { id: orderId },
+      data: {
+        paymentStatus,
+        // Auto-confirm COD orders when payment is collected
+        ...(paymentStatus === PaymentStatus.PAID &&
+          order.paymentMethod === "COD" && {
+            orderStatus: OrderStatus.CONFIRMED,
+          }),
+      },
+      include: { items: true, payment: true },
+    }),
+    prisma.payment.update({
+      where: { id: order.payment!.id },
+      data: paymentData,
+    }),
+  ]);
+
+  return updatedOrder;
+};
+
+const updateOrderInfoService = async (
+  orderId: string,
+  payload: any,
+) => {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { items: true, payment: true },
+  });
+
+  if (!order) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "Order not found");
+  }
+
+  const updatedOrder = await prisma.order.update({
+    where: { id: orderId },
+    data: {
+      name: payload.name,
+      phone: payload.phone,
+      state: payload.state,
+      address: payload.address,
+      orderNote: payload.orderNote,
+      billingName: payload.billingName,
+      billingPhone: payload.billingPhone,
+      billingEmail: payload.billingEmail,
+      billingState: payload.billingState,
+      billingAddress: payload.billingAddress,
+    },
+    include: { items: true, payment: true },
+  });
+
+  return updatedOrder;
+};
+
+const getOrderByTransactionIdService = async (transactionId: string) => {
+  const payment = await prisma.payment.findUnique({
+    where: { transactionId },
+    include: {
+      order: {
+        include: {
+          items: {
+            include: {
+              product: {
+                select: {
+                  thumbnailImage: true,
+                  salePrice: true,
+                  regularPrice: true,
+                },
+              },
+              variant: {
+                select: {
+                  color: true,
+                  size: true,
+                },
+              },
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              email: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!payment || !payment.order) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "Order not found");
+  }
+
+  const order = payment.order;
+
+  return {
+    id: order.id,
+    orderNo: order.orderNo,
+    createdAt: order.createdAt.toISOString(),
+    updatedAt: order.updatedAt.toISOString(),
+    name: order.name,
+    phone: order.phone,
+    state: order.state,
+    address: order.address,
+    orderNote: order.orderNote ?? null,
+    checkoutEmail: order.checkoutEmail ?? null,
+    billingName: order.billingName ?? null,
+    billingPhone: order.billingPhone ?? null,
+    billingEmail: order.billingEmail ?? null,
+    billingState: order.billingState ?? null,
+    billingAddress: order.billingAddress ?? null,
+    subtotal: order.subtotal,
+    totalAmount: order.totalAmount,
+    deliveryCharge: order.deliveryCharge ? Number(order.deliveryCharge) : 0,
+    deliveryType: order.deliveryType ?? null,
+    orderStatus: order.orderStatus,
+    paymentStatus: order.paymentStatus,
+    paymentMethod: order.paymentMethod,
+    invoiceUrl: order.invoiceUrl ?? null,
+    user: order.user
+      ? { id: order.user.id, email: order.user.email }
+      : null,
+    items: order.items.map((item) => ({
+      id: item.id,
+      productId: item.productId,
+      productName: item.productName,
+      price: item.price,
+      quantity: item.quantity,
+      total: item.total,
+      color: item.color ?? null,
+      size: item.size ?? null,
+      sku: item.sku ?? null,
+      variantId: item.variantId ?? null,
+      productImage:
+        item.productImage ?? item.product?.thumbnailImage ?? null,
+    })),
+    payment: {
+      id: payment.id,
+      orderId: payment.orderId,
+      orderNo: payment.orderNo,
+      transactionId: payment.transactionId,
+      paymentStatus: payment.paymentStatus,
+      paymentMethod: payment.paymentMethod,
+      gatewayStatus: payment.gatewayStatus,
+      bankTranId: payment.bankTranId,
+      cardType: payment.cardType,
+      cardIssuer: payment.cardIssuer,
+      riskLevel: payment.riskLevel,
+      riskTitle: payment.riskTitle,
+      validationId: payment.validationId,
+      storeAmount: payment.storeAmount ? Number(payment.storeAmount) : null,
+      currencyAmount: payment.currencyAmount ? Number(payment.currencyAmount) : null,
+      paymentGatewayData: payment.paymentGatewayData,
+      amount: payment.amount,
+      paidAt: payment.paidAt?.toISOString() ?? null,
+      invoiceUrl: payment.invoiceUrl ?? null,
+    },
   };
 };
 
@@ -502,6 +713,8 @@ const getOrderByIdService = async (orderId: string) => {
           },
         },
       },
+      // ── Payment details including gateway/card info ───────────────────────
+      payment: true,
       // ── Authenticated user (optional — guest orders have no user) ─────────
       user: {
         select: {
@@ -573,16 +786,42 @@ const getOrderByIdService = async (orderId: string) => {
                     ?? null,
     })),
  
-    // Shipment tracking history
-   
+    // Payment details
+    payment: order.payment
+      ? {
+          id: order.payment.id,
+          orderId: order.payment.orderId,
+          orderNo: order.payment.orderNo,
+          transactionId: order.payment.transactionId,
+          paymentStatus: order.payment.paymentStatus,
+          paymentMethod: order.payment.paymentMethod,
+          gatewayStatus: order.payment.gatewayStatus,
+          bankTranId: order.payment.bankTranId,
+          cardType: order.payment.cardType,
+          cardIssuer: order.payment.cardIssuer,
+          riskLevel: order.payment.riskLevel,
+          riskTitle: order.payment.riskTitle,
+          validationId: order.payment.validationId,
+          storeAmount: order.payment.storeAmount ? Number(order.payment.storeAmount) : null,
+          currencyAmount: order.payment.currencyAmount ? Number(order.payment.currencyAmount) : null,
+          paymentGatewayData: order.payment.paymentGatewayData,
+          amount: order.payment.amount,
+          paidAt: order.payment.paidAt?.toISOString() ?? null,
+          invoiceUrl: order.payment.invoiceUrl ?? null,
+        }
+      : null,
   };
 };
- 
+
 
 export const orderService = {
   createOrderService,
   getAllOrdersService,
+  getMyOrdersService,
   updateOrderStatusService,
+  updateOrderPaymentStatusService,
+  updateOrderInfoService,
   getOrderTrackingService,
-  getOrderByIdService
+  getOrderByIdService,
+  getOrderByTransactionIdService,
 };

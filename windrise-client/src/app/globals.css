@@ -11,10 +11,14 @@
 
 @theme {
   --color-ink: #1a1a1a;
+  --color-ink-soft: #64748b;
+  --color-ink-muted: #94a3b8;
   --color-line: #d4d4d4;
   --color-subtle: #64748b;
   --color-canvas: #f5f7fb;
+  --color-surface: #ffffff;
   --color-brand: #5b5bf5;
+  --color-brand-soft: #e0e7ff;
   --color-good: #16a34a;
   --color-warn: #f59e0b;
   --color-bad: #e5484d;

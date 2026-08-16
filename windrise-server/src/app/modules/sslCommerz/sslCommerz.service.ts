@@ -56,16 +56,37 @@ const sslPaymentInit = async (payload: ISSLCommerz) => {
     }
 }
 
+export const fetchValidationData = async (valId: string) => {
+    try {
+        const response = await axios.get(
+            `${envVars.SSL_VALIDATION_API}?val_id=${valId}&store_id=${envVars.SSL_STORE_ID}&store_passwd=${envVars.SSL_STORE_PASS}`
+        );
+        return response.data;
+    } catch (error: any) {
+        console.error("[SSLCommerz] fetchValidationData failed:", error?.response?.data || error.message);
+        throw new ApiError(400, `SSLCommerz validation fetch failed: ${error.message}`);
+    }
+};
+
+export const buildGatewayUpdateData = (validationData: any) => {
+    return {
+        gatewayStatus: validationData.status,
+        validationId: validationData.val_id,
+        bankTranId: validationData.bank_tran_id,
+        cardType: validationData.card_type,
+        cardIssuer: validationData.card_issuer,
+        riskLevel: validationData.risk_level,
+        riskTitle: validationData.risk_title,
+        storeAmount: validationData.store_amount ? String(validationData.store_amount) : null,
+        currencyAmount: validationData.currency_amount ? String(validationData.currency_amount) : null,
+        paymentGatewayData: validationData, // JSON field
+    };
+};
+
 export const validatePayment = async (payload: any) => {
     try {
         //===================== 1 Call SSLCommerz validation API ======================//
-        const response = await axios.get(
-            `${envVars.SSL_VALIDATION_API}?val_id=${payload.val_id}&store_id=${envVars.SSL_STORE_ID}&store_passwd=${envVars.SSL_STORE_PASS}`
-        );
-
-        const validationData = response.data;
-
-        
+        const validationData = await fetchValidationData(payload.val_id);
 
         //================== 2 Check payment status from SSL ==================//
         if (validationData.status !== "VALID") {
@@ -86,14 +107,7 @@ export const validatePayment = async (payload: any) => {
 
             await tx.payment.update({
                 where: { id: payment.id },
-                data: {
-                    gatewayStatus: validationData.status,
-                    validationId: validationData.val_id,
-                    bankTranId: validationData.bank_tran_id,
-                    cardType: validationData.card_type,
-                    cardIssuer: validationData.card_issuer,
-                    paymentGatewayData: validationData, // JSON field
-                },
+                data: buildGatewayUpdateData(validationData),
             });
         });
 
@@ -109,6 +123,8 @@ export const validatePayment = async (payload: any) => {
 
 export const SSLService = {
     sslPaymentInit,
-    validatePayment
+    validatePayment,
+    fetchValidationData,
+    buildGatewayUpdateData,
 }
 

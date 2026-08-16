@@ -28,7 +28,6 @@ enum UserStatus {
 
 
 enum OrderStatus {
-  PENDING
   CONFIRMED
   CANCELED
   FAILED

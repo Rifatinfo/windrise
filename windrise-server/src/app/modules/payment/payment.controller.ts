@@ -9,13 +9,18 @@ import { envVars } from "../../../config";
 import { SSLService } from "../sslCommerz/sslCommerz.service";
 
 const successPayment = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as Record<string, string>;
-    const result = await PaymentService.successPayment(query);
-
+    // SSLCommerz may send the callback as a POST (body) or redirect as GET (query).
+    // Merge both so we never lose gateway data such as val_id, card_type, etc.
+    const payload = {
+        ...(req.query as Record<string, string>),
+        ...(req.body as Record<string, string>),
+    };
+    const result = await PaymentService.successPayment(payload);
+    console.log("Payment result", result);
     //=============== Redirect user to frontend success page  =================//
-    
+
     return res.redirect(
-        `${envVars.SSL_SUCCESS_FRONTEND_URL}?transactionId=${query.transactionId}&orderId=${result.orderId}&invoiceUrl=${result.invoiceUrl}&message=${result.message}&amount=${query.amount}&status=success`
+        `${envVars.SSL_SUCCESS_FRONTEND_URL}?transactionId=${payload.transactionId ?? payload.tran_id}&orderId=${result.orderId}&invoiceUrl=${result.invoiceUrl}&message=${result.message}&amount=${payload.amount}&status=success`
     );
 });
 

@@ -15,7 +15,7 @@ export const startRestoreStockCron = () => {
                 paymentStatus: {
                     in: [PaymentStatus.CANCELED, PaymentStatus.FAILED],
                 },
-                orderStatus: OrderStatus.PENDING,
+                orderStatus: OrderStatus.PLACED,
                 createdAt: {
                     lt: new Date(Date.now() - 30 * 60 * 1000), // 30 min
                 },

@@ -14,8 +14,8 @@ const createOrderController = catchAsync(
 
     const order = await orderService.createOrderService({
       payload: req.body,
-      userId: req.user?.id,
-      userEmail: req.user?.email ?? undefined,
+      userId,
+      userEmail,
     });
 
     sendResponse(res, {
@@ -45,6 +45,23 @@ const getAllOrdersController = catchAsync(
   },
 );
 
+const getMyOrdersController = catchAsync(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.id as string;
+    const options = pick(req.query, ["page", "limit", "sortBy", "sortOrder"]);
+
+    const result = await orderService.getMyOrdersService(userId, options);
+
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: "My orders fetched successfully",
+      meta: result.meta,
+      data: result.data,
+    });
+  },
+);
+
 const updateOrderStatusController = catchAsync(
   async (req: Request, res: Response) => {
     const { orderId } = req.params;
@@ -67,14 +84,72 @@ const updateOrderStatusController = catchAsync(
   },
 );
 
+const updateOrderPaymentStatusController = catchAsync(
+  async (req: Request, res: Response) => {
+    const { orderId } = req.params;
+    const { paymentStatus } = req.body;
 
+    if (!paymentStatus) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, "Payment status is required");
+    }
+
+    const result = await orderService.updateOrderPaymentStatusService(
+      orderId as string,
+      paymentStatus,
+    );
+
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: "Payment status updated",
+      data: result,
+    });
+  },
+);
+
+const updateOrderInfoController = catchAsync(
+  async (req: Request, res: Response) => {
+    const { orderId } = req.params;
+
+    const result = await orderService.updateOrderInfoService(
+      orderId as string,
+      req.body,
+    );
+
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: "Order information updated",
+      data: result,
+    });
+  },
+);
+
+const getOrderTrackingController = catchAsync(
+  async (req: Request, res: Response) => {
+    const { orderId } = req.params;
+    const userId = req.user?.id as string;
+
+    const result = await orderService.getOrderTrackingService(
+      orderId as string,
+      userId,
+    );
+
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: "Order tracking info fetched successfully",
+      data: result,
+    });
+  },
+);
 
 const getOrderByIdController = catchAsync(
   async (req: Request, res: Response) => {
     const { id } = req.params; // orderId from  /orders/:id
- 
+
     const result = await orderService.getOrderByIdService(id as string);
- 
+
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,
@@ -83,9 +158,32 @@ const getOrderByIdController = catchAsync(
     });
   }
 );
+
+const getOrderByTransactionIdController = catchAsync(
+  async (req: Request, res: Response) => {
+    const { transactionId } = req.params;
+
+    const result = await orderService.getOrderByTransactionIdService(
+      transactionId as string,
+    );
+
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: "Order fetched successfully",
+      data: result,
+    });
+  },
+);
+
 export const OrderController = {
   createOrderController,
   getAllOrdersController,
+  getMyOrdersController,
   updateOrderStatusController,
-  getOrderByIdController
+  updateOrderPaymentStatusController,
+  updateOrderInfoController,
+  getOrderTrackingController,
+  getOrderByIdController,
+  getOrderByTransactionIdController,
 };
