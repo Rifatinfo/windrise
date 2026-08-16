@@ -32,6 +32,7 @@ export type NavItem = {
   icon: any;
   roles: UserRole[];
   path?: string;
+  children?: NavItem[];
 };
 
 // =====================
@@ -149,6 +150,31 @@ export const NAV_ROLE: NavItem[] = [
     icon: UserCogIcon,
     roles: ["ADMIN"],
     path: "/admin/create-admin",
+    children: [
+      {
+        id: "add-admin",
+        label: "Add Admin",
+        icon: ShieldCheckIcon,
+        roles: ["ADMIN", "SHOP_MANAGER"],
+        path: "/admin/add-admin",
+      },
+
+      {
+        id: "add-shop-manager",
+        label: "Add Shop Manager",
+        icon: UserCogIcon,
+        roles: ["ADMIN", "SHOP_MANAGER"],
+        path: "/admin/add-shop-manager",
+      },
+
+      {
+        id: "add-media-manager",
+        label: "Add Media Manager",
+        icon: UserPlusIcon,
+        roles: ["ADMIN", "SHOP_MANAGER"],
+        path: "/admin/add-media-manager",
+      },
+    ],
   },
 
   {
@@ -157,29 +183,6 @@ export const NAV_ROLE: NavItem[] = [
     icon: ShieldCheckIcon,
     roles: ["ADMIN"],
     path: "/admin/control-authority",
-  },
-  {
-    id: "add-admin",
-    label: "Add Admin",
-    icon: ShieldCheckIcon,
-    roles: ["ADMIN", "SHOP_MANAGER"],
-    path: "/admin/add-admin",
-  },
-
-  {
-    id: "add-shop-manager",
-    label: "Add Shop Manager",
-    icon: UserCogIcon,
-    roles: ["ADMIN", "SHOP_MANAGER"],
-    path: "/admin/add-shop-manager",
-  },
-
-  {
-    id: "add-media-manager",
-    label: "Add Media Manager",
-    icon: UserPlusIcon,
-    roles: ["ADMIN", "SHOP_MANAGER"],
-    path: "/admin/add-media-manager",
   },
 
   // =====================
