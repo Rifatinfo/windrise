@@ -50,8 +50,8 @@ export function OrderStatCards({
   onSelectStatus
 }: OrderStatCardsProps) {
   const countOf = (status: OrderStatus) => orders.filter(order => order.status === status).length;
-  return <section aria-label="Order status summary" className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-7">
-      <article className="flex items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3.5 shadow-card">
+  return <section aria-label="Order status summary" className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-7 mb-8">
+      <article className="flex items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3.5 shadow-card ">
         <span className="rounded-lg bg-brand-soft p-2 text-brand">
           <ShoppingCartIcon className="h-4 w-4" aria-hidden="true" />
         </span>

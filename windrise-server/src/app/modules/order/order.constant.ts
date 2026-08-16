@@ -3,6 +3,8 @@ export const orderFilterableFields = [
   "orderStatus",
   "paymentStatus",
   "paymentMethod",
+  "startDate",
+  "endDate",
 ];
 
 export const orderSearchableFields = [

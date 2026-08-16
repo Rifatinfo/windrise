@@ -68,7 +68,7 @@ export function PaymentMix({ orders }: PaymentMixProps) {
   return (
     <section
       aria-label="Payment mix"
-      className="overflow-hidden rounded-xl border border-line bg-surface shadow-card"
+      className="overflow-hidden mb-8 rounded-xl border border-line bg-surface shadow-card"
     >
       <div className="grid grid-cols-1 lg:grid-cols-12">
         <div className="border-line p-5 lg:col-span-4 lg:border-r">
