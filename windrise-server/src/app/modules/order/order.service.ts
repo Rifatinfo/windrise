@@ -392,7 +392,7 @@ const createOrderService = async ({
 const getAllOrdersService = async (params: any, options: any) => {
   const { page, limit, skip, sortBy, sortOrder } =
     paginationHelper.calculatePagination(options);
-  const { searchTerm, ...filterData } = params;
+  const { searchTerm, startDate, endDate, ...filterData } = params;
   const andConditions: Prisma.OrderWhereInput[] = [];
   // ============ Search  =============//
   if (searchTerm) {
@@ -404,6 +404,25 @@ const getAllOrdersService = async (params: any, options: any) => {
         },
       })),
     });
+  }
+
+  // ============ Date range (createdAt) ============//
+  if (startDate || endDate) {
+    const createdAt: Prisma.DateTimeFilter = {};
+    if (startDate) {
+      const start = new Date(startDate as string);
+      if (!Number.isNaN(start.getTime())) createdAt.gte = start;
+    }
+    if (endDate) {
+      const end = new Date(endDate as string);
+      if (!Number.isNaN(end.getTime())) {
+        end.setHours(23, 59, 59, 999);
+        createdAt.lte = end;
+      }
+    }
+    if (createdAt.gte || createdAt.lte) {
+      andConditions.push({ createdAt });
+    }
   }
 
   //=================== Filters  =================//

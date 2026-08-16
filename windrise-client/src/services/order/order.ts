@@ -92,8 +92,32 @@ export async function getOrderByTransactionId(transactionId: string): Promise<an
   return res.json();
 }
 
-export async function getAllOrders(): Promise<ApiListResponse<ServerOrder[]>> {
-  const res = await fetch(`${API_URL}/api/v1/order`, {
+export type GetOrdersParams = {
+  searchTerm?: string;
+  orderStatus?: string;
+  paymentStatus?: string;
+  paymentMethod?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: string;
+};
+
+export async function getAllOrders(
+  params?: GetOrdersParams
+): Promise<ApiListResponse<ServerOrder[]>> {
+  const query = new URLSearchParams();
+  if (params) {
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null && value !== "") {
+        query.set(key, String(value));
+      }
+    }
+  }
+  const qs = query.toString();
+  const res = await fetch(`${API_URL}/api/v1/order${qs ? `?${qs}` : ""}`, {
     credentials: "include",
   });
   if (!res.ok) await handleError(res);

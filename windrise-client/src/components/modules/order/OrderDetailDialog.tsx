@@ -1,25 +1,37 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import {
-  XIcon,
+  CalendarIcon,
+  CheckIcon,
   CheckCircle2Icon,
-  BanknoteIcon,
-  UserIcon,
-  MapPinIcon,
-  PhoneIcon,
+  ClipboardCheckIcon,
+  ClipboardListIcon,
+  ClockIcon,
+  DownloadIcon,
   MailIcon,
+  MapPinIcon,
+  PackageCheckIcon,
+  PackageOpenIcon,
   PencilIcon,
+  PhoneIcon,
+  ReceiptTextIcon,
   SaveIcon,
-  FileTextIcon,
+  ShoppingBagIcon,
+  StickyNoteIcon,
+  TruckIcon,
+  UserIcon,
+  XCircleIcon,
+  XIcon,
 } from "lucide-react";
 import type { Order, OrderCustomer, OrderStatus } from "@/types/order";
-import { formatBdt, formatDate, itemCount } from "@/utils/format";
+import { formatBdt, itemCount } from "@/utils/format";
 import {
   buildTimeline,
   getPaymentMethodDisplay,
+  isDropped,
   PAYMENT_STATE_META,
-  SHIPMENT_META,
+  PIPELINE,
   STATUS_META,
 } from "@/utils/orderFlow";
 import { StatusUpdateMenu } from "./StatusUpdateMenu";
@@ -33,6 +45,33 @@ interface OrderDetailDialogProps {
   onSaveInfo: (id: string, customer: OrderCustomer, billing: OrderCustomer | null) => void;
 }
 
+const TRACK_STEPS: { status: OrderStatus; label: string; icon: typeof ClipboardListIcon }[] = [
+  { status: "placed", label: "Placed", icon: ClipboardListIcon },
+  { status: "confirmed", label: "Confirmed", icon: ClipboardCheckIcon },
+  { status: "processed", label: "Processed", icon: PackageOpenIcon },
+  { status: "on_the_way", label: "On the Way", icon: TruckIcon },
+  { status: "delivered", label: "Delivered", icon: PackageCheckIcon },
+];
+
+const STEP_CIRCLE = {
+  done: "bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white shadow-lg shadow-indigo-500/30 ring-4 ring-indigo-100",
+  current:
+    "bg-gradient-to-br from-indigo-600 to-fuchsia-600 text-white shadow-lg shadow-indigo-500/40 ring-4 ring-indigo-100",
+  todo: "bg-slate-100 text-slate-400 ring-1 ring-slate-200",
+};
+
+function formatDateOnly(input: string | Date): string {
+  const date = typeof input === "string" ? new Date(input) : input;
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+}
+
+function formatTime(input: string | Date): string {
+  const date = typeof input === "string" ? new Date(input) : input;
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+}
+
 export function OrderDetailDialog({
   order,
   startInEdit,
@@ -42,18 +81,22 @@ export function OrderDetailDialog({
   onSaveInfo,
 }: OrderDetailDialogProps) {
   const [isEditing, setIsEditing] = useState(startInEdit);
+  const [editingShipping, setEditingShipping] = useState(false);
+  const [editingBilling, setEditingBilling] = useState(false);
   const [customer, setCustomer] = useState<OrderCustomer>(order?.customer ?? { name: "", phone: "" });
   const [billing, setBilling] = useState<OrderCustomer | null>(order?.billing ?? null);
   const [sameAsShipping, setSameAsShipping] = useState(!order?.billing);
+  const [prevOrder, setPrevOrder] = useState<Order | null>(order);
 
-  useEffect(() => {
-    if (order) {
-      setCustomer(order.customer);
-      setBilling(order.billing ?? null);
-      setSameAsShipping(!order.billing);
-      setIsEditing(startInEdit);
-    }
-  }, [order, startInEdit]);
+  if (order !== prevOrder) {
+    setPrevOrder(order);
+    setCustomer(order?.customer ?? { name: "", phone: "" });
+    setBilling(order?.billing ?? null);
+    setSameAsShipping(!order?.billing);
+    setIsEditing(startInEdit);
+    setEditingShipping(false);
+    setEditingBilling(false);
+  }
 
   useEffect(() => {
     if (!order) return;
@@ -64,17 +107,13 @@ export function OrderDetailDialog({
     return () => document.removeEventListener("keydown", onKey);
   }, [order, onClose]);
 
-  const timeline = useMemo(() => {
-    if (!order) return [];
-    return buildTimeline(order.status, order.placedAt);
-  }, [order]);
+  const dropped = useMemo(() => (order ? isDropped(order.status) : false), [order]);
 
   if (!order) return null;
 
   const statusMeta = STATUS_META[order.status];
   const paymentMeta = getPaymentMethodDisplay(order.payment.method, order.payment.gateway);
   const paymentState = PAYMENT_STATE_META[order.payment.state];
-  const shipmentMeta = SHIPMENT_META[order.shipment];
 
   const canCollect =
     order.payment.method === "cod" && order.payment.state !== "paid" && order.payment.state !== "canceled";
@@ -97,358 +136,417 @@ export function OrderDetailDialog({
       role="dialog"
       aria-modal="true"
       aria-label={`Order ${order.orderNo}`}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
     >
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <div className="relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl">
-        {/* Header */}
-          <div className="flex items-start justify-between border-b border-line px-6 py-5">
-          <div>
-            <div className="flex items-center gap-3">
-              <h2 className="text-lg font-semibold text-ink">Order #{order.orderNo}</h2>
-              <StatusUpdateMenu
-                status={order.status}
-                onChange={(status) => onStatusChange(order.id, status)}
-                align="right"
-              />
-            </div>
-            <p className="mt-1 text-xs text-ink-soft">
-              Placed {formatDate(order.placedAt)} · {itemCount(order)} items ·{" "}
-              {formatBdt(order.totalAmount)}
-            </p>
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
+
+      <div className="relative flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-surface shadow-pop ring-1 ring-black/5">
+        {/* Top bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-surface px-5 py-4 sm:px-6">
+          <div className="flex min-w-0 flex-wrap items-center gap-2.5">
+            <h2 className="text-lg font-bold tracking-tight text-ink">Order #{order.orderNo}</h2>
+            <StatusUpdateMenu
+              status={order.status}
+              onChange={(status) => onStatusChange(order.id, status)}
+              align="right"
+            />
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-soft">
+            <span className="inline-flex items-center gap-1.5">
+              <CalendarIcon className="h-3.5 w-3.5" aria-hidden="true" />
+              {formatDateOnly(order.placedAt)}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <ClockIcon className="h-3.5 w-3.5" aria-hidden="true" />
+              {formatTime(order.placedAt)}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <ShoppingBagIcon className="h-3.5 w-3.5" aria-hidden="true" />
+              {itemCount(order)} items
+            </span>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
               disabled={!order.invoiceUrl}
               onClick={() => order.invoiceUrl && window.open(order.invoiceUrl, "_blank")}
               aria-label="Download invoice"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:border-slate-300 disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:border-indigo-300 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <FileTextIcon className="h-4 w-4" />
+              <DownloadIcon className="h-3.5 w-3.5" aria-hidden="true" />
               Invoice
             </button>
             <button
               type="button"
               onClick={onClose}
               aria-label="Close dialog"
-              className="rounded-lg p-1.5 text-ink-muted transition-colors hover:bg-slate-100 hover:text-ink"
+              className="rounded-lg p-1.5 text-ink-soft transition-colors hover:bg-slate-100 hover:text-ink"
             >
-              <XIcon className="h-5 w-5" />
+              <XIcon className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            {/* Left column */}
-            <div className="space-y-6 lg:col-span-2">
-              {/* Status summary */}
-              <section className="rounded-xl border border-line bg-canvas p-4">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-soft">
-                  Fulfillment
-                </h3>
-                <div className="mt-3 flex flex-wrap items-center gap-3">
-                  <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${statusMeta.chip}`}
-                  >
-                    <span className={`h-1.5 w-1.5 rounded-full ${statusMeta.dot}`} />
-                    {statusMeta.label}
-                  </span>
-                  <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${shipmentMeta.chip}`}
-                  >
-                    <span className={`h-1.5 w-1.5 rounded-full ${shipmentMeta.dot}`} />
-                    {shipmentMeta.label}
-                  </span>
-                </div>
+        <div className="flex-1 overflow-y-auto bg-canvas p-4 sm:p-6">
+          <div className="space-y-6">
+            {/* Tracking stepper */}
+            <TrackingStepper order={order} />
 
-                <div className="mt-5">
-                  <ol className="relative space-y-0">
-                    {timeline.map((event, idx) => {
-                      const isLast = idx === timeline.length - 1;
-                      return (
-                        <li key={idx} className="relative flex gap-4 pb-6 last:pb-0">
-                          {!isLast && (
-                            <span className="absolute left-[9px] top-5 h-full w-px bg-line" />
-                          )}
-                          <span
-                            className={`relative z-10 mt-0.5 h-5 w-5 shrink-0 rounded-full border-2 ${
-                              isLast
-                                ? "border-brand bg-brand"
-                                : "border-slate-300 bg-surface"
-                            }`}
-                          >
-                            {isLast && (
-                              <CheckCircle2Icon className="h-3 w-3 text-white" />
+            {dropped && (
+              <div className="flex items-center gap-3 rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50 to-orange-50 px-5 py-4">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 text-white shadow-md shadow-rose-500/30">
+                  <XCircleIcon className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-rose-700">{statusMeta.label}</p>
+                  <p className="text-xs text-rose-600/80">
+                    This order was {statusMeta.label.toLowerCase()} and is no longer active.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+              {/* Left column */}
+              <div className="space-y-6 lg:col-span-2">
+                {/* Order summary */}
+                <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
+                  <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-sm">
+                        <ReceiptTextIcon className="h-4 w-4" aria-hidden="true" />
+                      </span>
+                      <h3 className="text-sm font-semibold text-ink">Order Summary</h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${paymentMeta.chip}`}
+                      >
+                        {paymentMeta.short}
+                      </span>
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${paymentState.chip}`}
+                      >
+                        <span className={`h-1.5 w-1.5 rounded-full ${paymentState.dot}`} />
+                        {paymentState.label}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 p-5">
+                    <div className="flex items-center justify-between rounded-xl bg-canvas px-4 py-3">
+                      <span className="text-sm text-ink-soft">Payment method</span>
+                      <span className="text-sm font-medium text-ink">{paymentMeta.label}</span>
+                    </div>
+
+                    {canCollect && (
+                      <button
+                        type="button"
+                        onClick={() => onMarkCollected(order.id)}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-3 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-500/25 transition-transform hover:scale-[1.01] active:scale-[0.99]"
+                      >
+                        <CheckCircle2Icon className="h-4 w-4" aria-hidden="true" />
+                        Mark as Collected
+                      </button>
+                    )}
+
+                    <dl className="space-y-2.5 text-sm">
+                      <div className="flex items-center justify-between">
+                        <dt className="text-ink-soft">Subtotal</dt>
+                        <dd className="tabular-nums text-ink">{formatBdt(order.subtotal)}</dd>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <dt className="text-ink-soft">Delivery charge</dt>
+                        <dd className="tabular-nums text-ink">{formatBdt(order.deliveryCharge)}</dd>
+                      </div>
+                      <div className="my-2 border-t border-dashed border-line" />
+                      <div className="flex items-center justify-between">
+                        <dt className="font-semibold text-ink">Total</dt>
+                        <dd className="text-lg font-bold tabular-nums text-indigo-600">
+                          {formatBdt(order.totalAmount)}
+                        </dd>
+                      </div>
+                    </dl>
+
+                    {order.payment.reference && (
+                      <p className="rounded-lg bg-canvas px-3 py-2 text-[11px] text-ink-muted">
+                        Reference: <span className="tabular-nums text-ink-soft">{order.payment.reference}</span>
+                      </p>
+                    )}
+                  </div>
+                </section>
+
+                {/* Items */}
+                <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
+                  <div className="flex items-center gap-2.5 border-b border-line px-5 py-3.5">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-sm">
+                      <ShoppingBagIcon className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <h3 className="text-sm font-semibold text-ink">
+                      Items{" "}
+                      <span className="ml-1 rounded-full bg-canvas px-2 py-0.5 text-[11px] font-semibold text-ink-soft">
+                        {itemCount(order)}
+                      </span>
+                    </h3>
+                  </div>
+
+                  <ul className="space-y-3 p-5">
+                    {order.items.map((item) => (
+                      <li
+                        key={item.id}
+                        className="flex gap-3.5 rounded-xl border border-line bg-canvas/50 p-3.5 transition-colors hover:border-indigo-200 hover:bg-indigo-50/40"
+                      >
+                        <img
+                          src={item.image ?? "/placeholder.png"}
+                          alt={item.name}
+                          className="h-16 w-12 shrink-0 rounded-lg object-cover ring-1 ring-black/5"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-ink">{item.name}</p>
+                          <div className="mt-1.5 flex flex-wrap gap-1.5">
+                            {item.sku && (
+                              <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-soft">
+                                SKU {item.sku}
+                              </span>
                             )}
-                          </span>
-                          <div>
-                            <p className="text-sm font-medium text-ink">{event.label}</p>
-                            <p className="text-xs text-ink-soft">{formatDate(event.at)}</p>
-                            {event.note && (
-                              <p className="mt-1 text-xs text-ink-muted">{event.note}</p>
+                            {item.size && (
+                              <span className="rounded-md bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-600">
+                                Size {item.size}
+                              </span>
+                            )}
+                            {item.color && (
+                              <span className="rounded-md bg-fuchsia-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-fuchsia-600">
+                                {item.color}
+                              </span>
                             )}
                           </div>
-                        </li>
-                      );
-                    })}
-                  </ol>
-                </div>
-              </section>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className="text-sm font-bold tabular-nums text-ink">{formatBdt(item.total)}</p>
+                          <p className="mt-0.5 text-xs tabular-nums text-ink-muted">
+                            {formatBdt(item.price)} × {item.quantity}
+                          </p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              </div>
 
-              {/* Items */}
-              <section className="rounded-xl border border-line bg-canvas p-4">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-soft">
-                  Items
-                </h3>
-                <ul className="mt-3 space-y-3">
-                  {order.items.map((item) => (
-                    <li
-                      key={item.id}
-                      className="flex items-start gap-3 rounded-lg border border-line bg-surface p-3"
-                    >
-                      <img
-                        src={item.image ?? "/placeholder.png"}
-                        alt={item.name}
-                        className="h-16 w-12 shrink-0 rounded-md border border-line object-cover"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-ink">{item.name}</p>
-                        <p className="text-xs text-ink-soft">
-                          {item.color && `${item.color}`}
-                          {item.color && item.size ? " / " : ""}
-                          {item.size && `Size ${item.size}`}
-                          {item.sku && (
-                            <span className="ml-2 text-ink-muted">SKU: {item.sku}</span>
-                          )}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium text-ink">
-                          {formatBdt(item.total)}
-                        </p>
-                        <p className="text-xs text-ink-soft">Qty {item.quantity}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            </div>
+              {/* Right column */}
+              <div className="space-y-6">
+                {/* Customer */}
+                <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
+                  <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500 to-indigo-500 text-white shadow-sm">
+                        <UserIcon className="h-4 w-4" aria-hidden="true" />
+                      </span>
+                      <h3 className="text-sm font-semibold text-ink">Customer</h3>
+                    </div>
+                    {!isEditing && (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditing(true)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-line bg-surface px-2 py-1 text-[11px] font-semibold text-ink transition-colors hover:border-indigo-200 hover:text-indigo-600"
+                      >
+                        <PencilIcon className="h-3 w-3" aria-hidden="true" />
+                        Edit
+                      </button>
+                    )}
+                  </div>
 
-            {/* Right column */}
-            <div className="space-y-6">
-              {/* Payment */}
-              <section className="rounded-xl border border-line bg-canvas p-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-soft">
-                    Payment
-                  </h3>
-                  {canCollect && (
-                    <button
-                      type="button"
-                      onClick={() => onMarkCollected(order.id)}
-                      className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-1 text-[10px] font-medium text-white transition-colors hover:bg-emerald-700"
-                    >
-                      <BanknoteIcon className="h-3 w-3" />
-                      Mark Collected
-                    </button>
-                  )}
-                </div>
-                <div className="mt-3 space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-1.5 text-ink-muted">
-                      <BanknoteIcon className="h-3.5 w-3.5" />
-                      Method
-                    </span>
-                    <span
-                      className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${paymentMeta.chip}`}
-                    >
-                      {paymentMeta.short}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-1.5 text-ink-muted">
-                      <CheckCircle2Icon className="h-3.5 w-3.5" />
-                      Status
-                    </span>
-                    <span
-                      className={`inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide ${paymentState.text}`}
-                    >
-                      <span className={`h-1.5 w-1.5 rounded-full ${paymentState.dot}`} />
-                      {paymentState.label}
-                    </span>
-                  </div>
-                  {order.payment.transactionId && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-ink-muted">Transaction</span>
-                      <span className="tabular-nums text-ink">{order.payment.transactionId}</span>
-                    </div>
-                  )}
-                  <div className="mt-2 border-t border-line pt-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-ink">Total</span>
-                      <span className="font-semibold text-ink">{formatBdt(order.totalAmount)}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-ink-soft">
-                      <span>Subtotal</span>
-                      <span>{formatBdt(order.subtotal)}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-ink-soft">
-                      <span>Delivery</span>
-                      <span>{formatBdt(order.deliveryCharge)}</span>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* Customer info */}
-              <section className="rounded-xl border border-line bg-canvas p-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-soft">
-                    Customer
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => setIsEditing((v) => !v)}
-                    className="inline-flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-[10px] font-medium text-ink transition-colors hover:bg-slate-50"
-                  >
-                    {isEditing ? (
+                  <div className="space-y-4 p-5">
+                    {!isEditing ? (
                       <>
-                        <XIcon className="h-3 w-3" /> Cancel
+                        <InfoField icon={<UserIcon />} label="Name" value={customer.name} />
+                        <InfoField icon={<PhoneIcon />} label="Phone" value={customer.phone} />
+                        <InfoField icon={<MailIcon />} label="Email" value={customer.email ?? ""} />
+                        <InfoField icon={<MapPinIcon />} label="State" value={customer.state ?? ""} />
                       </>
                     ) : (
                       <>
-                        <PencilIcon className="h-3 w-3" /> Edit
+                        <EditField label="Name" value={customer.name} onChange={(v) => updateCustomer("name", v)} />
+                        <EditField label="Phone" value={customer.phone} onChange={(v) => updateCustomer("phone", v)} />
+                        <EditField label="Email" value={customer.email ?? ""} onChange={(v) => updateCustomer("email", v)} />
+                        <EditField label="State" value={customer.state ?? ""} onChange={(v) => updateCustomer("state", v)} />
+
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={handleSave}
+                            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-fuchsia-600 px-3 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-transform hover:scale-[1.01] active:scale-[0.99]"
+                          >
+                            <SaveIcon className="h-4 w-4" aria-hidden="true" />
+                            Save Changes
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIsEditing(false)}
+                            className="inline-flex items-center justify-center rounded-xl border border-line px-3 py-2.5 text-sm font-semibold text-ink-soft transition-colors hover:bg-slate-50"
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       </>
                     )}
-                  </button>
-                </div>
+                  </div>
+                </section>
 
-                <div className="mt-3 space-y-3">
-                  <InfoField
-                    icon={<UserIcon className="h-3.5 w-3.5" />}
-                    label="Name"
-                    value={customer.name}
-                    editing={isEditing}
-                    onChange={(v) => updateCustomer("name", v)}
-                  />
-                  <InfoField
-                    icon={<PhoneIcon className="h-3.5 w-3.5" />}
-                    label="Phone"
-                    value={customer.phone}
-                    editing={isEditing}
-                    onChange={(v) => updateCustomer("phone", v)}
-                  />
-                  <InfoField
-                    icon={<MailIcon className="h-3.5 w-3.5" />}
-                    label="Email"
-                    value={customer.email ?? ""}
-                    editing={isEditing}
-                    onChange={(v) => updateCustomer("email", v)}
-                    optional
-                  />
-                  <InfoField
-                    icon={<MapPinIcon className="h-3.5 w-3.5" />}
-                    label="State"
-                    value={customer.state ?? ""}
-                    editing={isEditing}
-                    onChange={(v) => updateCustomer("state", v)}
-                  />
-                  <InfoField
-                    icon={<MapPinIcon className="h-3.5 w-3.5" />}
-                    label="Address"
-                    value={customer.address ?? ""}
-                    editing={isEditing}
-                    onChange={(v) => updateCustomer("address", v)}
-                    multiline
-                  />
-                </div>
+                {/* Shipping address */}
+                <AddressCard
+                  icon={<MapPinIcon className="h-4 w-4" aria-hidden="true" />}
+                  accent="from-emerald-500 to-teal-500"
+                  title="Shipping Address"
+                  editing={editingShipping}
+                  onToggleEdit={() => setEditingShipping((v) => !v)}
+                  values={{
+                    name: customer.name,
+                    phone: customer.phone,
+                    state: customer.state ?? "",
+                    address: customer.address ?? "",
+                  }}
+                  onChange={(field, value) => updateCustomer(field, value)}
+                  onSave={() => {
+                    onSaveInfo(order.id, customer, sameAsShipping ? null : billing);
+                    setEditingShipping(false);
+                  }}
+                  onCancel={() => setEditingShipping(false)}
+                />
 
-                {/* Billing info */}
-                {!isEditing && !billing ? null : (
-                  <div className="mt-5 border-t border-line pt-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-soft">
-                        Billing
-                      </h4>
-                      {isEditing && (
-                        <label className="flex cursor-pointer items-center gap-1.5 text-[10px] text-ink-muted">
-                          <input
-                            type="checkbox"
-                            checked={sameAsShipping}
-                            onChange={(e) => setSameAsShipping(e.target.checked)}
-                            className="h-3 w-3 rounded border-line"
-                          />
-                          Same as shipping
-                        </label>
-                      )}
-                    </div>
+                {/* Billing address */}
+                <AddressCard
+                  icon={<ReceiptTextIcon className="h-4 w-4" aria-hidden="true" />}
+                  accent="from-amber-500 to-orange-500"
+                  title="Billing Address"
+                  editing={editingBilling}
+                  onToggleEdit={() => setEditingBilling((v) => !v)}
+                  values={{
+                    name: billing?.name ?? "",
+                    phone: billing?.phone ?? "",
+                    state: billing?.state ?? "",
+                    address: billing?.address ?? "",
+                  }}
+                  onChange={(field, value) => updateBilling(field, value)}
+                  onSave={() => {
+                    onSaveInfo(order.id, customer, sameAsShipping ? null : billing);
+                    setEditingBilling(false);
+                  }}
+                  onCancel={() => setEditingBilling(false)}
+                  fallback="Same as shipping address"
+                  sameAsShipping={sameAsShipping}
+                  onSameAsShippingChange={(checked) => {
+                    setSameAsShipping(checked);
+                    if (checked) {
+                      setBilling(null);
+                    } else {
+                      setBilling({ name: customer.name, phone: customer.phone });
+                    }
+                  }}
+                />
 
-                    {!sameAsShipping && (
-                      <div className="mt-3 space-y-3">
-                        <InfoField
-                          icon={<UserIcon className="h-3.5 w-3.5" />}
-                          label="Name"
-                          value={billing?.name ?? ""}
-                          editing={isEditing}
-                          onChange={(v) => updateBilling("name", v)}
-                        />
-                        <InfoField
-                          icon={<PhoneIcon className="h-3.5 w-3.5" />}
-                          label="Phone"
-                          value={billing?.phone ?? ""}
-                          editing={isEditing}
-                          onChange={(v) => updateBilling("phone", v)}
-                        />
-                        <InfoField
-                          icon={<MailIcon className="h-3.5 w-3.5" />}
-                          label="Email"
-                          value={billing?.email ?? ""}
-                          editing={isEditing}
-                          onChange={(v) => updateBilling("email", v)}
-                          optional
-                        />
-                        <InfoField
-                          icon={<MapPinIcon className="h-3.5 w-3.5" />}
-                          label="State"
-                          value={billing?.state ?? ""}
-                          editing={isEditing}
-                          onChange={(v) => updateBilling("state", v)}
-                        />
-                        <InfoField
-                          icon={<MapPinIcon className="h-3.5 w-3.5" />}
-                          label="Address"
-                          value={billing?.address ?? ""}
-                          editing={isEditing}
-                          onChange={(v) => updateBilling("address", v)}
-                          multiline
-                        />
-                      </div>
-                    )}
-                    {sameAsShipping && (
-                      <p className="mt-2 text-xs text-ink-muted">Same as shipping address</p>
+                {/* Order note */}
+                <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
+                  <div className="flex items-center gap-2.5 border-b border-line px-5 py-3.5">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-sm">
+                      <StickyNoteIcon className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <h3 className="text-sm font-semibold text-ink">Order Note</h3>
+                  </div>
+                  <div className="p-5">
+                    {order.orderNote ? (
+                      <p className="whitespace-pre-wrap rounded-xl bg-canvas px-4 py-3 text-sm leading-relaxed text-ink">
+                        {order.orderNote}
+                      </p>
+                    ) : (
+                      <p className="text-sm italic text-ink-muted">No note attached to this order.</p>
                     )}
                   </div>
-                )}
-
-                {isEditing && (
-                  <button
-                    type="button"
-                    onClick={handleSave}
-                    className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-brand/90"
-                  >
-                    <SaveIcon className="h-4 w-4" />
-                    Save Changes
-                  </button>
-                )}
-              </section>
+                </section>
+              </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TrackingStepper({ order }: { order: Order }) {
+  const timeline = useMemo(() => buildTimeline(order.status, order.placedAt), [order]);
+  const dropped = isDropped(order.status);
+  const currentIndex = dropped ? -1 : PIPELINE.indexOf(order.status);
+
+  return (
+    <div className="rounded-2xl border border-line bg-surface px-5 py-5 shadow-card sm:px-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-ink">Order Tracking</h3>
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-soft">
+          <span className={`h-2 w-2 animate-pulse rounded-full ${STATUS_META[order.status].dot}`} />
+          {STATUS_META[order.status].label}
+        </span>
+      </div>
+
+      <div className="mt-6">
+        <div className="flex items-center gap-1">
+          {TRACK_STEPS.map((step, idx) => {
+            const Icon = step.icon;
+            const state = idx < currentIndex ? "done" : idx === currentIndex ? "current" : "todo";
+            return (
+              <Fragment key={step.status}>
+                <div className="relative flex h-12 w-12 shrink-0 items-center justify-center">
+                  {state === "current" && (
+                    <span className="absolute inset-0 animate-ping rounded-full bg-indigo-400/30" />
+                  )}
+                  <div
+                    className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full transition-all duration-300 ${STEP_CIRCLE[state]}`}
+                  >
+                    <Icon className="h-5 w-5" aria-hidden="true" />
+                  </div>
+                  {state === "done" && (
+                    <span className="absolute -right-0.5 -top-0.5 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-white ring-2 ring-surface">
+                      <CheckIcon className="h-2.5 w-2.5" aria-hidden="true" />
+                    </span>
+                  )}
+                </div>
+                {idx < TRACK_STEPS.length - 1 && (
+                  <div className="h-[3px] flex-1 overflow-hidden rounded-full bg-slate-200">
+                    <div
+                      className={`h-full rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500 transition-all duration-500 ${
+                        state === "done" ? "w-full" : "w-0"
+                      }`}
+                    />
+                  </div>
+                )}
+              </Fragment>
+            );
+          })}
+        </div>
+
+        <div className="mt-2 flex">
+          {TRACK_STEPS.map((step, idx) => (
+            <div key={step.status} className="flex-1 px-1 text-center">
+              <p
+                className={`text-[11px] font-bold ${
+                  idx === currentIndex
+                    ? "text-indigo-600"
+                    : idx < currentIndex
+                      ? "text-ink"
+                      : "text-ink-muted"
+                }`}
+              >
+                {step.label}
+              </p>
+              {timeline[idx] && (
+                <p className="mt-0.5 text-[10px] tabular-nums text-ink-muted">
+                  {formatDateOnly(timeline[idx].at)} · {formatTime(timeline[idx].at)}
+                </p>
+              )}
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -459,45 +557,194 @@ function InfoField({
   icon,
   label,
   value,
-  editing,
-  onChange,
-  multiline = false,
-  optional = false,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
-  editing: boolean;
-  onChange: (value: string) => void;
-  multiline?: boolean;
-  optional?: boolean;
 }) {
   return (
-    <div>
-      <p className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-[0.1em] text-ink-soft">
+    <div className="flex items-start justify-between gap-3">
+      <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-muted">
         {icon}
         {label}
-        {optional && <span className="normal-case text-ink-muted">(optional)</span>}
-      </p>
-      {editing ? (
-        multiline ? (
-          <textarea
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            rows={2}
-            className="mt-1 w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink outline-none focus:border-brand"
-          />
-        ) : (
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="mt-1 h-8 w-full rounded-md border border-line bg-surface px-2 text-sm text-ink outline-none focus:border-brand"
-          />
-        )
-      ) : (
-        <p className="mt-1 text-sm text-ink">{value || <span className="text-ink-muted">-</span>}</p>
-      )}
+      </span>
+      <span className="max-w-[60%] break-words text-right text-sm text-ink">
+        {value || <span className="text-ink-muted">-</span>}
+      </span>
     </div>
+  );
+}
+
+function EditField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-muted">{label}</span>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1 h-9 w-full rounded-lg border border-line bg-canvas/50 px-3 text-sm text-ink outline-none transition-colors focus:border-indigo-400 focus:bg-surface focus:ring-2 focus:ring-indigo-100"
+      />
+    </label>
+  );
+}
+
+function EditFieldArea({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-muted">{label}</span>
+      <textarea
+        rows={3}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1 w-full resize-none rounded-lg border border-line bg-canvas/50 px-3 py-2 text-sm text-ink outline-none transition-colors focus:border-indigo-400 focus:bg-surface focus:ring-2 focus:ring-indigo-100"
+      />
+    </label>
+  );
+}
+
+type AddressValues = {
+  name: string;
+  phone: string;
+  state: string;
+  address: string;
+};
+
+function AddressCard({
+  icon,
+  accent,
+  title,
+  editing,
+  onToggleEdit,
+  values,
+  onChange,
+  onSave,
+  onCancel,
+  fallback,
+  sameAsShipping,
+  onSameAsShippingChange,
+}: {
+  icon: React.ReactNode;
+  accent: string;
+  title: string;
+  editing: boolean;
+  onToggleEdit: () => void;
+  values: AddressValues;
+  onChange: (field: keyof AddressValues, value: string) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  fallback?: string;
+  sameAsShipping?: boolean;
+  onSameAsShippingChange?: (checked: boolean) => void;
+}) {
+  const empty = !values.name && !values.phone && !values.address && !values.state;
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
+      <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+        <div className="flex items-center gap-2.5">
+          <span
+            className={`flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${accent} text-white shadow-sm`}
+          >
+            {icon}
+          </span>
+          <h3 className="text-sm font-semibold text-ink">{title}</h3>
+        </div>
+        {!editing && (
+          <button
+            type="button"
+            onClick={onToggleEdit}
+            className="inline-flex items-center gap-1 rounded-lg border border-line bg-surface px-2 py-1 text-[11px] font-semibold text-ink transition-colors hover:border-indigo-200 hover:text-indigo-600"
+          >
+            <PencilIcon className="h-3 w-3" aria-hidden="true" />
+            Edit
+          </button>
+        )}
+      </div>
+
+      <div className="space-y-4 p-5">
+        {editing ? (
+          <>
+            {typeof onSameAsShippingChange === "function" && (
+              <label className="flex cursor-pointer items-center gap-1.5 text-sm text-ink-soft">
+                <input
+                  type="checkbox"
+                  checked={sameAsShipping}
+                  onChange={(e) => onSameAsShippingChange(e.target.checked)}
+                  className="h-3.5 w-3.5 rounded border-line accent-indigo-600"
+                />
+                Same as shipping address
+              </label>
+            )}
+            <EditField label="Name" value={values.name} onChange={(v) => onChange("name", v)} />
+            <EditField label="Phone" value={values.phone} onChange={(v) => onChange("phone", v)} />
+            <EditField label="State" value={values.state} onChange={(v) => onChange("state", v)} />
+            <EditFieldArea label="Address" value={values.address} onChange={(v) => onChange("address", v)} />
+
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={onSave}
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-fuchsia-600 px-3 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-transform hover:scale-[1.01] active:scale-[0.99]"
+              >
+                <SaveIcon className="h-4 w-4" aria-hidden="true" />
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={onCancel}
+                className="inline-flex items-center justify-center rounded-xl border border-line px-3 py-2.5 text-sm font-semibold text-ink-soft transition-colors hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </>
+        ) : fallback && empty ? (
+          <p className="flex items-center gap-1.5 text-sm italic text-ink-muted">
+            <CheckCircle2Icon className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
+            {fallback}
+          </p>
+        ) : (
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center gap-2">
+              <UserIcon className="h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden="true" />
+              <span className="font-semibold text-ink">{values.name || "-"}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <PhoneIcon className="h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden="true" />
+              <span className="tabular-nums text-ink-soft">{values.phone || "-"}</span>
+            </div>
+            {values.address && (
+              <div className="flex items-start gap-2">
+                <MapPinIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden="true" />
+                <span className="leading-relaxed text-ink-soft">{values.address}</span>
+              </div>
+            )}
+            {values.state && (
+              <div className="flex items-center gap-2">
+                <MapPinIcon className="h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden="true" />
+                <span className="text-ink-soft">{values.state}</span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
