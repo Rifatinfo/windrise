@@ -58,4 +58,45 @@ router.post(
 
 router.get("/",   UserController.getAllFromDB);
 
+router.patch(
+    "/:id",
+    auth(UserRole.ADMIN),
+    fileUploader.singleUpload("file"),
+    (req, _res, next) => {
+        try {
+            if (!req.body?.data) {
+                throw new Error("Update data missing");
+            }
+
+            const parsed = JSON.parse(req.body.data);
+            req.body = UserValidation.updateAdminValidationSchema.parse(parsed);
+
+            next();
+        } catch (error) {
+            next(error);
+        }
+    },
+    UserController.updateAdmin
+);
+
+router.patch(
+    "/:id/status",
+    auth(UserRole.ADMIN),
+    (req, _res, next) => {
+        try {
+            req.body = UserValidation.updateAdminStatusValidationSchema.parse(req.body);
+            next();
+        } catch (error) {
+            next(error);
+        }
+    },
+    UserController.updateAdminStatus
+);
+
+router.delete(
+    "/:id",
+    auth(UserRole.ADMIN),
+    UserController.deleteAdmin
+);
+
 export const UserRoutes = router;

@@ -45,8 +45,43 @@ const createAdmin = catchAsync(async (req: Request & { file?: Express.Multer.Fil
     });
 });
 
+const updateAdmin = catchAsync(async (req: Request & { file?: Express.Multer.File }, res: Response) => {
+    const result = await UserService.updateAdmin(req.params.id, req);
+    sendResponse(res, {
+        statusCode : 200,
+        success : true,
+        message : "Admin Updated Successfully",
+        data : result
+    });
+});
+
+const updateAdminStatus = catchAsync(async (req: Request, res: Response) => {
+    const requesterId = (req as Request & { user?: { id?: string } }).user?.id;
+    const result = await UserService.updateAdminStatus(req.params.id, req.body.status, requesterId);
+    sendResponse(res, {
+        statusCode : 200,
+        success : true,
+        message : "Admin Status Updated Successfully",
+        data : result
+    });
+});
+
+const deleteAdmin = catchAsync(async (req: Request, res: Response) => {
+    const requesterId = (req as Request & { user?: { id?: string } }).user?.id;
+    const result = await UserService.deleteAdmin(req.params.id, requesterId);
+    sendResponse(res, {
+        statusCode : 200,
+        success : true,
+        message : "Admin Deleted Successfully",
+        data : result
+    });
+});
+
 export const UserController = {
     createCustomer,
     getAllFromDB,
     createAdmin,
+    updateAdmin,
+    updateAdminStatus,
+    deleteAdmin,
 };

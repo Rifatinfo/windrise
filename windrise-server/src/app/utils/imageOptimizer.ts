@@ -17,6 +17,8 @@ export const optimizeAndSaveImage = async (
   const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}.webp`;
   const filepath = path.join(uploadDir, filename);
 
+  await ensureDir(uploadDir);
+
   await sharp(file.buffer)
     .resize(1200, 1200, {
       fit: "inside",

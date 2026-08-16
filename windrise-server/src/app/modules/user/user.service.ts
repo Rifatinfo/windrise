@@ -7,10 +7,12 @@ import prisma from "../../../shared/prisma";
 
 import { userSearchableFields } from "./user.constant";
 
-import { Prisma, UserRole } from "@prisma/client";
+import { Prisma, UserRole, UserStatus } from "@prisma/client";
 import { optimizeAndSaveImage } from "@/app/utils/imageOptimizer";
 import { generateUserSlug } from "@/app/utils/generateUserSlug";
 import { IOptions, paginationHelper } from "@/app/helpers/paginationHelper";
+import ApiError from "@/app/errors/ApiError";
+import { StatusCodes } from "http-status-codes";
 
 
 
@@ -179,9 +181,103 @@ const createAdmin = async (req: Request & { file?: Express.Multer.File }) => {
         });
 
         return admin;
+    }, {
+        maxWait: 20000,
+        timeout: 30000,
     });
 
     return result;
+};
+
+const updateAdmin = async (
+  id: string,
+  req: Request & { file?: Express.Multer.File }
+) => {
+  const { name, email } = req.body;
+
+  const existing = await prisma.user.findUnique({ where: { id } });
+  if (!existing || existing.role !== UserRole.ADMIN) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "Admin not found");
+  }
+  if (existing.isDeleted || existing.status === UserStatus.DELETED) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "This admin has been deleted");
+  }
+
+  let avatarUrl = existing.avatar;
+  if (req.file) {
+    const folder = `users/${existing.slug ?? generateUserSlug(existing.name ?? "user")}`;
+    const filename = await optimizeAndSaveImage(req.file, folder);
+    avatarUrl = `/uploads/${folder}/${filename}`;
+  }
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id },
+      data: {
+        ...(name !== undefined && { name }),
+        ...(email !== undefined && { email }),
+        ...(avatarUrl !== existing.avatar && { avatar: avatarUrl }),
+      },
+    }),
+    prisma.admin.update({
+      where: { userId: id },
+      data: {
+        ...(name !== undefined && { name }),
+        ...(email !== undefined && { email }),
+        ...(avatarUrl !== existing.avatar && { avatar: avatarUrl }),
+      },
+    }),
+  ]);
+
+  return prisma.user.findUnique({ where: { id } });
+};
+
+const updateAdminStatus = async (
+  id: string,
+  status: UserStatus,
+  requesterId?: string
+) => {
+  if (id === requesterId) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      "You cannot deactivate your own account"
+    );
+  }
+
+  const existing = await prisma.user.findUnique({ where: { id } });
+  if (!existing || existing.role !== UserRole.ADMIN) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "Admin not found");
+  }
+  if (existing.isDeleted) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "This admin has been deleted");
+  }
+
+  return prisma.user.update({
+    where: { id },
+    data: {
+      status,
+      isDeleted: status === UserStatus.DELETED,
+    },
+  });
+};
+
+const deleteAdmin = async (id: string, requesterId?: string) => {
+  if (id === requesterId) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "You cannot delete your own account");
+  }
+
+  const existing = await prisma.user.findUnique({ where: { id } });
+  if (!existing || existing.role !== UserRole.ADMIN) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "Admin not found");
+  }
+
+  return prisma.user.update({
+    where: { id },
+    data: {
+      isDeleted: true,
+      status: UserStatus.DELETED,
+    },
+  });
 };
 
 
@@ -189,4 +285,7 @@ export const UserService = {
     createCustomer,
     getAllFromDB,
     createAdmin,
+    updateAdmin,
+    updateAdminStatus,
+    deleteAdmin,
 };
