@@ -1,25 +1,20 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CalendarIcon,
-  CheckIcon,
   CheckCircle2Icon,
-  ClipboardCheckIcon,
-  ClipboardListIcon,
   ClockIcon,
+  CreditCardIcon,
   DownloadIcon,
+  FileTextIcon,
   MailIcon,
   MapPinIcon,
-  PackageCheckIcon,
-  PackageOpenIcon,
   PencilIcon,
   PhoneIcon,
   ReceiptTextIcon,
   SaveIcon,
   ShoppingBagIcon,
-  StickyNoteIcon,
-  TruckIcon,
   UserIcon,
   XCircleIcon,
   XIcon,
@@ -27,14 +22,13 @@ import {
 import type { Order, OrderCustomer, OrderStatus } from "@/types/order";
 import { formatBdt, itemCount } from "@/utils/format";
 import {
-  buildTimeline,
   getPaymentMethodDisplay,
   isDropped,
   PAYMENT_STATE_META,
-  PIPELINE,
   STATUS_META,
 } from "@/utils/orderFlow";
 import { StatusUpdateMenu } from "./StatusUpdateMenu";
+import { OrderStatusTimeline } from "./OrderStatusTimeline";
 
 interface OrderDetailDialogProps {
   order: Order | null;
@@ -44,21 +38,6 @@ interface OrderDetailDialogProps {
   onMarkCollected: (id: string) => void;
   onSaveInfo: (id: string, customer: OrderCustomer, billing: OrderCustomer | null) => void;
 }
-
-const TRACK_STEPS: { status: OrderStatus; label: string; icon: typeof ClipboardListIcon }[] = [
-  { status: "placed", label: "Placed", icon: ClipboardListIcon },
-  { status: "confirmed", label: "Confirmed", icon: ClipboardCheckIcon },
-  { status: "processed", label: "Processed", icon: PackageOpenIcon },
-  { status: "on_the_way", label: "On the Way", icon: TruckIcon },
-  { status: "delivered", label: "Delivered", icon: PackageCheckIcon },
-];
-
-const STEP_CIRCLE = {
-  done: "bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white shadow-lg shadow-indigo-500/30 ring-4 ring-indigo-100",
-  current:
-    "bg-gradient-to-br from-indigo-600 to-fuchsia-600 text-white shadow-lg shadow-indigo-500/40 ring-4 ring-indigo-100",
-  todo: "bg-slate-100 text-slate-400 ring-1 ring-slate-200",
-};
 
 function formatDateOnly(input: string | Date): string {
   const date = typeof input === "string" ? new Date(input) : input;
@@ -193,11 +172,11 @@ export function OrderDetailDialog({
         <div className="flex-1 overflow-y-auto bg-canvas p-4 sm:p-6">
           <div className="space-y-6">
             {/* Tracking stepper */}
-            <TrackingStepper order={order} />
+            <OrderStatusTimeline order={order} />
 
             {dropped && (
-              <div className="flex items-center gap-3 rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50 to-orange-50 px-5 py-4">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 text-white shadow-md shadow-rose-500/30">
+              <div className="flex items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-500 text-white">
                   <XCircleIcon className="h-5 w-5" aria-hidden="true" />
                 </span>
                 <div>
@@ -216,7 +195,7 @@ export function OrderDetailDialog({
                 <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
                   <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
                     <div className="flex items-center gap-2.5">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-sm">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
                         <ReceiptTextIcon className="h-4 w-4" aria-hidden="true" />
                       </span>
                       <h3 className="text-sm font-semibold text-ink">Order Summary</h3>
@@ -282,7 +261,7 @@ export function OrderDetailDialog({
                 {/* Items */}
                 <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
                   <div className="flex items-center gap-2.5 border-b border-line px-5 py-3.5">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-sm">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
                       <ShoppingBagIcon className="h-4 w-4" aria-hidden="true" />
                     </span>
                     <h3 className="text-sm font-semibold text-ink">
@@ -342,7 +321,7 @@ export function OrderDetailDialog({
                 <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
                   <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
                     <div className="flex items-center gap-2.5">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500 to-indigo-500 text-white shadow-sm">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
                         <UserIcon className="h-4 w-4" aria-hidden="true" />
                       </span>
                       <h3 className="text-sm font-semibold text-ink">Customer</h3>
@@ -378,7 +357,7 @@ export function OrderDetailDialog({
                           <button
                             type="button"
                             onClick={handleSave}
-                            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-fuchsia-600 px-3 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-transform hover:scale-[1.01] active:scale-[0.99]"
+                            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-black px-3 py-2.5 text-sm font-semibold text-white transition-colors duration-150 hover:bg-slate-800"
                           >
                             <SaveIcon className="h-4 w-4" aria-hidden="true" />
                             Save Changes
@@ -399,7 +378,7 @@ export function OrderDetailDialog({
                 {/* Shipping address */}
                 <AddressCard
                   icon={<MapPinIcon className="h-4 w-4" aria-hidden="true" />}
-                  accent="from-emerald-500 to-teal-500"
+                  tint="bg-emerald-50 text-emerald-600"
                   title="Shipping Address"
                   editing={editingShipping}
                   onToggleEdit={() => setEditingShipping((v) => !v)}
@@ -419,8 +398,8 @@ export function OrderDetailDialog({
 
                 {/* Billing address */}
                 <AddressCard
-                  icon={<ReceiptTextIcon className="h-4 w-4" aria-hidden="true" />}
-                  accent="from-amber-500 to-orange-500"
+                  icon={<CreditCardIcon className="h-4 w-4" aria-hidden="true" />}
+                  tint="bg-emerald-50 text-emerald-600"
                   title="Billing Address"
                   editing={editingBilling}
                   onToggleEdit={() => setEditingBilling((v) => !v)}
@@ -451,8 +430,8 @@ export function OrderDetailDialog({
                 {/* Order note */}
                 <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
                   <div className="flex items-center gap-2.5 border-b border-line px-5 py-3.5">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-sm">
-                      <StickyNoteIcon className="h-4 w-4" aria-hidden="true" />
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                      <FileTextIcon className="h-4 w-4" aria-hidden="true" />
                     </span>
                     <h3 className="text-sm font-semibold text-ink">Order Note</h3>
                   </div>
@@ -469,84 +448,6 @@ export function OrderDetailDialog({
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TrackingStepper({ order }: { order: Order }) {
-  const timeline = useMemo(() => buildTimeline(order.status, order.placedAt), [order]);
-  const dropped = isDropped(order.status);
-  const currentIndex = dropped ? -1 : PIPELINE.indexOf(order.status);
-
-  return (
-    <div className="rounded-2xl border border-line bg-surface px-5 py-5 shadow-card sm:px-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-ink">Order Tracking</h3>
-        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-soft">
-          <span className={`h-2 w-2 animate-pulse rounded-full ${STATUS_META[order.status].dot}`} />
-          {STATUS_META[order.status].label}
-        </span>
-      </div>
-
-      <div className="mt-6">
-        <div className="flex items-center gap-1">
-          {TRACK_STEPS.map((step, idx) => {
-            const Icon = step.icon;
-            const state = idx < currentIndex ? "done" : idx === currentIndex ? "current" : "todo";
-            return (
-              <Fragment key={step.status}>
-                <div className="relative flex h-12 w-12 shrink-0 items-center justify-center">
-                  {state === "current" && (
-                    <span className="absolute inset-0 animate-ping rounded-full bg-indigo-400/30" />
-                  )}
-                  <div
-                    className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full transition-all duration-300 ${STEP_CIRCLE[state]}`}
-                  >
-                    <Icon className="h-5 w-5" aria-hidden="true" />
-                  </div>
-                  {state === "done" && (
-                    <span className="absolute -right-0.5 -top-0.5 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-white ring-2 ring-surface">
-                      <CheckIcon className="h-2.5 w-2.5" aria-hidden="true" />
-                    </span>
-                  )}
-                </div>
-                {idx < TRACK_STEPS.length - 1 && (
-                  <div className="h-[3px] flex-1 overflow-hidden rounded-full bg-slate-200">
-                    <div
-                      className={`h-full rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500 transition-all duration-500 ${
-                        state === "done" ? "w-full" : "w-0"
-                      }`}
-                    />
-                  </div>
-                )}
-              </Fragment>
-            );
-          })}
-        </div>
-
-        <div className="mt-2 flex">
-          {TRACK_STEPS.map((step, idx) => (
-            <div key={step.status} className="flex-1 px-1 text-center">
-              <p
-                className={`text-[11px] font-bold ${
-                  idx === currentIndex
-                    ? "text-indigo-600"
-                    : idx < currentIndex
-                      ? "text-ink"
-                      : "text-ink-muted"
-                }`}
-              >
-                {step.label}
-              </p>
-              {timeline[idx] && (
-                <p className="mt-0.5 text-[10px] tabular-nums text-ink-muted">
-                  {formatDateOnly(timeline[idx].at)} · {formatTime(timeline[idx].at)}
-                </p>
-              )}
-            </div>
-          ))}
         </div>
       </div>
     </div>
@@ -628,7 +529,7 @@ type AddressValues = {
 
 function AddressCard({
   icon,
-  accent,
+  tint,
   title,
   editing,
   onToggleEdit,
@@ -641,7 +542,7 @@ function AddressCard({
   onSameAsShippingChange,
 }: {
   icon: React.ReactNode;
-  accent: string;
+  tint: string;
   title: string;
   editing: boolean;
   onToggleEdit: () => void;
@@ -659,9 +560,7 @@ function AddressCard({
     <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
       <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
         <div className="flex items-center gap-2.5">
-          <span
-            className={`flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${accent} text-white shadow-sm`}
-          >
+          <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${tint}`}>
             {icon}
           </span>
           <h3 className="text-sm font-semibold text-ink">{title}</h3>
@@ -701,7 +600,7 @@ function AddressCard({
               <button
                 type="button"
                 onClick={onSave}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-fuchsia-600 px-3 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-transform hover:scale-[1.01] active:scale-[0.99]"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-black px-3 py-2.5 text-sm font-semibold text-white transition-colors duration-150 hover:bg-slate-800"
               >
                 <SaveIcon className="h-4 w-4" aria-hidden="true" />
                 Save
