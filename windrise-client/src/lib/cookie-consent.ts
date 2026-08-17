@@ -26,6 +26,8 @@ function isConsentState(value: unknown): value is ConsentState {
   );
 }
 
+
+
 /** Reads and validates the consent cookie. Returns null if missing/invalid. Client-only. */
 export function getStoredConsent(): ConsentState | null {
   if (typeof document === "undefined") return null;

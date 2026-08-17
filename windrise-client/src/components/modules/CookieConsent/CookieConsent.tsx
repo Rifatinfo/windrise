@@ -63,6 +63,8 @@ export function CookieConsent() {
         />
       )}
 
+
+
       {showBanner && (
         <div
           role="region"
