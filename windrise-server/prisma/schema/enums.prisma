@@ -1,10 +1,8 @@
-
 enum StockStatus {
   IN_STOCK
   OUT_OF_STOCK
   LOW_STOCK
 }
-
 
 enum AuthType {
   CREDENTIALS
@@ -26,15 +24,14 @@ enum UserStatus {
   DELETED
 }
 
-
 enum OrderStatus {
   CONFIRMED
   CANCELED
   FAILED
   EXPIRED
 
-  PLACED       
-  PROCESSED   
+  PLACED
+  PROCESSED
   ON_THE_WAY
   DELIVERED
 }
@@ -65,5 +62,44 @@ enum ShipmentStatus {
   ARRIVED_AT_LOCAL_SORT_FACILITY
   OUT_FOR_DELIVERY
   DELIVERED
-  CANCELED 
+  CANCELED
+}
+
+// ========= Coupon Related ========//
+
+enum CouponType {
+  PERCENTAGE
+  FIXED
+}
+
+// ========= Return / Refund Related ========//
+
+enum ReturnReason {
+  WRONG_SIZE
+  DAMAGED_PRODUCT
+  WRONG_PRODUCT
+  CHANGED_MIND
+  NOT_AS_EXPECTED
+  OTHER
+}
+
+enum ReturnStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum RefundStatus {
+  PENDING
+  COMPLETED
+}
+
+// ========= Analytics Related ========//
+
+enum AnalyticsEventType {
+  PAGE_VIEW
+  PRODUCT_VIEW
+  ADD_TO_CART
+  CHECKOUT_START
 }

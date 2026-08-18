@@ -1,10 +1,7 @@
+import { SalesOverview } from "@/components/modules/dashboard/SalesOverview";
 
 const AdminPage = () => {
-    return (
-        <div>
-            <p>Admin Page</p>
-        </div>
-    )
+  return <SalesOverview />;
 };
 
 export default AdminPage;

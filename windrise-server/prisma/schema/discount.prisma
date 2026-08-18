@@ -1,6 +1,6 @@
 model Discount {
-  id    String        @id @default(cuid())
-//   type  DiscountType?
+  id    String @id @default(cuid())
+  //   type  DiscountType?
   value Float?
 
   startDate DateTime?

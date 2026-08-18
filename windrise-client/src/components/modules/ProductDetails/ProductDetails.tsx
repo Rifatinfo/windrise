@@ -9,6 +9,7 @@ import { SizeGuideModal } from "./SizeGuideModal";
 import { ProductGallery } from "./ProductGallery";
 import { AddToCartModal, AddedProduct } from "@/components/modules/addToCart/AddToCartModal";
 import { useCart } from "@/contexts/CartContext";
+import { trackEvent } from "@/lib/eventTracking";
 import {
   Select,
   SelectContent,
@@ -89,6 +90,10 @@ const ProductDetails = ({
     }
   }, [product.id]);
 
+  useEffect(() => {
+    trackEvent("PRODUCT_VIEW", { productId: product.id });
+  }, [product.id]);
+
   const toggleWishlist = () => {
     const wishlist = JSON.parse(
       localStorage.getItem(WISHLIST_STORAGE_KEY) ?? "[]",
@@ -127,6 +132,7 @@ const ProductDetails = ({
       image: imageUrl,
       quantity,
     });
+    trackEvent("ADD_TO_CART", { productId: product.id });
 
     setAddedProduct({
       name: product.name,

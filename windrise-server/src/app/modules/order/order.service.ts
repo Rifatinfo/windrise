@@ -18,6 +18,7 @@ import { DELIVERY_CHARGE } from "@/config/delivery.config";
 import { parseDeliveryType } from "@/app/utils/parseDeliveryType";
 import { SSLService } from "../sslCommerz/sslCommerz.service";
 import { paginationHelper } from "@/app/helpers/paginationHelper";
+import { CouponService } from "../coupon/coupon.service";
 
 
                        
@@ -248,7 +249,21 @@ const createOrderService = async ({
     };
   });
 
-  const totalAmount = subtotal + deliveryCharge;
+  // =========================
+  // Coupon: re-validate server-side even if the client already checked
+  // =========================
+  let couponId: string | undefined;
+  let discountAmount = 0;
+  if (payload.couponCode) {
+    const { coupon, discountAmount: discount } = await CouponService.validateCouponService({
+      code: payload.couponCode,
+      subtotal,
+    });
+    couponId = coupon.id;
+    discountAmount = discount;
+  }
+
+  const totalAmount = Math.max(subtotal - discountAmount, 0) + deliveryCharge;
 
   // =========================
   // FAST TRANSACTION: only DB writes inside, no PDF/email
@@ -282,6 +297,9 @@ const createOrderService = async ({
         subtotal,
         totalAmount,
 
+        coupon: couponId ? { connect: { id: couponId } } : undefined,
+        discountAmount,
+
         paymentMethod:
           paymentMethod === "ONLINE" ? PaymentMethod.ONLINE : PaymentMethod.COD,
 
@@ -296,6 +314,10 @@ const createOrderService = async ({
         items: true,
       },
     });
+
+    if (couponId) {
+      await tx.coupon.update({ where: { id: couponId }, data: { usedCount: { increment: 1 } } });
+    }
 
     const createdOrder = order as typeof order & { items: typeof preparedOrderItems };
 

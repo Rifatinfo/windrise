@@ -1,14 +1,14 @@
 model Order {
   id String @id @default(cuid())
 
-  userId String?        // optional for guest users
-  user   User?          @relation(fields: [userId], references: [id])
-  orderNo      String   @unique
-  name    String
-  state   String
-  phone   String
-  address String
-  orderNote String?
+  userId        String? // optional for guest users
+  user          User?   @relation(fields: [userId], references: [id])
+  orderNo       String  @unique
+  name          String
+  state         String
+  phone         String
+  address       String
+  orderNote     String?
   checkoutEmail String?
 
   billingName    String?
@@ -19,18 +19,24 @@ model Order {
 
   subtotal    Float
   totalAmount Float
-  
+
   invoiceUrl String?
 
-  orderStatus   OrderStatus   @default(PLACED)
-  paymentStatus PaymentStatus @default(UNPAID)
-  paymentMethod PaymentMethod
+  orderStatus    OrderStatus   @default(PLACED)
+  paymentStatus  PaymentStatus @default(UNPAID)
+  paymentMethod  PaymentMethod
   deliveryCharge Decimal?
   deliveryType   DeliveryType?
-  items   OrderItem[]
+  items          OrderItem[]
 
-  payment Payment?    @relation("OrderPayment") 
-  
+  payment Payment? @relation("OrderPayment")
+
+  couponId       String?
+  coupon         Coupon? @relation(fields: [couponId], references: [id])
+  discountAmount Float   @default(0)
+
+  return OrderReturn?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -47,16 +53,16 @@ model OrderItem {
   quantity    Int
   total       Float
 
-  color     String?
-  size      String?
-  sku        String? 
-  variantId String?
+  color        String?
+  size         String?
+  sku          String?
+  variantId    String?
   productImage String?
-  
+
   // Relations
-  variant   Variant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
-  product   Product  @relation(fields: [productId], references: [id])
-  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant Variant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  product Product  @relation(fields: [productId], references: [id])
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@map("order_items")
 }
