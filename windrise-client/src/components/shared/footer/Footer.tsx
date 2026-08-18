@@ -9,6 +9,7 @@ import {
   FaWhatsapp,
 } from "react-icons/fa";
 import WhiteLogo from '../logo/WhiteLogo';
+import { openCookiePreferences } from '@/lib/cookie-consent';
 type FooterGroup = {
   title: string
   links: string[]
@@ -93,6 +94,13 @@ export function Footer() {
             <a className="transition-colors hover:text-white" href="#terms">
               Terms of Use
             </a>
+            <button
+              type="button"
+              onClick={openCookiePreferences}
+              className="transition-colors hover:text-white"
+            >
+              Cookie Settings
+            </button>
           </div>
         </div>
       </div>
@@ -174,6 +182,13 @@ export function Footer() {
             <a className="transition-colors hover:text-white" href="#terms">
               Terms of Use
             </a>
+            <button
+              type="button"
+              onClick={openCookiePreferences}
+              className="transition-colors hover:text-white"
+            >
+              Cookie Settings
+            </button>
           </div>
           <div className="mt-5 flex justify-center">
             <SocialLinks />
