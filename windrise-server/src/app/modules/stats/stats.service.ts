@@ -785,20 +785,34 @@ const getCustomerLifetimeValue = async () => {
   };
 };
 
-// ============================= §33 — Alerts =============================
+// ============================= §33 — Alerts / Notifications =============================
+// Backs the dashboard header's notification bell. Every entry is derived from a real row
+// (order, payment, product stock level, or return) — there's no persisted "notification"
+// table, so read/unread state is tracked client-side against these stable `id`s.
 
-const getAlerts = async () => {
+export type NotificationType = "stock" | "order" | "shipment" | "product" | "analytics" | "system";
+
+export interface AlertNotification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  timestamp: string;
+  link: string;
+}
+
+const getAlerts = async (): Promise<AlertNotification[]> => {
   const [recentOrders, recentPayments, inventoryOverview, pendingReturns, failedPayments] = await Promise.all([
     prisma.order.findMany({
       orderBy: { createdAt: "desc" },
       take: 5,
-      select: { orderNo: true, name: true, totalAmount: true, createdAt: true },
+      select: { id: true, orderNo: true, name: true, totalAmount: true, createdAt: true },
     }),
     prisma.payment.findMany({
       where: { paymentStatus: "PAID" },
       orderBy: { paidAt: "desc" },
       take: 5,
-      select: { orderNo: true, amount: true, paidAt: true },
+      select: { id: true, orderNo: true, amount: true, paidAt: true },
     }),
     InventoryService.getInventoryOverview(),
     prisma.orderReturn.findMany({
@@ -811,53 +825,89 @@ const getAlerts = async () => {
       where: { paymentStatus: "FAILED" },
       orderBy: { failedAt: "desc" },
       take: 5,
-      select: { orderNo: true, failedAt: true },
+      select: { id: true, orderNo: true, failedAt: true },
     }),
   ]);
 
-  const alerts: Array<{ type: string; message: string; createdAt: Date }> = [];
+  const alerts: Array<AlertNotification & { createdAt: Date }> = [];
 
   for (const o of recentOrders) {
     alerts.push({
-      type: "NEW_ORDER",
-      message: `New order ${o.orderNo} from ${o.name} — ৳${o.totalAmount}`,
+      id: `order-${o.id}`,
+      type: "order",
+      title: "New order placed",
+      message: `${o.orderNo} from ${o.name} — ৳${o.totalAmount}`,
+      link: "/admin/orders",
       createdAt: o.createdAt,
+      timestamp: o.createdAt.toISOString(),
     });
   }
   for (const p of recentPayments) {
     if (p.paidAt) {
       alerts.push({
-        type: "PAYMENT_RECEIVED",
-        message: `Payment received for order ${p.orderNo} — ৳${p.amount}`,
+        id: `payment-${p.id}`,
+        type: "order",
+        title: "Payment received",
+        message: `${p.orderNo} — ৳${p.amount}`,
+        link: "/admin/orders",
         createdAt: p.paidAt,
+        timestamp: p.paidAt.toISOString(),
       });
     }
   }
   for (const p of inventoryOverview.products) {
+    const now = new Date();
     if (p.totalUnits === 0) {
-      alerts.push({ type: "OUT_OF_STOCK", message: `${p.name} is out of stock`, createdAt: new Date() });
+      alerts.push({
+        id: `stock-out-${p.id}`,
+        type: "stock",
+        title: "Out of stock",
+        message: `${p.name} is out of stock`,
+        link: "/admin/inventory-management",
+        createdAt: now,
+        timestamp: now.toISOString(),
+      });
     } else if (p.totalUnits <= LOW_STOCK_THRESHOLD) {
       alerts.push({
-        type: "LOW_STOCK",
-        message: `${p.name} is low on stock (${p.totalUnits} left)`,
-        createdAt: new Date(),
+        id: `stock-low-${p.id}`,
+        type: "stock",
+        title: "Low stock alert",
+        message: `${p.name} has only ${p.totalUnits} units left`,
+        link: "/admin/inventory-management",
+        createdAt: now,
+        timestamp: now.toISOString(),
       });
     }
   }
   for (const r of pendingReturns) {
     alerts.push({
-      type: "RETURN_REQUEST",
-      message: `Return requested for order ${r.order.orderNo}`,
+      id: `return-${r.id}`,
+      type: "shipment",
+      title: "Return requested",
+      message: `Order ${r.order.orderNo}`,
+      link: "/admin/orders",
       createdAt: r.createdAt,
+      timestamp: r.createdAt.toISOString(),
     });
   }
   for (const p of failedPayments) {
     if (p.failedAt) {
-      alerts.push({ type: "FAILED_PAYMENT", message: `Payment failed for order ${p.orderNo}`, createdAt: p.failedAt });
+      alerts.push({
+        id: `payment-failed-${p.id}`,
+        type: "system",
+        title: "Payment failed",
+        message: `Order ${p.orderNo}`,
+        link: "/admin/orders",
+        createdAt: p.failedAt,
+        timestamp: p.failedAt.toISOString(),
+      });
     }
   }
 
-  return alerts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, 20);
+  return alerts
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, 20)
+    .map(({ createdAt: _createdAt, ...rest }) => rest);
 };
 
 // ============================= §34 — Business performance rollup =============================

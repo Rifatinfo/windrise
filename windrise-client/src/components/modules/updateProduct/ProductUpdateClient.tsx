@@ -14,6 +14,7 @@ import { ArrowLeft, Eye, Save } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ImageUploadUpdate from "../addProduct/ImageUploadUpdate";
 import Swal from "sweetalert2";
+import { hasMeaningfulHtmlContent } from "@/lib/sanitizeHtml";
 
 type CategoryPayload = {
     categories: { categoryId: string }[];
@@ -99,6 +100,20 @@ const ProductUpdateClient = ({ product, slug }: any) => {
         setGalleryImages([]);
     }, [product]);
    const validateForm = () => {
+
+    if (!hasMeaningfulHtmlContent(basicDetails.fullDescription)) {
+        Swal.fire({
+            icon: "error",
+            title: "Missing Field",
+            text: "Product description is required.",
+            confirmButtonText: "Go it",
+            customClass: {
+            confirmButton: "bg-black text-white px-12 py-2 rounded cursor-pointer",
+        },
+        buttonsStyling: false,
+        });
+        return false;
+    }
 
     //============= Category required ==========================//
     if (!categoryPayload.categories || categoryPayload.categories.length === 0) {

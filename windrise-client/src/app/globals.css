@@ -74,7 +74,25 @@
   font-family: "DM Sans", sans-serif
 }
 .font-avegreat {
-  font-family: 'Avegreat', sans-serif;                                          
+  font-family: 'Avegreat', sans-serif;
+}
+
+.notif-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #d4d4d4 transparent;
+}
+.notif-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.notif-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.notif-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #d4d4d4;
+  border-radius: 9999px;
+}
+.notif-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #b0b0b0;
 }
 
 body {
@@ -210,4 +228,165 @@ body {
 
 .gallery-track::-webkit-scrollbar {
   display: none;                /* Chrome, Safari */
+}
+
+/* ==========================================================================
+   Product description rich text — shared typography for both the Tiptap
+   editing surface (.rte-content) and the sanitized read-only render
+   (.product-description), so Write / Preview / product page all match.
+   ========================================================================== */
+
+.rte-content,
+.product-description {
+  color: var(--color-ink);
+  font-size: 0.9rem;
+  line-height: 1.7;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.rte-content {
+  min-height: 100%;
+  outline: none;
+  cursor: text;
+}
+
+.rte-content p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--muted-foreground);
+}
+
+.rte-content:focus,
+.rte-content .ProseMirror-focused {
+  outline: none;
+}
+
+.rte-content > *,
+.product-description > * {
+  margin-top: 0.85em;
+  margin-bottom: 0.85em;
+}
+
+.rte-content > *:first-child,
+.product-description > *:first-child {
+  margin-top: 0;
+}
+
+.rte-content > *:last-child,
+.product-description > *:last-child {
+  margin-bottom: 0;
+}
+
+.rte-content h1, .product-description h1 { font-size: 1.75em; font-weight: 700; line-height: 1.3; }
+.rte-content h2, .product-description h2 { font-size: 1.45em; font-weight: 700; line-height: 1.3; }
+.rte-content h3, .product-description h3 { font-size: 1.25em; font-weight: 600; line-height: 1.35; }
+.rte-content h4, .product-description h4 { font-size: 1.1em; font-weight: 600; line-height: 1.4; }
+.rte-content h5, .product-description h5 { font-size: 1em; font-weight: 600; line-height: 1.4; }
+.rte-content h6, .product-description h6 { font-size: 0.9em; font-weight: 600; line-height: 1.4; text-transform: uppercase; letter-spacing: 0.02em; }
+
+.rte-content ul, .product-description ul {
+  list-style: disc;
+  padding-left: 1.5em;
+}
+
+.rte-content ol, .product-description ol {
+  list-style: decimal;
+  padding-left: 1.5em;
+}
+
+.rte-content ul ul, .product-description ul ul,
+.rte-content ol ul, .product-description ol ul {
+  list-style: circle;
+}
+
+.rte-content li, .product-description li {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
+.rte-content li > p, .product-description li > p {
+  margin: 0;
+}
+
+.rte-content a, .product-description a {
+  color: var(--color-brand);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-all;
+}
+
+.rte-content a:hover, .product-description a:hover {
+  opacity: 0.8;
+}
+
+.rte-content blockquote, .product-description blockquote {
+  border-left: 3px solid var(--color-line);
+  padding-left: 1em;
+  color: var(--color-ink-soft);
+  font-style: italic;
+}
+
+.rte-content hr, .product-description hr {
+  border: none;
+  border-top: 1px solid var(--color-line);
+  margin-top: 1.5em;
+  margin-bottom: 1.5em;
+}
+
+.rte-content code, .product-description code {
+  background: var(--color-canvas);
+  border: 1px solid var(--color-line);
+  border-radius: 4px;
+  padding: 0.15em 0.4em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+}
+
+.rte-content pre, .product-description pre {
+  background: var(--color-ink);
+  color: var(--color-surface);
+  border-radius: 8px;
+  padding: 0.85em 1em;
+  overflow-x: auto;
+}
+
+.rte-content pre code, .product-description pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+}
+
+.rte-content mark, .product-description mark {
+  border-radius: 2px;
+  padding: 0.05em 0.15em;
+}
+
+.rte-content img, .product-description img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+.rte-content table, .product-description table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.rte-content th, .product-description th,
+.rte-content td, .product-description td {
+  border: 1px solid var(--color-line);
+  padding: 0.5em 0.75em;
+  text-align: left;
+  vertical-align: top;
+}
+
+.rte-content th, .product-description th {
+  background: var(--color-canvas);
+  font-weight: 600;
 }

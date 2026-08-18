@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { RichTextEditor } from "@/components/shared/richTextEditor/RichTextEditor"
 
 export enum StockStatus {
   IN_STOCK = "IN_STOCK",
@@ -129,13 +130,9 @@ export function BasicDetailsCard({ data, onChange }: BasicDetailsProps) {
 
         {/* Full Description */}
         <Field label="Full Description">
-          <Textarea
-            rows={6}
-            className="h-28"
+          <RichTextEditor
             value={data.fullDescription}
-            onChange={(e) =>
-              onChange("fullDescription", e.target.value)
-            }
+            onChange={(html) => onChange("fullDescription", html)}
           />
         </Field>
       </div>
