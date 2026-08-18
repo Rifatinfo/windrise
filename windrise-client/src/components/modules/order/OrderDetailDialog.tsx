@@ -29,6 +29,7 @@ import {
 } from "@/utils/orderFlow";
 import { StatusUpdateMenu } from "./StatusUpdateMenu";
 import { OrderStatusTimeline } from "./OrderStatusTimeline";
+import { ReturnAction } from "./ReturnAction";
 
 interface OrderDetailDialogProps {
   order: Order | null;
@@ -231,6 +232,8 @@ export function OrderDetailDialog({
                         Mark as Collected
                       </button>
                     )}
+
+                    <ReturnAction orderId={order.id} />
 
                     <dl className="space-y-2.5 text-sm">
                       <div className="flex items-center justify-between">

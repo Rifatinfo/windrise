@@ -31,6 +31,7 @@ export interface CreateOrderDTO {
   cartItems: CartItemDTO[];
   paymentMethod: "ONLINE" | "COD";
   checkoutEmail?: string;
+  couponCode?: string;
 }
 
 export interface UpdateOrderInfoDTO {

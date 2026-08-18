@@ -21,6 +21,7 @@ import {
   BadgeDollarSignIcon,
   WarehouseIcon,
   CarIcon,
+  BadgePercentIcon,
 } from "lucide-react";
 import { UserRole } from "@/types/role";
 import { PiInvoice } from "react-icons/pi";
@@ -85,6 +86,13 @@ export const NAV_MAIN: NavItem[] = [
     icon: WarehouseIcon,
     roles: ["ADMIN", "SHOP_MANAGER"],
     path: "/admin/inventory-management",
+  },
+  {
+    id: "coupons",
+    label: "Coupons",
+    icon: BadgePercentIcon,
+    roles: ["ADMIN", "SHOP_MANAGER"],
+    path: "/admin/coupons",
   },
   {
     id: "all-product",

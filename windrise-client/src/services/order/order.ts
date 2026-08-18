@@ -34,6 +34,7 @@ export type CreateOrderPayload = {
   cartItems: CartItemDTO[];
   paymentMethod: "ONLINE" | "COD";
   checkoutEmail?: string;
+  couponCode?: string;
 };
 
 export type CreateOrderResponse = {

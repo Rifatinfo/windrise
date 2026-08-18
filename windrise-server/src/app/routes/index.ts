@@ -7,6 +7,11 @@ import { ProductRoutes } from "../modules/product/product.routes";
 import { OrderRoutes } from "../modules/order/order.routes";
 import { PaymentRoutes } from "../modules/payment/payment.routes";
 import { InventoryRoutes } from "../modules/inventory/inventory.routes";
+import { StatsRoutes } from "../modules/stats/stats.routes";
+import { CouponRoutes } from "../modules/coupon/coupon.routes";
+import { ReturnRoutes } from "../modules/returns/returns.routes";
+import { MarketingRoutes } from "../modules/marketing/marketing.routes";
+import { AnalyticsRoutes } from "../modules/analytics/analytics.routes";
 
 
 const router = express.Router();
@@ -36,7 +41,27 @@ const moduleRoutes = [
   {
     path: "/inventory",
     route: InventoryRoutes,
-  }
+  },
+  {
+    path: "/stats",
+    route: StatsRoutes,
+  },
+  {
+    path: "/coupon",
+    route: CouponRoutes,
+  },
+  {
+    path: "/return",
+    route: ReturnRoutes,
+  },
+  {
+    path: "/marketing",
+    route: MarketingRoutes,
+  },
+  {
+    path: "/analytics",
+    route: AnalyticsRoutes,
+  },
 ];
 
 moduleRoutes.forEach((route) => {

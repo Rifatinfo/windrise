@@ -17,6 +17,8 @@ import {
 } from './data/bangladesh'
 import { useCart } from '@/contexts/CartContext'
 import { createOrder } from '@/services/order/order'
+import { validateCoupon } from '@/services/coupon/coupon'
+import { trackEvent } from '@/lib/eventTracking'
 
 const labelClass = 'block text-[12px] text-[#1a1a1a]'
 const inputClass =
@@ -32,7 +34,7 @@ function Required() {
 
 export function Checkout() {
   const router = useRouter()
-  const { items, shippingId, clearCart } = useCart()
+  const { items, shippingId, subtotal, clearCart } = useCart()
   const isPlacingOrderRef = useRef(false)
   const [payment, setPayment] = useState<'online' | 'cod'>('cod')
   const [sameAddress, setSameAddress] = useState(true)
@@ -45,6 +47,37 @@ export function Checkout() {
   const [billingZip, setBillingZip] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  const [couponCode, setCouponCode] = useState('')
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number } | null>(null)
+  const [couponError, setCouponError] = useState('')
+  const [couponLoading, setCouponLoading] = useState(false)
+
+  useEffect(() => {
+    trackEvent('CHECKOUT_START')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function applyCoupon() {
+    if (!couponCode.trim()) return
+    setCouponLoading(true)
+    setCouponError('')
+    try {
+      const result = await validateCoupon(couponCode.trim(), subtotal)
+      setAppliedCoupon({ code: result.coupon.code, discountAmount: result.discountAmount })
+    } catch (err: unknown) {
+      setAppliedCoupon(null)
+      setCouponError(err instanceof Error ? err.message : 'Invalid coupon code')
+    } finally {
+      setCouponLoading(false)
+    }
+  }
+
+  function removeCoupon() {
+    setAppliedCoupon(null)
+    setCouponCode('')
+    setCouponError('')
+  }
 
   const [form, setForm] = useState({
     firstName: '',
@@ -165,6 +198,7 @@ export function Checkout() {
         })),
         paymentMethod: payment === 'online' ? 'ONLINE' as const : 'COD' as const,
         checkoutEmail: form.email || undefined,
+        ...(appliedCoupon && { couponCode: appliedCoupon.code }),
       }
 
       const result = await createOrder(payload)
@@ -650,6 +684,41 @@ export function Checkout() {
             {/* Order overview */}
             <aside className="order-2 mt-10 lg:mt-0">
               <OrderOverview />
+
+              <div className="mt-4">
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between border border-[#e6e6e6] px-3 py-2 text-[11px]">
+                    <span className="text-[#1a1a1a]">
+                      Coupon <strong>{appliedCoupon.code}</strong> applied · −৳{appliedCoupon.discountAmount}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={removeCoupon}
+                      className="text-[#8f8f8f] underline hover:text-[#1a1a1a]"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value)}
+                      placeholder="Coupon code"
+                      className={`${inputClass} mt-0 flex-1`}
+                    />
+                    <button
+                      type="button"
+                      onClick={applyCoupon}
+                      disabled={couponLoading || !couponCode.trim()}
+                      className="h-[30px] shrink-0 border border-[#1a1a1a] px-3 text-[10px] tracking-[0.06em] text-[#1a1a1a] transition-opacity hover:opacity-80 disabled:opacity-50"
+                    >
+                      {couponLoading ? 'Checking…' : 'Apply'}
+                    </button>
+                  </div>
+                )}
+                {couponError && <p className="mt-1.5 text-[10.5px] text-[#e0322b]">{couponError}</p>}
+              </div>
 
               {error && (
                 <p className="mt-4 text-[11px] text-[#e0322b]">{error}</p>
