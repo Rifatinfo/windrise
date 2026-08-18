@@ -10,6 +10,7 @@ import { ProductGallery } from "./ProductGallery";
 import { AddToCartModal, AddedProduct } from "@/components/modules/addToCart/AddToCartModal";
 import { useCart } from "@/contexts/CartContext";
 import { trackEvent } from "@/lib/eventTracking";
+import { ProductDescriptionRenderer } from "@/components/shared/ProductDescriptionRenderer";
 import {
   Select,
   SelectContent,
@@ -327,9 +328,11 @@ const ProductDetails = ({
                 className="mt-4 max-w-[420px] lg:max-w-[620px]"
               >
                 {tab === "Description" && (
-                  <p className="text-[12px] font-light leading-relaxed text-ink lg:text-[15px]">
-                    {description}
-                  </p>
+                  <ProductDescriptionRenderer
+                    html={product.fullDescription}
+                    fallback={description}
+                    className="text-[12px] font-light leading-relaxed text-ink lg:text-[15px]"
+                  />
                 )}
                 {tab === "Fit & Sizing" && (
                   <p className="text-[12px] font-light leading-relaxed text-ink lg:text-[15px]">

@@ -1,7 +1,8 @@
 'use client';
-import { BellIcon, MenuIcon, UserIcon } from 'lucide-react';
+import { MenuIcon, UserIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { getUserAvatar } from '@/utiles/user-utils';
+import { NotificationBell } from '@/components/shared/notifications/NotificationBell';
 
 export function Header() {
     const { user, loading } = useAuth();
@@ -14,10 +15,7 @@ export function Header() {
       </button>
 
       <div className="ml-auto flex min-w-0 items-center justify-end gap-3 sm:gap-4">
-        <button type="button" className="relative shrink-0 rounded-full p-2 text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-900" aria-label="Notifications">
-          <BellIcon className="h-5 w-5" />
-          <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
-        </button>
+        <NotificationBell />
         {!loading && user && (
           <div className="flex items-center gap-2">
             {avatar ? (

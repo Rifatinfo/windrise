@@ -1,5 +1,13 @@
 
 import { z } from 'zod';
+import { hasMeaningfulHtmlContent, sanitizeProductDescription } from '../../../shared/sanitizeHtml';
+
+const fullDescriptionField = z
+    .string()
+    .refine(hasMeaningfulHtmlContent, {
+        message: "Product description is required.",
+    })
+    .transform(sanitizeProductDescription);
 
 export const createProductSchema = z.object({
     name: z.string().min(1),
@@ -10,7 +18,7 @@ export const createProductSchema = z.object({
     stockQuantity: z.number().min(0).optional(),
     stockStatus: z.enum(["IN_STOCK", "OUT_OF_STOCK", "LOW_STOCK"]),
     shortDescription: z.string().optional(),
-    fullDescription: z.string().optional(),
+    fullDescription: fullDescriptionField,
     categories: z.array(z.string()).min(1), // category IDs
     subCategories: z.array(z.string()).optional(), // subcategory IDs
     variants: z
@@ -45,7 +53,7 @@ export const updateProductSchema = z.object({
   stockQuantity: z.number().min(0).optional(),
   stockStatus: z.enum(["IN_STOCK", "OUT_OF_STOCK", "LOW_STOCK"]).optional(),
   shortDescription: z.string().optional(),
-  fullDescription: z.string().optional(),
+  fullDescription: fullDescriptionField.optional(),
   categories: z.array(z.string()).min(1).optional(), // category IDs
   subCategories: z.array(z.string()).optional(), // subcategory IDs
   variants: z

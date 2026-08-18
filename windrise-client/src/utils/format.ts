@@ -30,3 +30,28 @@ export function percent(part: number, whole: number): number {
   if (!whole || whole === 0) return 0
   return Math.round((part / whole) * 100)
 }
+
+/** "2 minutes ago", "1 hour ago", "Yesterday", falling back to a short date past a week. */
+export function formatRelativeTime(input: string | Date): string {
+  if (!input) return '-'
+  const date = typeof input === 'string' ? new Date(input) : input
+  if (Number.isNaN(date.getTime())) return '-'
+
+  const diffMs = Date.now() - date.getTime()
+  const diffSeconds = Math.round(diffMs / 1000)
+
+  if (diffSeconds < 30) return 'Just now'
+  if (diffSeconds < 60) return `${diffSeconds} seconds ago`
+
+  const diffMinutes = Math.round(diffSeconds / 60)
+  if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes === 1 ? '' : 's'} ago`
+
+  const diffHours = Math.round(diffMinutes / 60)
+  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`
+
+  const diffDays = Math.round(diffHours / 24)
+  if (diffDays === 1) return 'Yesterday'
+  if (diffDays < 7) return `${diffDays} days ago`
+
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}

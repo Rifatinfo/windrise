@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Dispatch, SetStateAction } from "react";
 import { X } from "lucide-react";
+import { ProductDescriptionRenderer } from "@/components/shared/ProductDescriptionRenderer";
 
 interface Variant { id: string; color: string; size: string; quantity: number; }
 interface ProductImage { id: string; url: string; }
@@ -134,7 +135,10 @@ const ProductViewModal = ({ product, open, setOpen }: Props) => {
                         product.fullDescription && (
                             <div className="w-full">
                                 <h3 className="text-lg font-semibold text-gray-700 mb-2 text-left">Description</h3>
-                                <p className="text-gray-600 text-left">{product.fullDescription}</p>
+                                <ProductDescriptionRenderer
+                                    html={product.fullDescription}
+                                    className="text-gray-600 text-left"
+                                />
                             </div>
                         )
                     }

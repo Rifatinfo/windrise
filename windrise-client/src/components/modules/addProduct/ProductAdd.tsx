@@ -11,6 +11,7 @@ import { AdditionalInfoSection, InfoItem } from "./AdditionalInfoSection"
 
 import { Toast } from "@/components/shared/Toast/Toast"
 import { serverFetch } from "@/lib/server-fetch"
+import { hasMeaningfulHtmlContent } from "@/lib/sanitizeHtml"
 import ImageUploadSection from "./ImageUploadSection"
 import CategoriesSection from "./CategoriesSection"
 
@@ -116,6 +117,20 @@ export default function ProductAddPage() {
         icon: "error",
         title: "Missing Field",
         text: "Short Description is required!",
+        confirmButtonText: "Go it",
+            customClass: {
+            confirmButton: "bg-black text-white px-12 py-2 rounded cursor-pointer",
+        },
+        buttonsStyling: false,
+      });
+      return false;
+    }
+
+    if (!hasMeaningfulHtmlContent(basicDetails.fullDescription)) {
+      Swal.fire({
+        icon: "error",
+        title: "Missing Field",
+        text: "Product description is required.",
         confirmButtonText: "Go it",
             customClass: {
             confirmButton: "bg-black text-white px-12 py-2 rounded cursor-pointer",
