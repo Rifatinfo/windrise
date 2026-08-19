@@ -10,6 +10,7 @@ router.use(auth(UserRole.ADMIN, UserRole.SHOP_MANAGER));
 
 router.get("/summary", StatsController.getSummary);
 router.get("/revenue-chart", StatsController.getRevenueChart);
+router.get("/category-revenue-series", StatsController.getCategoryRevenueSeries);
 router.get("/order-status", StatsController.getOrderStatusOverview);
 router.get("/recent-orders", StatsController.getRecentOrders);
 router.get("/top-products", StatsController.getTopProducts);

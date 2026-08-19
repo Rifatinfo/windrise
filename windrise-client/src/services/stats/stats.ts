@@ -3,6 +3,7 @@ import type {
   BestCustomerRow,
   BusinessPerformance,
   CategoryBreakdownRow,
+  CategoryRevenueSeries,
   CouponsPerformance,
   CustomerLifetimeValue,
   CustomersOverview,
@@ -62,6 +63,10 @@ export const getSalesSummary = (params: DateRangeParams) => get<SalesSummary>("/
 
 export const getRevenueChart = (params: DateRangeParams & { granularity?: "day" | "week" | "month" }) =>
   get<RevenuePoint[]>("/revenue-chart", params);
+
+export const getCategoryRevenueSeries = (
+  params: DateRangeParams & { granularity?: "day" | "week" | "month" }
+) => get<CategoryRevenueSeries>("/category-revenue-series", params);
 
 export const getOrderStatusOverview = (params: DateRangeParams) =>
   get<OrderStatusOverview>("/order-status", params);

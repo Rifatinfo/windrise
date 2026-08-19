@@ -22,6 +22,16 @@ const getRevenueChart = catchAsync(async (req: Request, res: Response) => {
   ok(res, "Revenue chart fetched", await StatsService.getRevenueChart(start, end, granularity));
 });
 
+const getCategoryRevenueSeries = catchAsync(async (req: Request, res: Response) => {
+  const { start, end } = parseDateRange(req.query);
+  const granularity = parseGranularity(req.query);
+  ok(
+    res,
+    "Category revenue series fetched",
+    await StatsService.getCategoryRevenueSeries(start, end, granularity),
+  );
+});
+
 const getOrderStatusOverview = catchAsync(async (req: Request, res: Response) => {
   const { start, end } = parseDateRange(req.query);
   ok(res, "Order status overview fetched", await StatsService.getOrderStatusOverview(start, end));
@@ -162,6 +172,7 @@ const exportStatsReport = catchAsync(async (req: Request, res: Response) => {
 export const StatsController = {
   getSummary,
   getRevenueChart,
+  getCategoryRevenueSeries,
   getOrderStatusOverview,
   getRecentOrders,
   getTopProducts,

@@ -119,6 +119,79 @@ const getRevenueChart = async (start: Date, end: Date, granularity: "day" | "wee
     .map(([date, v]) => ({ date, revenue: round2(v.revenue), orders: v.orders }));
 };
 
+/**
+ * Revenue split by category, bucketed over time — the series a stacked area
+ * chart needs to show how the category mix shifts across the range.
+ *
+ * Categories are capped to the top N by revenue; the rest roll into "Other"
+ * so the stack stays readable.
+ */
+const getCategoryRevenueSeries = async (
+  start: Date,
+  end: Date,
+  granularity: "day" | "week" | "month",
+  topN = 5,
+) => {
+  const items = await prisma.orderItem.findMany({
+    where: { order: { createdAt: { gte: start, lte: end }, orderStatus: VALID_ORDER_STATUS_FILTER } },
+    select: {
+      total: true,
+      order: { select: { createdAt: true } },
+      product: { select: { categories: { select: { category: { select: { name: true } } } } } },
+    },
+  });
+
+  const bucketKey = (date: Date) => {
+    if (granularity === "month") {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    }
+    if (granularity === "week") {
+      const d = new Date(date);
+      const day = (d.getDay() + 6) % 7; // Monday = 0
+      d.setDate(d.getDate() - day);
+      return d.toISOString().slice(0, 10);
+    }
+    return date.toISOString().slice(0, 10);
+  };
+
+  // Rank categories first so we know which ones survive as their own series.
+  const totals = new Map<string, number>();
+  for (const item of items) {
+    const names = item.product?.categories.map((c) => c.category.name) ?? [];
+    for (const name of names.length ? names : ["Uncategorized"]) {
+      totals.set(name, (totals.get(name) ?? 0) + item.total);
+    }
+  }
+
+  const ranked = [...totals.entries()].sort(([, a], [, b]) => b - a).map(([name]) => name);
+  const kept = ranked.slice(0, topN);
+  const hasOther = ranked.length > topN;
+  const categories = hasOther ? [...kept, "Other"] : kept;
+
+  const buckets = new Map<string, Map<string, number>>();
+  for (const item of items) {
+    const key = bucketKey(item.order.createdAt);
+    const row = buckets.get(key) ?? new Map<string, number>();
+    const names = item.product?.categories.map((c) => c.category.name) ?? [];
+
+    for (const name of names.length ? names : ["Uncategorized"]) {
+      const series = kept.includes(name) ? name : "Other";
+      row.set(series, (row.get(series) ?? 0) + item.total);
+    }
+    buckets.set(key, row);
+  }
+
+  const points = [...buckets.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, row]) => {
+      const point: Record<string, string | number> = { date };
+      for (const name of categories) point[name] = round2(row.get(name) ?? 0);
+      return point;
+    });
+
+  return { categories, points };
+};
+
 // ============================= §4 — Order Status Overview =============================
 
 const getOrderStatusOverview = async (start: Date, end: Date) => {
@@ -933,6 +1006,7 @@ const getBusinessPerformance = async (start: Date, end: Date) => {
 export {
   getSummary,
   getRevenueChart,
+  getCategoryRevenueSeries,
   getOrderStatusOverview,
   getRecentOrders,
   getTopProducts,
@@ -961,6 +1035,7 @@ export {
 export const StatsService = {
   getSummary,
   getRevenueChart,
+  getCategoryRevenueSeries,
   getOrderStatusOverview,
   getRecentOrders,
   getTopProducts,

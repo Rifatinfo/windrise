@@ -189,6 +189,32 @@ export function thisMonthRange(): DateRangeSelection {
   return buildQuickRanges(new Date())[0]
 }
 
+/**
+ * Presets for the Analytics page — rolling windows suited to trend analysis,
+ * rather than the calendar-month ranges used on Sales Overview / Inventory.
+ */
+export function buildAnalyticsRanges(today: Date): DateRangeSelection[] {
+  const year = today.getFullYear()
+  const month = today.getMonth()
+  const day = today.getDate()
+  const end = toISODate(today)
+
+  const daysAgo = (count: number) => toISODate(new Date(year, month, day - (count - 1)))
+
+  return [
+    { label: 'Today', start: end, end },
+    { label: 'Last 7 Days', start: daysAgo(7), end },
+    { label: 'Last 30 Days', start: daysAgo(30), end },
+    { label: 'Last 90 Days', start: daysAgo(90), end },
+    { label: 'This Year', start: toISODate(new Date(year, 0, 1)), end },
+  ]
+}
+
+/** Default range shown when Analytics first loads */
+export function last30DaysRange(): DateRangeSelection {
+  return buildAnalyticsRanges(new Date())[2]
+}
+
 // ================= Motion variants =================
 // Parent sections use `cardCascade`; each card child uses `cardRise` (no initial/animate
 // props of its own) so framer-motion orchestrates the stagger through variant inheritance.

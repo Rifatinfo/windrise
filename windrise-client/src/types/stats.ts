@@ -21,6 +21,12 @@ export interface RevenuePoint {
   orders: number;
 }
 
+/** Multi-series time buckets powering the stacked area chart. */
+export interface CategoryRevenueSeries {
+  categories: string[];
+  points: Array<Record<string, string | number>>;
+}
+
 export interface OrderStatusOverview {
   total: number;
   pending: number;
