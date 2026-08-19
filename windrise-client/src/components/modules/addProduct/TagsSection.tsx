@@ -38,18 +38,19 @@ export function TagsSection({ tags, onChange }: TagsSectionProps) {
           onKeyDown={handleKeyDown}
         />
 
-        <div className="flex flex-wrap gap-2 min-h-[2rem]">
+       <div className="flex flex-wrap gap-2 min-h-[2rem]">
           {tags.length === 0 && (
             <p className="text-sm text-slate-400 italic">No tags added yet</p>
           )}
-          {tags.map((tag: any, idx: number) => (
-            <Badge key={tag.id || idx || tag}>
-              {tag?.name}
+          {tags.map((tag) => (
+            <Badge key={tag}>
+              {tag}
               <button
                 onClick={() => removeTag(tag)}
-                className="ml-1 hover:text-white cursor-pointer"
+                className="ml-1 hover:text-white"
               >
-                <X size={16} />
+                
+              <X size={16} className='cursor-pointer' />
               </button>
             </Badge>
           ))}
