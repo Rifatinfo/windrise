@@ -328,7 +328,7 @@ export default function ProductAddPage() {
 
       <main className="max-w-[1600px] mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-9 space-y-8">
+          <div className="lg:col-span-9  space-y-8">
             <BasicDetailsCard
               data={basicDetails}
               onChange={(field, value) =>
