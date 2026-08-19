@@ -1,10 +1,12 @@
 "use client";
 import { EyeIcon, FileTextIcon, InboxIcon, PencilIcon, SearchIcon } from 'lucide-react'
 
-import type { Order, OrderStatus } from '@/types/order'
+import type { AfterSalesStatus, Order, OrderStatus, ShipmentStatus } from '@/types/order'
 import { formatBdt, formatDate, itemCount, orderTotal } from '@/utils/format'
-import { getPaymentMethodDisplay, PAYMENT_STATE_META, SHIPMENT_META, STATUS_META } from '@/utils/orderFlow'
+import { getPaymentMethodDisplay, PAYMENT_STATE_META, STATUS_META } from '@/utils/orderFlow'
 import { StatusUpdateMenu } from './StatusUpdateMenu'
+import { ShipmentStatusMenu } from './ShipmentStatusMenu'
+import { AfterSalesMenu } from './AfterSalesMenu'
 
 
 export type OrderTab = 'all' | 'placed' | 'processed' | 'on_the_way' | 'delivered'
@@ -27,6 +29,8 @@ interface OrdersTableProps {
   onView: (order: Order) => void
   onEdit: (order: Order) => void
   onStatusChange: (id: string, status: OrderStatus) => void
+  onShipmentChange: (id: string, status: ShipmentStatus) => void
+  onAfterSalesChange: (id: string, status: AfterSalesStatus) => void
 }
 
 export function OrdersTable({
@@ -39,6 +43,8 @@ export function OrdersTable({
   onView,
   onEdit,
   onStatusChange,
+  onShipmentChange,
+  onAfterSalesChange,
 }: OrdersTableProps) {
   return (
     <section className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
@@ -88,7 +94,7 @@ export function OrdersTable({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1080px] border-collapse text-left">
+        <table className="w-full min-w-[1220px] border-collapse text-left">
           <thead>
             <tr className="border-y border-line bg-slate-50 text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-soft">
               <th scope="col" className="px-5 py-3">
@@ -115,6 +121,9 @@ export function OrdersTable({
               <th scope="col" className="px-3 py-3">
                 Shipment
               </th>
+              <th scope="col" className="px-3 py-3">
+                After-Sales
+              </th>
               <th scope="col" className="px-5 py-3 text-right">
                 Actions
               </th>
@@ -124,7 +133,6 @@ export function OrdersTable({
             {orders.map((order) => {
               const method = getPaymentMethodDisplay(order.payment.method, order.payment.gateway)
               const state = PAYMENT_STATE_META[order.payment.state]
-              const shipment = SHIPMENT_META[order.shipment]
 
               return (
                 <tr
@@ -177,19 +185,24 @@ export function OrdersTable({
                       {order.payment.reference}
                     </p>
                   </td>
-                  <td className="px-3 py-3">
+                  <td className="px-2 py-3">
                     <StatusUpdateMenu
                       status={order.status}
                       onChange={(status) => onStatusChange(order.id, status)}
                     />
                   </td>
-                  <td className="px-3 py-3">
-                    <span
-                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${shipment.chip}`}
-                    >
-                      <span className={`h-1.5 w-1.5 rounded-full ${shipment.dot}`} />
-                      {shipment.label}
-                    </span>
+                  <td className="px-2 py-3">
+                    <ShipmentStatusMenu
+                      status={order.shipment}
+                      onChange={(status) => onShipmentChange(order.id, status)}
+                    />
+                  </td>
+                  <td className="px-2 py-3">
+                    <AfterSalesMenu
+                      status={order.afterSales}
+                      orderStatus={order.status}
+                      onChange={(status) => onAfterSalesChange(order.id, status)}
+                    />
                   </td>
                   <td className="px-5 py-3">
                     <div className="flex items-center justify-end gap-2">

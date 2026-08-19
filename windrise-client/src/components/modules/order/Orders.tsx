@@ -7,7 +7,12 @@ import {
   thisMonthRange,
   type DateRangeSelection,
 } from "@/components/modules/inventory/inventory.utils";
-import type { Order, OrderStatus } from "@/types/order";
+import type {
+  AfterSalesStatus,
+  Order,
+  OrderStatus,
+  ShipmentStatus,
+} from "@/types/order";
 import { formatDate, itemCount, orderTotal } from "@/utils/format";
 import { STATUS_META } from "@/utils/orderFlow";
 import { OrderTab } from "./OrdersTable";
@@ -19,10 +24,29 @@ import type { OrderCustomer } from "@/types/order";
 import {
   getAllOrders,
   markOrderCollected,
+  updateOrderAfterSalesStatus,
   updateOrderInfo,
+  updateOrderShipmentStatus,
   updateOrderStatus,
 } from "@/services/order/order";
 import { mapServerOrdersToUi } from "@/lib/orderMapper";
+
+/** UI value -> Prisma enum value. */
+const SHIPMENT_TO_SERVER: Record<ShipmentStatus, string> = {
+  ready_for_dispatch: "ORDER_CONFIRMED",
+  shipped: "PACKAGE_SHIPPED",
+  in_transit: "ARRIVED_AT_LOCAL_SORT_FACILITY",
+  out_for_delivery: "OUT_FOR_DELIVERY",
+  delivered: "DELIVERED",
+  canceled: "CANCELED",
+};
+
+const AFTER_SALES_TO_SERVER: Record<AfterSalesStatus, string> = {
+  none: "NONE",
+  completed: "COMPLETED",
+  return: "RETURN",
+  exchange: "EXCHANGE",
+};
 
 export function Orders() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -113,6 +137,28 @@ export function Orders() {
       refreshOrder(updated);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to update status";
+      setError(message);
+    }
+  };
+
+  const updateShipment = async (id: string, next: ShipmentStatus) => {
+    try {
+      const response = await updateOrderShipmentStatus(id, SHIPMENT_TO_SERVER[next]);
+      const updated = mapServerOrdersToUi([response.data])[0];
+      refreshOrder(updated);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to update shipment";
+      setError(message);
+    }
+  };
+
+  const updateAfterSales = async (id: string, next: AfterSalesStatus) => {
+    try {
+      const response = await updateOrderAfterSalesStatus(id, AFTER_SALES_TO_SERVER[next]);
+      const updated = mapServerOrdersToUi([response.data])[0];
+      refreshOrder(updated);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to update after-sales";
       setError(message);
     }
   };
@@ -251,6 +297,8 @@ export function Orders() {
               onView={(order) => open(order, false)}
               onEdit={(order) => open(order, true)}
               onStatusChange={updateStatus}
+              onShipmentChange={updateShipment}
+              onAfterSalesChange={updateAfterSales}
             />
           </div>
         )}

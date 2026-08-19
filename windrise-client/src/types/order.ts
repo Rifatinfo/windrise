@@ -13,12 +13,15 @@ export type PaymentMethod = 'cod' | 'online'
 export type PaymentState = 'paid' | 'due' | 'failed' | 'canceled'
 
 export type ShipmentStatus =
-  | 'not_shipped'
-  | 'package_shipped'
-  | 'at_sort_facility'
+  | 'ready_for_dispatch'
+  | 'shipped'
+  | 'in_transit'
   | 'out_for_delivery'
   | 'delivered'
   | 'canceled'
+
+/** After-sales handling shown beside the shipment column. */
+export type AfterSalesStatus = 'none' | 'completed' | 'return' | 'exchange'
 
 export type OrderEvent = {
   label: string
@@ -85,6 +88,7 @@ export type Order = {
   status: OrderStatus
   payment: OrderPayment
   shipment: ShipmentStatus
+  afterSales: AfterSalesStatus
   subtotal: number
   deliveryCharge: number
   total: number
@@ -154,6 +158,10 @@ export type ServerOrder = {
   deliveryCharge?: number | string | null
   deliveryType?: string | null
   orderStatus: string
+  /** Admin override; null means it follows `orderStatus`. */
+  shipmentStatus?: string | null
+  /** Admin override; null means it follows `orderStatus`. */
+  afterSalesStatus?: string | null
   paymentStatus: 'UNPAID' | 'PAID' | 'FAILED' | 'CANCELED'
   paymentMethod: 'COD' | 'ONLINE'
   invoiceUrl?: string | null

@@ -1,4 +1,5 @@
 import type {
+  AfterSalesStatus,
   GatewayInfo,
   Order,
   OrderStatus,
@@ -6,12 +7,42 @@ import type {
   PaymentState,
   ServerOrder,
   ServerPayment,
+  ShipmentStatus,
 } from "@/types/order";
 import {
+  afterSalesForStatus,
   buildGatewayLabel,
   normalizeGatewayLabelString,
   shipmentForStatus,
 } from "@/utils/orderFlow";
+
+/** Prisma ShipmentStatus -> UI value. */
+const SHIPMENT_MAP: Record<string, ShipmentStatus> = {
+  ORDER_CONFIRMED: "ready_for_dispatch",
+  PACKAGE_SHIPPED: "shipped",
+  ARRIVED_AT_LOCAL_SORT_FACILITY: "in_transit",
+  OUT_FOR_DELIVERY: "out_for_delivery",
+  DELIVERED: "delivered",
+  CANCELED: "canceled",
+};
+
+/** Prisma AfterSalesStatus -> UI value. */
+const AFTER_SALES_MAP: Record<string, AfterSalesStatus> = {
+  NONE: "none",
+  COMPLETED: "completed",
+  RETURN: "return",
+  EXCHANGE: "exchange",
+};
+
+function toUiShipment(value?: string | null): ShipmentStatus | null {
+  if (!value) return null;
+  return SHIPMENT_MAP[value.trim().toUpperCase()] ?? null;
+}
+
+function toUiAfterSales(value?: string | null): AfterSalesStatus | null {
+  if (!value) return null;
+  return AFTER_SALES_MAP[value.trim().toUpperCase()] ?? null;
+}
 
 const STATUS_MAP: Record<string, OrderStatus> = {
   PLACED: "placed",
@@ -171,7 +202,9 @@ export function mapServerOrderToUi(
       riskLevel: order.payment?.riskLevel ?? null,
       riskTitle: order.payment?.riskTitle ?? null,
     },
-    shipment: shipmentForStatus(status),
+    // A stored override wins; otherwise both columns follow the order status.
+    shipment: toUiShipment(order.shipmentStatus) ?? shipmentForStatus(status),
+    afterSales: toUiAfterSales(order.afterSalesStatus) ?? afterSalesForStatus(status),
     subtotal: order.subtotal,
     deliveryCharge,
     total: order.totalAmount,

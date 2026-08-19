@@ -176,11 +176,76 @@ const getOrderByTransactionIdController = catchAsync(
   },
 );
 
+const SHIPMENT_STATUSES = [
+  "ORDER_CONFIRMED",
+  "PACKAGE_SHIPPED",
+  "ARRIVED_AT_LOCAL_SORT_FACILITY",
+  "OUT_FOR_DELIVERY",
+  "DELIVERED",
+  "CANCELED",
+];
+
+const AFTER_SALES_STATUSES = ["NONE", "COMPLETED", "RETURN", "EXCHANGE"];
+
+const updateOrderShipmentStatusController = catchAsync(
+  async (req: Request, res: Response) => {
+    const { orderId } = req.params;
+    const { shipmentStatus } = req.body;
+
+    if (!shipmentStatus || !SHIPMENT_STATUSES.includes(shipmentStatus)) {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        "A valid shipmentStatus is required",
+      );
+    }
+
+    const result = await orderService.updateOrderShipmentStatusService(
+      orderId as string,
+      shipmentStatus,
+    );
+
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Shipment status updated",
+      data: result,
+    });
+  },
+);
+
+const updateOrderAfterSalesStatusController = catchAsync(
+  async (req: Request, res: Response) => {
+    const { orderId } = req.params;
+    const { afterSalesStatus } = req.body;
+
+    if (!afterSalesStatus || !AFTER_SALES_STATUSES.includes(afterSalesStatus)) {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        "A valid afterSalesStatus is required",
+      );
+    }
+
+    const result = await orderService.updateOrderAfterSalesStatusService(
+      orderId as string,
+      afterSalesStatus,
+    );
+
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "After-sales status updated",
+      data: result,
+    });
+  },
+);
+
 export const OrderController = {
   createOrderController,
   getAllOrdersController,
   getMyOrdersController,
   updateOrderStatusController,
+  updateOrderShipmentStatusController,
+  updateOrderAfterSalesStatusController,
   updateOrderPaymentStatusController,
   updateOrderInfoController,
   getOrderTrackingController,

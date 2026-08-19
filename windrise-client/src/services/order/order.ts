@@ -147,6 +147,36 @@ export async function updateOrderStatus(
   return res.json();
 }
 
+/** Stores an admin override for the Shipment column. */
+export async function updateOrderShipmentStatus(
+  orderId: string,
+  shipmentStatus: string
+): Promise<ApiListResponse<ServerOrder>> {
+  const res = await fetch(`${API_URL}/api/v1/order/${orderId}/shipment-status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ shipmentStatus }),
+  });
+  if (!res.ok) await handleError(res);
+  return res.json();
+}
+
+/** Stores an admin override for the After-Sales column. */
+export async function updateOrderAfterSalesStatus(
+  orderId: string,
+  afterSalesStatus: string
+): Promise<ApiListResponse<ServerOrder>> {
+  const res = await fetch(`${API_URL}/api/v1/order/${orderId}/after-sales-status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ afterSalesStatus }),
+  });
+  if (!res.ok) await handleError(res);
+  return res.json();
+}
+
 export async function markOrderCollected(
   orderId: string
 ): Promise<ApiListResponse<ServerOrder>> {

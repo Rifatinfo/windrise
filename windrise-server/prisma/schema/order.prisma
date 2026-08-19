@@ -23,6 +23,11 @@ model Order {
   invoiceUrl String?
 
   orderStatus    OrderStatus   @default(PLACED)
+  // Both follow orderStatus while null. An admin picking a value from the
+  // Shipment / After-Sales dropdowns stores an override here, which is
+  // cleared again the next time the order status moves.
+  shipmentStatus   ShipmentStatus?
+  afterSalesStatus AfterSalesStatus?
   paymentStatus  PaymentStatus @default(UNPAID)
   paymentMethod  PaymentMethod
   deliveryCharge Decimal?
