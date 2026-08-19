@@ -282,7 +282,7 @@ const resetForm = () => {
                     <div className="lg:col-span-9 space-y-8">
                         <BasicDetailsCard data={basicDetails}
                             onChange={(f, v) => setBasicDetails((p) => ({ ...p, [f]: v }))} />
-                        <VariantsSection variants={variants} onChange={setVariants} />
+                        <VariantsSection variants={variants} onChange={setVariants} mainSku={basicDetails.sku} />
                         <AdditionalInfoSection items={additionalInfo} onChange={setAdditionalInfo} />
                         <TagsSection tags={tags} onChange={setTags} />
                     </div>
