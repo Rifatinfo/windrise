@@ -145,6 +145,7 @@ const createProduct = async (
               color: variant.color,
               size: variant.size,
               quantity: variant.quantity ?? 0,
+              sku: variant.sku ?? null,
             })),
           }
         : undefined,
@@ -588,6 +589,7 @@ const updateProduct = async (
               color: variant.color,
               size: variant.size,
               quantity: variant.quantity ?? 0,
+              sku: variant.sku ?? null,
             })),
           }
         : undefined,

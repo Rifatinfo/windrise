@@ -16,7 +16,7 @@ import ImageUploadSection from "./ImageUploadSection"
 import CategoriesSection from "./CategoriesSection"
 
 import Swal from "sweetalert2";
-import { createVariant, isEmptyVariant, Variant, VariantsSection } from "./VariantsSection"
+import { createVariant, isEmptyVariant, resolveVariantSku, Variant, VariantsSection } from "./VariantsSection"
 import Spinner from "@/components/shared/Spinner"
 import { TagsSection } from "./TagsSection"
 
@@ -256,6 +256,7 @@ export default function ProductAddPage() {
           color: v.color,
           size: v.size,
           quantity: Number(v.quantity),
+          sku: resolveVariantSku(v, basicDetails.sku),
         })),
 
         additionalInformation: additionalInfo,
