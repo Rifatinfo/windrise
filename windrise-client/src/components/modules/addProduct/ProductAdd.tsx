@@ -16,7 +16,7 @@ import ImageUploadSection from "./ImageUploadSection"
 import CategoriesSection from "./CategoriesSection"
 
 import Swal from "sweetalert2";
-import { Variant, VariantsSection } from "./VariantsSection"
+import { createVariant, isEmptyVariant, Variant, VariantsSection } from "./VariantsSection"
 import Spinner from "@/components/shared/Spinner"
 import { TagsSection } from "./TagsSection"
 
@@ -33,7 +33,8 @@ export default function ProductAddPage() {
     stockStatus: StockStatus.IN_STOCK
   })
 
-  const [variants, setVariants] = useState<Variant[]>([])
+  // The variants table opens with two blank rows, matching the design.
+  const [variants, setVariants] = useState<Variant[]>(() => [createVariant(), createVariant()])
   const [additionalInfo, setAdditionalInfo] = useState<InfoItem[]>([])
   const [tags, setTags] = useState<string[]>([])
   const [isSaving, setIsSaving] = useState(false)
@@ -216,7 +217,7 @@ export default function ProductAddPage() {
       stockQuantity: 0,
       stockStatus: StockStatus.IN_STOCK
     })
-    setVariants([])
+    setVariants([createVariant(), createVariant()])
     setAdditionalInfo([])
     setTags([])
     setGalleryImages([])
@@ -250,7 +251,8 @@ export default function ProductAddPage() {
 
         tags,
 
-        variants: variants.map(v => ({
+        // Blank rows the admin never filled in must not become records.
+        variants: variants.filter(v => !isEmptyVariant(v)).map(v => ({
           color: v.color,
           size: v.size,
           quantity: Number(v.quantity),
@@ -335,7 +337,7 @@ export default function ProductAddPage() {
                 setBasicDetails(prev => ({ ...prev, [field]: value }))
               }
             />
-            <VariantsSection variants={variants} onChange={setVariants} />
+            <VariantsSection variants={variants} onChange={setVariants} mainSku={basicDetails.sku} />
             <AdditionalInfoSection items={additionalInfo} onChange={setAdditionalInfo} />
             <TagsSection tags={tags} onChange={setTags} />
           </div>
