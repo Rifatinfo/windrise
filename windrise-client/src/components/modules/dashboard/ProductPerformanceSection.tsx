@@ -24,13 +24,17 @@ export function ProductPerformanceSection({ startDate, endDate }: { startDate: s
     <SectionCard
       title="Product Performance"
       subtitle="Views and add-to-cart depend on storefront event tracking — counts start from when it went live"
+      // Flex/grid children default to min-width:auto, which lets the wide table
+      // push the whole page sideways on small screens instead of scrolling
+      // inside its own card. min-w-0 restores the constraint.
+      className="min-w-0"
     >
       {rows === null ? (
         <div className="h-[240px] animate-pulse rounded-xl bg-canvas" />
       ) : rows.length === 0 ? (
         <EmptyState message="No product activity in this range yet." />
       ) : (
-        <div className="overflow-x-auto">
+        <div className="min-w-0 overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-line text-xs text-ink-muted">

@@ -55,15 +55,6 @@ export const NAV_MAIN: NavItem[] = [
     roles: ["ADMIN"],
     path: "/admin/analytics",
   },
-
-  {
-    id: "all-user",
-    label: "Users",
-    icon: UsersIcon,
-    roles: ["ADMIN", "SHOP_MANAGER"],
-    path: "/admin/all-users",
-  },
-
   {
     id: "customer",
     label: "Customers",
@@ -181,6 +172,13 @@ export const NAV_ROLE: NavItem[] = [
         icon: UserPlusIcon,
         roles: ["ADMIN", "SHOP_MANAGER"],
         path: "/admin/add-media-manager",
+      },
+      {
+        id: "add-customer-support",
+        label: "Add Customer Support",
+        icon: UserPlusIcon,
+        roles: ["ADMIN", "SHOP_MANAGER"],
+        path: "/admin/add-customer-support",
       },
     ],
   },

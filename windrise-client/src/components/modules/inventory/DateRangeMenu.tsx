@@ -13,9 +13,14 @@ function formatDay(value: string): string {
 interface DateRangeMenuProps {
   value: string
   onChange: (range: DateRangeSelection) => void
+  /**
+   * Preset list to offer. Defaults to the calendar ranges used by Sales
+   * Overview / Inventory; Analytics passes its own rolling windows.
+   */
+  buildRanges?: (today: Date) => DateRangeSelection[]
 }
 
-export function DateRangeMenu({ value, onChange }: DateRangeMenuProps) {
+export function DateRangeMenu({ value, onChange, buildRanges }: DateRangeMenuProps) {
   const [open, setOpen] = useState(false)
   const [customMode, setCustomMode] = useState(false)
   const [start, setStart] = useState('')
@@ -23,7 +28,7 @@ export function DateRangeMenu({ value, onChange }: DateRangeMenuProps) {
   const rootRef = useRef<HTMLDivElement>(null)
 
   // Computed on every render so "today" is always current — it is only five date calculations
-  const quickRanges = buildQuickRanges(new Date())
+  const quickRanges = (buildRanges ?? buildQuickRanges)(new Date())
 
   function closeMenu() {
     setOpen(false)

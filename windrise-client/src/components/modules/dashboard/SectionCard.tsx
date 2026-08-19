@@ -15,7 +15,9 @@ export function SectionCard({ title, subtitle, action, children, className, id }
       id={id}
       className={`@container rounded-2xl border border-line bg-surface p-5 shadow-card ${className ?? ""}`}
     >
-      <div className="mb-4 flex items-start justify-between gap-3">
+      {/* wraps so header controls (segmented toggles, links) move below the
+          title on narrow screens rather than overflowing the card */}
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold text-ink">{title}</h3>
           {subtitle && <p className="mt-0.5 text-xs text-ink-muted">{subtitle}</p>}
