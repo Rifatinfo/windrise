@@ -4,10 +4,12 @@ import ApiError from "../../errors/ApiError";
 import { CreateOrderDTO } from "./order.interface";
 
 import {
+  AfterSalesStatus,
   OrderStatus,
   PaymentMethod,
   PaymentStatus,
   Prisma,
+  ShipmentStatus,
 } from "@prisma/client";
 import { orderSearchableFields } from "./order.constant";
 
@@ -498,7 +500,33 @@ const updateOrderStatusService = async (
 ) => {
   return prisma.order.update({
     where: { id: orderId },
-    data: { orderStatus: status },
+    // Moving the order along the pipeline re-syncs both columns: clearing the
+    // overrides lets them derive from the new order status again.
+    data: { orderStatus: status, shipmentStatus: null, afterSalesStatus: null },
+    include: { items: true, payment: true },
+  });
+};
+
+/** Admin override for the Shipment column. */
+const updateOrderShipmentStatusService = async (
+  orderId: string,
+  shipmentStatus: ShipmentStatus,
+) => {
+  return prisma.order.update({
+    where: { id: orderId },
+    data: { shipmentStatus },
+    include: { items: true, payment: true },
+  });
+};
+
+/** Admin override for the After-Sales column. */
+const updateOrderAfterSalesStatusService = async (
+  orderId: string,
+  afterSalesStatus: AfterSalesStatus,
+) => {
+  return prisma.order.update({
+    where: { id: orderId },
+    data: { afterSalesStatus },
     include: { items: true, payment: true },
   });
 };
@@ -800,6 +828,9 @@ const getOrderByIdService = async (orderId: string) => {
  
     // Status
     orderStatus:    order.orderStatus,    // PENDING | PROCESSING | …
+    // null on both means "follow orderStatus" — the client derives the label.
+    shipmentStatus:   order.shipmentStatus   ?? null,
+    afterSalesStatus: order.afterSalesStatus ?? null,
     paymentStatus:  order.paymentStatus,  // UNPAID | PAID | …
     paymentMethod:  order.paymentMethod,  // ONLINE | COD
     invoiceUrl:     order.invoiceUrl ?? null,
@@ -860,6 +891,8 @@ export const orderService = {
   getAllOrdersService,
   getMyOrdersService,
   updateOrderStatusService,
+  updateOrderShipmentStatusService,
+  updateOrderAfterSalesStatusService,
   updateOrderPaymentStatusService,
   updateOrderInfoService,
   getOrderTrackingService,

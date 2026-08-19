@@ -1,4 +1,5 @@
 import type {
+  AfterSalesStatus,
   GatewayInfo,
   OrderEvent,
   OrderStatus,
@@ -93,25 +94,88 @@ export const STATUS_META: Record<OrderStatus, StatusMeta> = {
   },
 }
 
-export const SHIPMENT_META: Record<ShipmentStatus, { label: string; dot: string; chip: string }> = {
-  not_shipped: { label: 'Not Shipped', dot: 'bg-slate-400', chip: 'bg-slate-100 text-slate-700' },
-  package_shipped: {
-    label: 'Package Shipped',
+export const SHIPMENT_ORDER: ShipmentStatus[] = [
+  'ready_for_dispatch',
+  'shipped',
+  'in_transit',
+  'out_for_delivery',
+  'delivered',
+  'canceled',
+]
+
+export const SHIPMENT_META: Record<
+  ShipmentStatus,
+  { label: string; dot: string; text: string; chip: string }
+> = {
+  ready_for_dispatch: {
+    label: 'Ready for Dispatch',
+    dot: 'bg-slate-400',
+    text: 'text-slate-600',
+    chip: 'bg-slate-100 text-slate-700',
+  },
+  shipped: {
+    label: 'Shipped',
     dot: 'bg-indigo-500',
+    text: 'text-indigo-600',
     chip: 'bg-indigo-50 text-indigo-700',
   },
-  at_sort_facility: {
-    label: 'At Local Sort Facility',
-    dot: 'bg-blue-500',
-    chip: 'bg-blue-50 text-blue-700',
+  in_transit: {
+    label: 'In Transit',
+    dot: 'bg-violet-500',
+    text: 'text-violet-600',
+    chip: 'bg-violet-50 text-violet-700',
   },
   out_for_delivery: {
     label: 'Out for Delivery',
-    dot: 'bg-teal-500',
-    chip: 'bg-teal-50 text-teal-700',
+    dot: 'bg-amber-500',
+    text: 'text-amber-600',
+    chip: 'bg-amber-50 text-amber-700',
   },
-  delivered: { label: 'Delivered', dot: 'bg-emerald-500', chip: 'bg-emerald-50 text-emerald-700' },
-  canceled: { label: 'Canceled', dot: 'bg-rose-500', chip: 'bg-rose-50 text-rose-700' },
+  delivered: {
+    label: 'Delivered',
+    dot: 'bg-emerald-500',
+    text: 'text-emerald-600',
+    chip: 'bg-emerald-50 text-emerald-700',
+  },
+  canceled: {
+    label: 'Cancelled',
+    dot: 'bg-red-500',
+    text: 'text-red-600',
+    chip: 'bg-red-50 text-red-700',
+  },
+}
+
+/** Options an admin can pick in the After-Sales dropdown. */
+export const AFTER_SALES_ORDER: AfterSalesStatus[] = ['return', 'exchange']
+
+export const AFTER_SALES_META: Record<
+  AfterSalesStatus,
+  { label: string; dot: string; text: string; chip: string }
+> = {
+  none: {
+    label: '—',
+    dot: 'bg-slate-300',
+    text: 'text-slate-400',
+    chip: 'bg-slate-50 text-slate-500',
+  },
+  completed: {
+    label: 'Completed',
+    dot: 'bg-emerald-500',
+    text: 'text-emerald-600',
+    chip: 'bg-emerald-50 text-emerald-700',
+  },
+  return: {
+    label: 'Return',
+    dot: 'bg-red-500',
+    text: 'text-red-600',
+    chip: 'bg-red-50 text-red-700',
+  },
+  exchange: {
+    label: 'Exchange',
+    dot: 'bg-blue-500',
+    text: 'text-blue-600',
+    chip: 'bg-blue-50 text-blue-700',
+  },
 }
 
 export interface GatewayColorMeta {
@@ -332,21 +396,32 @@ export function isDropped(status: OrderStatus): boolean {
   return DROPPED.includes(status)
 }
 
+/**
+ * Shipment stage implied by the order status. Used whenever an order has no
+ * manual shipment override stored against it.
+ */
 export function shipmentForStatus(status: OrderStatus): ShipmentStatus {
   switch (status) {
     case 'placed':
-      return 'not_shipped'
     case 'confirmed':
-      return 'package_shipped'
+      return 'ready_for_dispatch'
     case 'processed':
-      return 'at_sort_facility'
+      return 'shipped'
     case 'on_the_way':
-      return 'out_for_delivery'
+      return 'in_transit'
     case 'delivered':
       return 'delivered'
     default:
       return 'canceled'
   }
+}
+
+/**
+ * After-sales state implied by the order status: an order only reaches
+ * "Completed" once it has actually been delivered.
+ */
+export function afterSalesForStatus(status: OrderStatus): AfterSalesStatus {
+  return status === 'delivered' ? 'completed' : 'none'
 }
 
 const DROP_NOTE: Partial<Record<OrderStatus, string>> = {

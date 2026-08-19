@@ -65,6 +65,15 @@ enum ShipmentStatus {
   CANCELED
 }
 
+// Shown in the Orders table's After-Sales column. NONE/COMPLETED are the
+// automatic states; RETURN/EXCHANGE are chosen by an admin.
+enum AfterSalesStatus {
+  NONE
+  COMPLETED
+  RETURN
+  EXCHANGE
+}
+
 // ========= Coupon Related ========//
 
 enum CouponType {
