@@ -26,7 +26,8 @@ export const createProductSchema = z.object({
             z.object({
                 color: z.string().optional(),
                 size: z.string().optional(),
-                quantity: z.number().int().min(0)
+                quantity: z.number().int().min(0),
+                sku: z.string().optional()
             })
         )
         .optional(),
@@ -62,6 +63,7 @@ export const updateProductSchema = z.object({
         color: z.string().optional(),
         size: z.string().optional(),
         quantity: z.number().int().min(0).optional(),
+        sku: z.string().optional(),
       })
     )
     .optional(),

@@ -6,7 +6,7 @@ import { Toast } from "@/components/shared/Toast/Toast";
 import CategoriesSection from "@/components/modules/addProduct/CategoriesSection";
 import { TagsSection } from "@/components/modules/addProduct/TagsSection";
 import { AdditionalInfoSection, InfoItem } from "@/components/modules/addProduct/AdditionalInfoSection";
-import { Variant, VariantsSection } from "@/components/modules/addProduct/VariantsSection";
+import { hydrateVariant, isEmptyVariant, resolveVariantSku, Variant, VariantsSection } from "@/components/modules/addProduct/VariantsSection";
 import { BasicDetailsCard, StockStatus } from "@/components/modules/addProduct/BasicDetailsCard";
 import { Button } from "@/components/ui/button";
 import Spinner from "@/components/shared/Spinner";
@@ -68,9 +68,23 @@ const ProductUpdateClient = ({ product, slug }: any) => {
             stockStatus: product.stockStatus ?? StockStatus.IN_STOCK,
         });
 
-        setVariants(product.variants || []);
+        // Saved SKUs come back with the product; ones that differ from the
+        // derived value were typed by hand, so they stay locked.
+        setVariants(
+            (product.variants ?? []).map((v: Parameters<typeof hydrateVariant>[0]) =>
+                hydrateVariant(v, product.sku ?? "")
+            )
+        );
         setAdditionalInfo(product.additionalInformation || []);
-        setTags(product.tags || []);
+        // The API returns tags as { id, name } records, but TagsSection works
+        // with plain strings — normalise here so it never receives objects.
+        setTags(
+            (product.tags ?? [])
+                .map((t: string | { name?: string }) =>
+                    typeof t === "string" ? t : t?.name ?? ""
+                )
+                .filter(Boolean)
+        );
 
         setCategoryPayload({
             categories: product.categories?.map((c: any) => ({ categoryId: c.categoryId || c.category?.id })) || [],
@@ -203,8 +217,9 @@ const resetForm = () => {
                 tags: tags.map((t: any) =>
                     typeof t === "string" ? t : t.name
                 ),
-                variants: variants.map((v) => ({
+                variants: variants.filter((v) => !isEmptyVariant(v)).map((v) => ({
                     color: v.color, size: v.size, quantity: Number(v.quantity),
+                    sku: resolveVariantSku(v, basicDetails.sku),
                 })),
                 additionalInformation: additionalInfo,
             };

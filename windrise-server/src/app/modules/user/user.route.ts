@@ -58,6 +58,31 @@ router.post(
 
 router.get("/",   UserController.getAllFromDB);
 
+/* ===============================================
+ ============ Self-service profile edit ==========
+ Must stay above "/:id" or Express matches that first.
+ ============================================== */
+router.patch(
+    "/me",
+    auth(
+        UserRole.ADMIN,
+        UserRole.SHOP_MANAGER,
+        UserRole.MEDIA_MANAGER,
+        UserRole.CUSTOMER,
+    ),
+    fileUploader.singleUpload("file"),
+    (req, _res, next) => {
+        try {
+            const parsed = req.body?.data ? JSON.parse(req.body.data) : {};
+            req.body = UserValidation.updateMyProfileValidationSchema.parse(parsed);
+            next();
+        } catch (error) {
+            next(error);
+        }
+    },
+    UserController.updateMyProfile
+);
+
 router.patch(
     "/:id",
     auth(UserRole.ADMIN),

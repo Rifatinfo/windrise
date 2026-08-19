@@ -55,6 +55,18 @@ const updateAdmin = catchAsync(async (req: Request & { file?: Express.Multer.Fil
     });
 });
 
+const updateMyProfile = catchAsync(
+    async (req: Request & { user?: { id?: string }; file?: Express.Multer.File }, res: Response) => {
+        const result = await UserService.updateMyProfile(req.user!.id as string, req);
+        sendResponse(res, {
+            statusCode: 200,
+            success: true,
+            message: "Profile updated successfully",
+            data: result,
+        });
+    }
+);
+
 const updateAdminStatus = catchAsync(async (req: Request, res: Response) => {
     const requesterId = (req as Request & { user?: { id?: string } }).user?.id;
     const result = await UserService.updateAdminStatus(req.params.id, req.body.status, requesterId);
@@ -82,6 +94,7 @@ export const UserController = {
     getAllFromDB,
     createAdmin,
     updateAdmin,
+    updateMyProfile,
     updateAdminStatus,
     deleteAdmin,
 };

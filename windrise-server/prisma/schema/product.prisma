@@ -104,6 +104,9 @@ model Variant {
   color    String?
   size     String?
   quantity Int     @default(0)
+  // Per-variant SKU, derived from the product SKU (or typed by an admin).
+  // Nullable so variants created before this field keep working.
+  sku      String?
 
   orderItems OrderItem[]
 }

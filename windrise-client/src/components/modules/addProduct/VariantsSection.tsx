@@ -38,6 +38,40 @@ export const createVariant = (): Variant => ({
 export const isEmptyVariant = (variant: Variant) =>
   !variant.color.trim() && !Number(variant.quantity)
 
+/**
+ * The SKU actually shown for a row — the hand-typed one when locked,
+ * otherwise the value derived from the main SKU. This is what gets saved.
+ */
+export const resolveVariantSku = (variant: Variant, mainSku: string) =>
+  variant.skuManual
+    ? variant.sku ?? ''
+    : computeVariantSku(mainSku, variant.color, variant.size)
+
+/**
+ * Rebuilds rows from a saved product. A stored SKU that doesn't match what
+ * the main SKU would produce must have been typed by hand, so it stays
+ * locked; derived ones stay on auto and follow future SKU changes.
+ */
+export const hydrateVariant = (
+  saved: { id: string; color?: string | null; size?: string | null; quantity?: number | null; sku?: string | null },
+  mainSku: string
+): Variant => {
+  const color = saved.color ?? ''
+  const size = saved.size ?? 'M'
+  const stored = saved.sku ?? ''
+  const derived = computeVariantSku(mainSku, color, size)
+  const manual = Boolean(stored) && stored !== derived
+
+  return {
+    id: saved.id,
+    color,
+    size,
+    quantity: saved.quantity ?? 0,
+    sku: manual ? stored : undefined,
+    skuManual: manual,
+  }
+}
+
 export function VariantsSection({ variants, onChange, mainSku = '' }: VariantsSectionProps) {
   const addVariant = () => onChange([...variants, createVariant()])
 
@@ -64,10 +98,7 @@ export function VariantsSection({ variants, onChange, mainSku = '' }: VariantsSe
     }
   }
 
-  const skuFor = (variant: Variant) =>
-    variant.skuManual
-      ? variant.sku ?? ''
-      : computeVariantSku(mainSku, variant.color, variant.size)
+  const skuFor = (variant: Variant) => resolveVariantSku(variant, mainSku)
 
   const sizeOptions = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
 

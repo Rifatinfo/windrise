@@ -33,6 +33,8 @@ export interface ProductVariant {
   stock?: number;
   price?: number;
   quantity: number;
+  /** Per-variant SKU, derived from the product SKU or typed by an admin. */
+  sku?: string | null;
 }
 
 export interface AdditionalInfo {

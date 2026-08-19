@@ -232,6 +232,97 @@ const updateAdmin = async (
   return prisma.user.findUnique({ where: { id } });
 };
 
+/**
+ * Self-service profile update for the signed-in user.
+ *
+ * Unlike `updateAdmin` this works for every role, only ever touches the
+ * caller's own rows, and never changes the email (the login identity).
+ */
+const updateMyProfile = async (
+  userId: string,
+  req: Request & { file?: Express.Multer.File }
+) => {
+  const { name, phone, removeAvatar } = req.body as {
+    name?: string;
+    phone?: string;
+    removeAvatar?: boolean;
+  };
+
+  const existing = await prisma.user.findUnique({ where: { id: userId } });
+  if (!existing) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
+  }
+  if (existing.isDeleted || existing.status === UserStatus.DELETED) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "This account has been deleted");
+  }
+
+  let avatarUrl = existing.avatar;
+  if (req.file) {
+    const folder = `users/${existing.slug ?? generateUserSlug(existing.name ?? "user")}`;
+    const filename = await optimizeAndSaveImage(req.file, folder);
+    avatarUrl = `/uploads/${folder}/${filename}`;
+  } else if (removeAvatar) {
+    avatarUrl = null;
+  }
+
+  const avatarChanged = avatarUrl !== existing.avatar;
+  // An empty phone string means "clear it", not "set it to empty".
+  const phoneValue = phone === undefined ? undefined : phone === "" ? null : phone;
+
+  const sharedData = {
+    ...(name !== undefined && { name }),
+    ...(avatarChanged && { avatar: avatarUrl }),
+  };
+
+  const writes: Prisma.PrismaPromise<unknown>[] = [
+    prisma.user.update({ where: { id: userId }, data: sharedData }),
+  ];
+
+  // Mirror onto whichever role profile this user has. Customers have no
+  // phone column, so it is only written for the roles that do.
+  const profileData = { ...sharedData, ...(phoneValue !== undefined && { phone: phoneValue }) };
+
+  if (existing.role === UserRole.ADMIN) {
+    writes.push(prisma.admin.update({ where: { userId }, data: profileData }));
+  } else if (existing.role === UserRole.SHOP_MANAGER) {
+    writes.push(prisma.shopManager.update({ where: { userId }, data: profileData }));
+  } else if (existing.role === UserRole.MEDIA_MANAGER) {
+    writes.push(prisma.mediaManager.update({ where: { userId }, data: profileData }));
+  } else if (existing.role === UserRole.CUSTOMER) {
+    writes.push(prisma.customer.update({ where: { userId }, data: sharedData }));
+  }
+
+  await prisma.$transaction(writes);
+
+  const updated = await prisma.user.findUniqueOrThrow({
+    where: { id: userId },
+    include: {
+      admin: true,
+      customer: true,
+      shopManager: true,
+      mediaManager: true,
+    },
+  });
+
+  // Never hand password hashes back to the browser.
+  const strip = <T extends { password?: string | null } | null>(profile: T) =>
+    profile ? { ...profile, password: undefined } : profile;
+
+  return {
+    id: updated.id,
+    email: updated.email,
+    name: updated.name,
+    avatar: updated.avatar,
+    role: updated.role,
+    status: updated.status,
+    needPasswordChange: updated.needPasswordChange,
+    admin: strip(updated.admin),
+    customer: strip(updated.customer),
+    shopManager: strip(updated.shopManager),
+    mediaManager: strip(updated.mediaManager),
+  };
+};
+
 const updateAdminStatus = async (
   id: string,
   status: UserStatus,
@@ -286,6 +377,7 @@ export const UserService = {
     getAllFromDB,
     createAdmin,
     updateAdmin,
+    updateMyProfile,
     updateAdminStatus,
     deleteAdmin,
 };

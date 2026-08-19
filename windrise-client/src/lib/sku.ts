@@ -114,10 +114,10 @@ export function computeVariantSku(
     size: string
 ): string {
     if (!mainSku) return '';
-    const colorCode = color.trim()
-        ? color.trim().substring(0, 3).toUpperCase()
-        : 'CLR';
-    const sizeCode = size ? size.toUpperCase() : 'SZ';
+    // Strip punctuation/spaces first — "In tenetur" must give "INT", not "IN ",
+    // so a SKU never carries whitespace into URLs, exports or barcodes.
+    const colorCode = alphanumeric(color).substring(0, 3).toUpperCase() || 'CLR';
+    const sizeCode = alphanumeric(size).toUpperCase() || 'SZ';
     return `${mainSku}-${colorCode}-${sizeCode}`;
 }
 

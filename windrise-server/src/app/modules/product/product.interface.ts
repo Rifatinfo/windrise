@@ -12,7 +12,7 @@ export interface CreateProductInput {
     fullDescription?: string;
     categories?: string[];
     subCategories?: (string | { id: string; name: string; parentId?: string })[];
-    variants?: Array<{ color?: string; size?: string; quantity?: number }>;
+    variants?: Array<{ color?: string; size?: string; quantity?: number; sku?: string }>;
     sizeGuidImage?: string;
     thumbnailImage?: string;
     images?: string[];
