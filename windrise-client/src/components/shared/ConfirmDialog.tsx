@@ -23,7 +23,7 @@ const ConfirmDialog = ({ trigger, title, description, onConfirm }: Props) => {
     <AlertDialog>
       <AlertDialogTrigger>{trigger}</AlertDialogTrigger>
 
-      <AlertDialogContent className="max-w-sm bg-white rounded-xl shadow-xl border border-gray-200">
+      <AlertDialogContent className="max-w-sm bg-white rounded-xl shadow-xl ">
         <AlertDialogHeader className="p-5 text-center">
           <AlertDialogTitle className="text-lg font-bold text-black">
             {title}
@@ -33,14 +33,14 @@ const ConfirmDialog = ({ trigger, title, description, onConfirm }: Props) => {
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <AlertDialogFooter className="flex justify-center gap-4 p-5">
-          <AlertDialogCancel className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition cursor-pointer">
+        <AlertDialogFooter className="flex justify-center gap-4 p-5 bg-white">
+          <AlertDialogCancel className="px-4 py-2 rounded-lg border hover:bg-white text-gray-700  transition cursor-pointer">
             Cancel
           </AlertDialogCancel>
 
           <AlertDialogAction
             onClick={onConfirm}
-            className="px-4 py-2 rounded-lg bg-black text-white font-semibold  transition cursor-pointer"
+            className="px-4 py-2 rounded-lg bg-red-700 text-white font-semibold   cursor-pointer"
           >
             Delete
           </AlertDialogAction>

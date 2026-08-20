@@ -171,3 +171,45 @@ export type ServerOrder = {
   payment?: ServerPayment | null
   user?: { id: string; email?: string | null; name?: string | null } | null
 }
+
+// ─── Public order tracking (POST /order/track) ──────────────────────────────
+// Deliberately narrower than ServerOrder: the endpoint is unauthenticated, so
+// it returns only what the tracking page renders — no address, email, billing
+// or payment records.
+
+export type TrackedOrderItem = {
+  id: string
+  productName: string
+  sku: string | null
+  size: string | null
+  color: string | null
+  quantity: number
+  price: number
+  total: number
+  productImage: string | null
+}
+
+/** A recorded status transition, oldest first. */
+export type TrackedOrderEvent = {
+  /** Prisma OrderStatus, e.g. "PLACED" | "PROCESSED" | "DELIVERED" */
+  status: string
+  at: string
+}
+
+export type TrackedOrder = {
+  orderNo: string
+  placedAt: string
+  updatedAt: string
+  orderStatus: string
+  shipmentStatus: string | null
+  afterSalesStatus: string | null
+  history: TrackedOrderEvent[]
+  /** Real delivery date once delivered, otherwise null. */
+  deliveredAt: string | null
+  estimatedDeliveryAt: string
+  subtotal: number
+  deliveryCharge: number
+  discountAmount: number
+  totalAmount: number
+  items: TrackedOrderItem[]
+}

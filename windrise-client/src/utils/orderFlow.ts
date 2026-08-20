@@ -451,3 +451,110 @@ export function buildTimeline(status: OrderStatus, placedAt: string): OrderEvent
     at: new Date(start + i * step).toISOString(),
   }))
 }
+
+// ─── Customer-facing tracking timeline ─────────────────────────────────────
+// The storefront tracking page shows four milestones rather than the five
+// internal pipeline stages: "confirmed" and "processed" both read as
+// "we're preparing your order" to a customer, so they share one step.
+
+export type TrackingStepKey = 'placed' | 'processed' | 'on_the_way' | 'delivered'
+
+export type TrackingStepState = 'done' | 'current' | 'upcoming'
+
+export type TrackingStep = {
+  key: TrackingStepKey
+  label: string
+  state: TrackingStepState
+  /** ISO date to show under the label, or null when there is nothing to show. */
+  at: string | null
+  /** True when `at` is a projection rather than a recorded transition. */
+  estimated: boolean
+}
+
+const TRACKING_STEPS: {
+  key: TrackingStepKey
+  label: string
+  /** Prisma OrderStatus values that land on this milestone. */
+  statuses: string[]
+}[] = [
+  { key: 'placed', label: 'Order Placed', statuses: ['PLACED'] },
+  { key: 'processed', label: 'Order Processed', statuses: ['CONFIRMED', 'PROCESSED'] },
+  { key: 'on_the_way', label: 'On the Way', statuses: ['ON_THE_WAY'] },
+  { key: 'delivered', label: 'Delivered', statuses: ['DELIVERED'] },
+]
+
+/** Statuses that take an order off the pipeline entirely. */
+const DROPPED_STATUSES = ['CANCELED', 'FAILED', 'EXPIRED']
+
+export function isDroppedStatus(orderStatus: string): boolean {
+  return DROPPED_STATUSES.includes(orderStatus.trim().toUpperCase())
+}
+
+type TrackingInput = {
+  orderStatus: string
+  placedAt: string
+  estimatedDeliveryAt: string
+  history: { status: string; at: string }[]
+}
+
+/**
+ * Turn the recorded status history into the four milestones the page renders.
+ *
+ * Steps that actually happened carry their real recorded date. Steps still
+ * ahead are projected across the remaining time to the estimated delivery
+ * date and flagged `estimated` so the UI can label them "Est." — nothing is
+ * ever presented as having happened when it hasn't.
+ */
+export function buildTrackingSteps(order: TrackingInput): TrackingStep[] {
+  const status = order.orderStatus.trim().toUpperCase()
+
+  // Earliest recorded date per milestone.
+  const recordedAt = new Map<TrackingStepKey, string>()
+  for (const step of TRACKING_STEPS) {
+    const match = order.history
+      .filter((event) => step.statuses.includes(event.status.trim().toUpperCase()))
+      .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime())[0]
+    if (match) recordedAt.set(step.key, match.at)
+  }
+
+  const currentIndex = Math.max(
+    0,
+    TRACKING_STEPS.findIndex((step) => step.statuses.includes(status))
+  )
+
+  // Project the steps still ahead between the last thing we know happened and
+  // the estimated delivery date, keeping every estimate in the future.
+  const lastKnown = TRACKING_STEPS.slice(0, currentIndex + 1)
+    .map((step) => recordedAt.get(step.key))
+    .filter(Boolean)
+    .map((value) => new Date(value as string).getTime())
+    .reduce((latest, value) => Math.max(latest, value), new Date(order.placedAt).getTime())
+
+  const target = Math.max(
+    new Date(order.estimatedDeliveryAt).getTime(),
+    Date.now() + 24 * 60 * 60 * 1000
+  )
+
+  const pending = TRACKING_STEPS.length - 1 - currentIndex
+  const span = Math.max(target - lastKnown, 0)
+
+  return TRACKING_STEPS.map((step, index) => {
+    const recorded = recordedAt.get(step.key) ?? null
+    const state: TrackingStepState =
+      index < currentIndex ? 'done' : index === currentIndex ? 'current' : 'upcoming'
+
+    if (recorded) {
+      return { key: step.key, label: step.label, state, at: recorded, estimated: false }
+    }
+
+    // Nothing recorded and nothing to project — a step already passed on a
+    // legacy order that predates the status log.
+    if (index <= currentIndex) {
+      return { key: step.key, label: step.label, state, at: null, estimated: false }
+    }
+
+    const stepsAhead = index - currentIndex
+    const at = new Date(lastKnown + (span * stepsAhead) / pending).toISOString()
+    return { key: step.key, label: step.label, state, at, estimated: true }
+  })
+}

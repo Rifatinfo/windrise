@@ -91,7 +91,7 @@ export function SidebarSearch({ role }: { role: UserRole }) {
   };
 
   return (
-    <div ref={rootRef} className="relative px-4 pb-2">
+    <div ref={rootRef} className="relative px-4 mt-4">
       <div className="relative">
         <SearchIcon
           className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"

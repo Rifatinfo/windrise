@@ -19,9 +19,12 @@ export const commonProtectedRoutes: RouteConfig = {
 }
 
 export const customerProtectedRoutes: RouteConfig = {
-    exact: ["/order-history", "/my-orders", "/order-tracking", "/order-history"],
+    // "/order-tracking" itself is deliberately public: guests look an order up
+    // with its Order ID + the phone number on it. Only the /order-tracking/:id
+    // view, which reads a signed-in customer's own order, stays protected.
+    exact: ["/order-history", "/my-orders"],
     patterns: [
-    /^\/order-tracking\/.*$/,   //  allow dynamic orderId
+    /^\/order-tracking\/.+$/,   //  allow dynamic orderId
   ],
 }
 

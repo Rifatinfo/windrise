@@ -239,8 +239,23 @@ const updateOrderAfterSalesStatusController = catchAsync(
   },
 );
 
+/** Public lookup from the storefront order-tracking page. */
+const trackOrderController = catchAsync(async (req: Request, res: Response) => {
+  const { orderNo, phone } = req.body;
+
+  const result = await orderService.trackOrderService(orderNo, phone);
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: "Order tracking info fetched successfully",
+    data: result,
+  });
+});
+
 export const OrderController = {
   createOrderController,
+  trackOrderController,
   getAllOrdersController,
   getMyOrdersController,
   updateOrderStatusController,

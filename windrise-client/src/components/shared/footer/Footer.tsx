@@ -18,6 +18,16 @@ const WR_LOGO_URL =
   '/assets/Logo-icon.svg'
 const PAYMENT_GATEWAY_URL =
   '/assets/Payment-Gateway.svg'
+/**
+ * Destinations for footer links that have a real page. Anything not listed
+ * here stays an inert placeholder until its page exists.
+ */
+const FOOTER_LINK_HREFS: Record<string, string> = {
+  'Order Status': '/order-tracking',
+}
+
+const footerLinkHref = (link: string) => FOOTER_LINK_HREFS[link] ?? '#'
+
 const FOOTER_GROUPS: FooterGroup[] = [
   {
     title: 'Help',
@@ -149,7 +159,7 @@ export function Footer() {
                         {group.links.map((link) => (
                           <li key={link}>
                             <a
-                              href="#"
+                              href={footerLinkHref(link)}
                               className="text-xs text-zinc-100 transition-colors hover:text-zinc-400"
                             >
                               {link}
@@ -273,7 +283,7 @@ function DesktopLinkGroup({ group }: { group: FooterGroup }) {
           {group.links.map((link) => (
             <li key={link}>
               <a
-                href="#"
+                href={footerLinkHref(link)}
                 className="text-sm text-zinc-200 transition-colors hover:text-zinc-500"
               >
                 {link}

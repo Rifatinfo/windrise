@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import type { ServerOrder } from "@/types/order";
+import type { ServerOrder, TrackedOrder } from "@/types/order";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -212,6 +212,24 @@ export async function updateOrderInfo(
     headers: { "Content-Type": "application/json" },
     credentials: "include",
     body: JSON.stringify(payload),
+  });
+  if (!res.ok) await handleError(res);
+  return res.json();
+}
+
+/**
+ * Public order lookup for the storefront tracking page. Both the order number
+ * and the phone number on the order are required — the API answers with the
+ * same 404 whichever one is wrong.
+ */
+export async function trackOrder(
+  orderNo: string,
+  phone: string
+): Promise<ApiListResponse<TrackedOrder>> {
+  const res = await fetch(`${API_URL}/api/v1/order/track`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ orderNo, phone }),
   });
   if (!res.ok) await handleError(res);
   return res.json();
