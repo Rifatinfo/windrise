@@ -1,5 +1,10 @@
 
-export type UserRole = "ADMIN" | "CUSTOMER" | "SHOP_MANAGER" | "MEDIA_MANAGER";
+export type UserRole =
+    | "ADMIN"
+    | "CUSTOMER"
+    | "SHOP_MANAGER"
+    | "MEDIA_MANAGER"
+    | "CUSTOMER_SUPPORT";
 
 export type RouteConfig = {
     exact: string[],

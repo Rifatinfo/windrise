@@ -5,18 +5,25 @@ import { Loader2Icon, PlusIcon, SearchIcon, UserRoundCheckIcon } from "lucide-re
 import Swal from "sweetalert2";
 import type { Admin, AdminStatus } from "@/types/admin";
 import {
-  createAdmin,
+  createStaff,
   deleteAdmin,
   getAllAdmins,
   updateAdmin,
   updateAdminStatus,
 } from "@/services/admin/admin";
+import { STAFF_ROLES, type StaffRoleKey } from "@/types/staffRole";
 import { useAuth } from "@/hooks/use-auth";
 import { AdminsTable } from "./AdminsTable";
 import { AdminFormDialog, type AdminFormPayload } from "./AdminFormDialog";
 import { Toast } from "@/components/shared/Toast/Toast";
 
-export function Admins() {
+/**
+ * One screen for every staff role. The role config supplies the labels and
+ * the create endpoint, so Add Admin / Shop Manager / Media Manager /
+ * Customer Support all behave identically.
+ */
+export function Admins({ roleKey = "ADMIN" }: { roleKey?: StaffRoleKey }) {
+  const config = STAFF_ROLES[roleKey];
   const { user } = useAuth();
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +38,7 @@ export function Admins() {
   const fetchAll = async () => {
     try {
       const result = await getAllAdmins({
+        role: roleKey,
         limit: 1000,
         sortBy: "createdAt",
         sortOrder: "desc",
@@ -38,7 +46,8 @@ export function Admins() {
       setAdmins(result.data ?? []);
       setError("");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to load admins";
+      const message =
+        err instanceof Error ? err.message : `Failed to load ${config.plural}`;
       setError(message);
     } finally {
       setRefreshing(false);
@@ -49,7 +58,7 @@ export function Admins() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAll();
-  }, []);
+  }, [roleKey]);
 
   const refresh = () => {
     setRefreshing(true);
@@ -86,13 +95,14 @@ export function Admins() {
     try {
       if (editing) {
         await updateAdmin(editing.id, { name: payload.name, email: payload.email }, payload.file);
-        Toast.fire({ icon: "success", title: "Admin updated successfully!" });
+        Toast.fire({ icon: "success", title: `${config.singular} updated successfully!` });
       } else {
-        await createAdmin(
+        await createStaff(
+          roleKey,
           { name: payload.name, email: payload.email, password: payload.password ?? "" },
           payload.file
         );
-        Toast.fire({ icon: "success", title: "Admin created successfully!" });
+        Toast.fire({ icon: "success", title: `${config.singular} created successfully!` });
       }
       setFormOpen(false);
       refresh();
@@ -108,10 +118,12 @@ export function Admins() {
     const activating = status === "ACTIVE";
     Swal.fire({
       icon: "question",
-      title: activating ? "Activate admin?" : "Deactivate admin?",
+      title: activating
+        ? `Activate ${config.singular.toLowerCase()}?`
+        : `Deactivate ${config.singular.toLowerCase()}?`,
       text: activating
-        ? `${admin.name ?? "This admin"} will be able to sign in again.`
-        : `${admin.name ?? "This admin"} will not be able to sign in until reactivated.`,
+        ? `${admin.name ?? `This ${config.singular.toLowerCase()}`} will be able to sign in again.`
+        : `${admin.name ?? `This ${config.singular.toLowerCase()}`} will not be able to sign in until reactivated.`,
       showCancelButton: true,
       confirmButtonText: activating ? "Activate" : "Deactivate",
       cancelButtonText: "Cancel",
@@ -123,7 +135,9 @@ export function Admins() {
         await updateAdminStatus(admin.id, status);
         Toast.fire({
           icon: "success",
-          title: activating ? "Admin activated!" : "Admin deactivated.",
+          title: activating
+            ? `${config.singular} activated!`
+            : `${config.singular} deactivated.`,
         });
         refresh();
       } catch (err: unknown) {
@@ -136,8 +150,8 @@ export function Admins() {
   const handleDelete = (admin: Admin) => {
     Swal.fire({
       icon: "warning",
-      title: "Delete admin?",
-      text: `${admin.name ?? "This admin"} will be permanently removed. This cannot be undone.`,
+      title: `Delete ${config.singular.toLowerCase()}?`,
+      text: `${admin.name ?? `This ${config.singular.toLowerCase()}`} will be permanently removed. This cannot be undone.`,
       showCancelButton: true,
       confirmButtonText: "Delete",
       cancelButtonText: "Cancel",
@@ -147,10 +161,10 @@ export function Admins() {
       if (!result.isConfirmed) return;
       try {
         await deleteAdmin(admin.id);
-        Toast.fire({ icon: "success", title: "Admin deleted." });
+        Toast.fire({ icon: "success", title: `${config.singular} deleted.` });
         refresh();
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "Failed to delete admin";
+        const message = err instanceof Error ? err.message : `Failed to delete ${config.singular.toLowerCase()}`;
         Toast.fire({ icon: "error", title: message });
       }
     });
@@ -163,19 +177,19 @@ export function Admins() {
           <div>
             <nav aria-label="Breadcrumb" className="text-xs text-ink-soft">
               Dashboards / <span className="font-medium text-ink">Admin Role</span> /{" "}
-              <span className="font-medium text-ink">Add Admin</span>
+              <span className="font-medium text-ink">{config.navLabel}</span>
             </nav>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight text-ink">
-              All Admins
+              {config.heading}
             </h1>
             <p className="mt-1 text-sm text-ink-muted">
-              Manage every admin account for the store.
+              {config.subtitle}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-ink-muted">
               <UserRoundCheckIcon className="h-3.5 w-3.5" aria-hidden="true" />
-              {admins.length} admins
+              {admins.length} {config.plural}
             </span>
             <button
               type="button"
@@ -195,7 +209,7 @@ export function Admins() {
               className="inline-flex h-10 items-center gap-2 rounded-xl bg-brand px-4 text-sm font-medium text-white shadow-card transition-colors duration-150 hover:bg-brand/90"
             >
               <PlusIcon className="h-4 w-4" aria-hidden="true" />
-              Add Admin
+              {config.navLabel}
             </button>
           </div>
         </header>
@@ -209,7 +223,7 @@ export function Admins() {
         {loading ? (
           <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 rounded-xl bg-surface py-16">
             <Loader2Icon className="h-6 w-6 animate-spin text-ink-soft" />
-            <p className="text-sm text-ink-muted">Loading admins...</p>
+            <p className="text-sm text-ink-muted">Loading {config.plural}...</p>
           </div>
         ) : (
           <div
@@ -226,13 +240,15 @@ export function Admins() {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search by name, email or ID..."
-                aria-label="Search admins"
+                aria-label={`${`Search ${config.plural}`}`}
                 className="h-10 w-full rounded-lg border border-line bg-surface pl-10 pr-3 text-sm text-ink placeholder:text-ink-soft outline-none transition-colors duration-150 focus:border-brand"
               />
             </div>
 
             <AdminsTable
               admins={filtered}
+              roleLabel={config.singular}
+              rolePlural={config.plural}
               currentUserId={user?.id}
               serialOf={(admin) => admins.findIndex((item) => item.id === admin.id) + 1}
               onEdit={openEdit}
@@ -250,6 +266,7 @@ export function Admins() {
           error={formError}
           onClose={() => setFormOpen(false)}
           onSubmit={handleSubmit}
+          roleLabel={config.singular}
         />
       )}
     </main>

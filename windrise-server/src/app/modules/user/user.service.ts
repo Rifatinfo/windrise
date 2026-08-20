@@ -137,57 +137,98 @@ const getAllFromDB = async (params: any, options: IOptions) => {
 }
 
 
-const createAdmin = async (req: Request & { file?: Express.Multer.File }) => {
+/**
+ * Roles that represent staff accounts created from the "Admin Role" section
+ * of the dashboard. Customers are created through the storefront instead.
+ */
+export const STAFF_ROLES = [
+    UserRole.ADMIN,
+    UserRole.SHOP_MANAGER,
+    UserRole.MEDIA_MANAGER,
+    UserRole.CUSTOMER_SUPPORT,
+] as const;
+
+export type StaffRole = (typeof STAFF_ROLES)[number];
+
+const STAFF_LABEL: Record<StaffRole, string> = {
+    [UserRole.ADMIN]: "Admin",
+    [UserRole.SHOP_MANAGER]: "Shop manager",
+    [UserRole.MEDIA_MANAGER]: "Media manager",
+    [UserRole.CUSTOMER_SUPPORT]: "Customer support",
+};
+
+const isStaffRole = (role: UserRole): role is StaffRole =>
+    (STAFF_ROLES as readonly UserRole[]).includes(role);
+
+/** Writes the role-specific profile row that mirrors the user record. */
+const createStaffProfile = async (
+    tx: Prisma.TransactionClient,
+    role: StaffRole,
+    data: {
+        userId: string;
+        name?: string;
+        email: string;
+        phone?: string;
+        avatar: string | null;
+        password: string;
+    }
+) => {
+    if (role === UserRole.ADMIN) return tx.admin.create({ data });
+    if (role === UserRole.SHOP_MANAGER) return tx.shopManager.create({ data });
+    if (role === UserRole.MEDIA_MANAGER) return tx.mediaManager.create({ data });
+    return tx.customerSupport.create({ data });
+};
+
+/**
+ * Creates a staff account: the `User` login record plus its role profile.
+ * Shared by every "Add <role>" page so the four flows can't drift apart.
+ */
+const createStaff = async (
+    role: StaffRole,
+    req: Request & { file?: Express.Multer.File }
+) => {
     const { name, email, password, phone } = req.body;
 
-    // ===== Generate slug =====
-    const slug = name ? await generateUserSlug(name.trim()) : `user-${crypto.randomBytes(6).toString("hex")}`;
-    let avatarUrl: string | null = null;
+    const existingEmail = await prisma.user.findUnique({ where: { email } });
+    if (existingEmail) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, "That email is already registered");
+    }
 
+    const slug = name
+        ? await generateUserSlug(name.trim())
+        : `user-${crypto.randomBytes(6).toString("hex")}`;
+
+    let avatarUrl: string | null = null;
     if (req.file) {
         const userFolder = `users/${slug}`;
         const filename = await optimizeAndSaveImage(req.file, userFolder);
         avatarUrl = `/uploads/${userFolder}/${filename}`;
     }
 
-    // ===== Hash password =====
     const saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS) || 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // ===== Prisma Transaction =====
-    const result = await prisma.$transaction(async (tx) => {
-        // 1 Create User
-        const user = await tx.user.create({
-            data: {
-                email,
-                name,
-                password: hashedPassword,
-                avatar: avatarUrl,
-                role: UserRole.ADMIN,
-            },
-        });
+    return prisma.$transaction(
+        async (tx) => {
+            const user = await tx.user.create({
+                data: { email, name, password: hashedPassword, avatar: avatarUrl, slug, role },
+            });
 
-
-        // 3 Create Admin Profile
-        const admin = await tx.admin.create({
-            data: {
+            return createStaffProfile(tx, role, {
                 userId: user.id,
                 name,
                 email,
                 phone,
                 avatar: avatarUrl,
                 password: hashedPassword,
-            },
-        });
-
-        return admin;
-    }, {
-        maxWait: 20000,
-        timeout: 30000,
-    });
-
-    return result;
+            });
+        },
+        { maxWait: 20000, timeout: 30000 }
+    );
 };
+
+const createAdmin = (req: Request & { file?: Express.Multer.File }) =>
+    createStaff(UserRole.ADMIN, req);
 
 const updateAdmin = async (
   id: string,
@@ -196,11 +237,15 @@ const updateAdmin = async (
   const { name, email } = req.body;
 
   const existing = await prisma.user.findUnique({ where: { id } });
-  if (!existing || existing.role !== UserRole.ADMIN) {
-    throw new ApiError(StatusCodes.NOT_FOUND, "Admin not found");
+  // Any staff role is manageable from the Admin Role pages, not just ADMIN.
+  if (!existing || !isStaffRole(existing.role)) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "Staff account not found");
   }
   if (existing.isDeleted || existing.status === UserStatus.DELETED) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, "This admin has been deleted");
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      `${STAFF_LABEL[existing.role]} has been deleted`
+    );
   }
 
   let avatarUrl = existing.avatar;
@@ -210,23 +255,25 @@ const updateAdmin = async (
     avatarUrl = `/uploads/${folder}/${filename}`;
   }
 
+  const profileData = {
+    ...(name !== undefined && { name }),
+    ...(email !== undefined && { email }),
+    ...(avatarUrl !== existing.avatar && { avatar: avatarUrl }),
+  };
+
+  // Mirror the change onto whichever profile table this staff role owns.
+  const profileUpdate =
+    existing.role === UserRole.ADMIN
+      ? prisma.admin.update({ where: { userId: id }, data: profileData })
+      : existing.role === UserRole.SHOP_MANAGER
+        ? prisma.shopManager.update({ where: { userId: id }, data: profileData })
+        : existing.role === UserRole.MEDIA_MANAGER
+          ? prisma.mediaManager.update({ where: { userId: id }, data: profileData })
+          : prisma.customerSupport.update({ where: { userId: id }, data: profileData });
+
   await prisma.$transaction([
-    prisma.user.update({
-      where: { id },
-      data: {
-        ...(name !== undefined && { name }),
-        ...(email !== undefined && { email }),
-        ...(avatarUrl !== existing.avatar && { avatar: avatarUrl }),
-      },
-    }),
-    prisma.admin.update({
-      where: { userId: id },
-      data: {
-        ...(name !== undefined && { name }),
-        ...(email !== undefined && { email }),
-        ...(avatarUrl !== existing.avatar && { avatar: avatarUrl }),
-      },
-    }),
+    prisma.user.update({ where: { id }, data: profileData }),
+    profileUpdate,
   ]);
 
   return prisma.user.findUnique({ where: { id } });
@@ -288,6 +335,8 @@ const updateMyProfile = async (
     writes.push(prisma.shopManager.update({ where: { userId }, data: profileData }));
   } else if (existing.role === UserRole.MEDIA_MANAGER) {
     writes.push(prisma.mediaManager.update({ where: { userId }, data: profileData }));
+  } else if (existing.role === UserRole.CUSTOMER_SUPPORT) {
+    writes.push(prisma.customerSupport.update({ where: { userId }, data: profileData }));
   } else if (existing.role === UserRole.CUSTOMER) {
     writes.push(prisma.customer.update({ where: { userId }, data: sharedData }));
   }
@@ -336,11 +385,14 @@ const updateAdminStatus = async (
   }
 
   const existing = await prisma.user.findUnique({ where: { id } });
-  if (!existing || existing.role !== UserRole.ADMIN) {
-    throw new ApiError(StatusCodes.NOT_FOUND, "Admin not found");
+  if (!existing || !isStaffRole(existing.role)) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "Staff account not found");
   }
   if (existing.isDeleted) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, "This admin has been deleted");
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      `${STAFF_LABEL[existing.role]} has been deleted`
+    );
   }
 
   return prisma.user.update({
@@ -358,8 +410,8 @@ const deleteAdmin = async (id: string, requesterId?: string) => {
   }
 
   const existing = await prisma.user.findUnique({ where: { id } });
-  if (!existing || existing.role !== UserRole.ADMIN) {
-    throw new ApiError(StatusCodes.NOT_FOUND, "Admin not found");
+  if (!existing || !isStaffRole(existing.role)) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "Staff account not found");
   }
 
   return prisma.user.update({
@@ -376,6 +428,7 @@ export const UserService = {
     createCustomer,
     getAllFromDB,
     createAdmin,
+    createStaff,
     updateAdmin,
     updateMyProfile,
     updateAdminStatus,

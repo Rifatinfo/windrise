@@ -44,7 +44,8 @@ export function AdminFormDialog({
   error,
   onClose,
   onSubmit,
-}: AdminFormDialogProps) {
+  roleLabel = "Admin",
+}: AdminFormDialogProps & { roleLabel?: string }) {
   const isCreate = !admin;
   const [name, setName] = useState(admin?.name ?? "");
   const [email, setEmail] = useState(admin?.email ?? "");
@@ -112,7 +113,7 @@ export function AdminFormDialog({
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
       role="dialog"
       aria-modal="true"
-      aria-label={isCreate ? "Create a new admin" : `Edit ${admin?.name ?? "admin"}`}
+      aria-label={isCreate ? `Create a new ${roleLabel.toLowerCase()}` : `Edit ${admin?.name ?? roleLabel.toLowerCase()}`}
       onClick={onClose}
     >
       <div
@@ -122,12 +123,12 @@ export function AdminFormDialog({
         <div className="flex items-center justify-between border-b border-line px-6 py-4">
           <div>
             <h2 className="text-base font-semibold text-ink">
-              {isCreate ? "Add Admin" : "Edit Admin"}
+              {isCreate ? `Add ${roleLabel}` : `Edit ${roleLabel}`}
             </h2>
             <p className="text-xs text-ink-muted">
               {isCreate
-                ? "Create a new admin account for the store."
-                : "Update the details of this admin account."}
+                ? `Create a new ${roleLabel.toLowerCase()} account for the store.`
+                : `Update the details of this ${roleLabel.toLowerCase()} account.`}
             </p>
           </div>
           <button

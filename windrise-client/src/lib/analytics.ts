@@ -4,25 +4,44 @@ declare global {
   interface Window {
     dataLayer?: unknown[];
     gtag?: (...args: unknown[]) => void;
+    /** Set once the Consent Mode v2 defaults have been pushed. */
+    __consentModeDefaultSet?: boolean;
   }
 }
 
 /**
- * Runs in <head> before hydration so Google Consent Mode v2 has a default
- * (denied) state established before gtag.js — or any other Google tag —
- * ever loads. This must stay inline; it cannot be deferred to a client effect.
+ * Establishes the Google Consent Mode v2 default (denied) state.
+ *
+ * This runs at module-evaluation time of the client chunk that owns every
+ * Google tag (`CookieConsent`), so it is always in place before gtag.js — or
+ * any other Google tag — can be requested. It deliberately does NOT go through
+ * `next/script` with `strategy="beforeInteractive"`: that renders a real
+ * `<script>` element into the React tree, and React never executes script tags
+ * it creates on the client, so the defaults silently never applied on pages
+ * reached through `notFound()`.
+ *
+ * If a Google tag is ever added directly to the document <head>, this bootstrap
+ * has to move back into the HTML ahead of it.
+ *
+ * Idempotent — safe to call more than once.
  */
-export const CONSENT_MODE_DEFAULT_SCRIPT = `
-window.dataLayer = window.dataLayer || [];
-function gtag(){window.dataLayer.push(arguments);}
-window.gtag = gtag;
-gtag('consent', 'default', {
-  analytics_storage: 'denied',
-  ad_storage: 'denied',
-  ad_user_data: 'denied',
-  ad_personalization: 'denied'
-});
-`.trim();
+export function ensureConsentModeDefault(): void {
+  if (typeof window === "undefined" || window.__consentModeDefaultSet) return;
+  window.__consentModeDefaultSet = true;
+
+  window.dataLayer = window.dataLayer || [];
+  function gtag(...args: unknown[]) {
+    window.dataLayer!.push(args);
+  }
+  window.gtag = gtag;
+
+  gtag("consent", "default", {
+    analytics_storage: "denied",
+    ad_storage: "denied",
+    ad_user_data: "denied",
+    ad_personalization: "denied",
+  });
+}
 
 let gaInitialized = false;
 

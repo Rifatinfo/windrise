@@ -4,7 +4,8 @@ import sendResponse from "../../../shared/sendResponse";
 import { StatusCodes } from "http-status-codes";
 import pick from "../../../shared/pick";
 import { userFilterableFields } from "./user.constant";
-import { UserService } from "./user.service";
+import { UserService, type StaffRole } from "./user.service";
+import { UserRole } from "@prisma/client";
 
 const createCustomer = catchAsync(
   async (req: Request & { file?: Express.Multer.File }, res: Response) => {
@@ -44,6 +45,22 @@ const createAdmin = catchAsync(async (req: Request & { file?: Express.Multer.Fil
         data : result
     });
 });
+
+/** One handler factory for every "Add <role>" page. */
+const createStaffHandler = (role: StaffRole, label: string) =>
+    catchAsync(async (req: Request & { file?: Express.Multer.File }, res: Response) => {
+        const result = await UserService.createStaff(role, req);
+        sendResponse(res, {
+            statusCode: 201,
+            success: true,
+            message: `${label} Created Successfully`,
+            data: result,
+        });
+    });
+
+const createShopManager = createStaffHandler(UserRole.SHOP_MANAGER, "Shop Manager");
+const createMediaManager = createStaffHandler(UserRole.MEDIA_MANAGER, "Media Manager");
+const createCustomerSupport = createStaffHandler(UserRole.CUSTOMER_SUPPORT, "Customer Support");
 
 const updateAdmin = catchAsync(async (req: Request & { file?: Express.Multer.File }, res: Response) => {
     const result = await UserService.updateAdmin(req.params.id, req);
@@ -93,6 +110,9 @@ export const UserController = {
     createCustomer,
     getAllFromDB,
     createAdmin,
+    createShopManager,
+    createMediaManager,
+    createCustomerSupport,
     updateAdmin,
     updateMyProfile,
     updateAdminStatus,

@@ -10,13 +10,23 @@ import {
   onOpenCookiePreferences,
   persistConsent,
 } from "@/lib/cookie-consent";
-import { initGoogleAnalytics, updateGoogleConsent } from "@/lib/analytics";
+import {
+  ensureConsentModeDefault,
+  initGoogleAnalytics,
+  updateGoogleConsent,
+} from "@/lib/analytics";
 import { buildMetaPixelSnippet } from "@/lib/meta-pixel";
 import { CookiePreferences } from "./CookiePreferences";
 
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID;
 const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 const META_PIXEL_SNIPPET = META_PIXEL_ID ? buildMetaPixelSnippet(META_PIXEL_ID) : null;
+
+// Consent Mode v2 must default to denied before any Google tag below can load.
+// Running it here, at chunk evaluation, guarantees that ordering on every page
+// — including ones reached through notFound(), where React re-renders the root
+// layout on the client and would never execute an inline <script>.
+ensureConsentModeDefault();
 
 export function CookieConsent() {
   const [showBanner, setShowBanner] = useState(false);

@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   MoreHorizontalIcon,
   PencilIcon,
@@ -10,6 +11,10 @@ import {
 import type { Admin, AdminStatus } from "@/types/admin";
 import { ADMIN_STATUS_META } from "@/types/admin";
 import { AdminAvatar } from "./AdminAvatar";
+
+/** Row action menu geometry — used to anchor and flip the portalled menu. */
+const MENU_WIDTH = 176; // matches the old w-44
+const MENU_MAX_HEIGHT = 148; // Edit + Deactivate + Delete, plus padding
 
 function formatDateOnly(input: string | Date): string {
   if (!input) return "-";
@@ -23,6 +28,10 @@ function formatDateOnly(input: string | Date): string {
 }
 
 interface AdminsTableProps {
+  /** Role label used in the column header and empty state, e.g. "Shop Manager". */
+  roleLabel?: string;
+  /** Plural label used in the empty state, e.g. "shop managers". */
+  rolePlural?: string;
   admins: Admin[];
   currentUserId?: string;
   serialOf?: (admin: Admin) => number;
@@ -44,44 +53,80 @@ function RowMenu({
   onToggleStatus: (status: AdminStatus) => void;
   onDelete: () => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const open = menuPos !== null;
   const isSelf = admin.id === currentUserId;
 
   useEffect(() => {
     if (!open) return;
-    const onClick = () => setOpen(false);
-    document.addEventListener("click", onClick);
-    return () => document.removeEventListener("click", onClick);
+    const close = () => setMenuPos(null);
+    document.addEventListener("click", close);
+    // The menu is fixed-positioned, so it must close rather than drift when
+    // the page or the table's own horizontal scroller moves.
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      document.removeEventListener("click", close);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
   }, [open]);
 
   const inactive = admin.status === "INACTIVE";
 
+  /**
+   * Anchors the menu to the trigger in viewport coordinates. It renders in a
+   * portal on <body>, so the table's `overflow-x-auto` wrapper — which also
+   * clips vertically — can no longer cut the menu off.
+   */
+  const toggleMenu = () => {
+    if (open) {
+      setMenuPos(null);
+      return;
+    }
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const GAP = 6;
+    const flipUp = rect.bottom + GAP + MENU_MAX_HEIGHT > window.innerHeight;
+
+    setMenuPos({
+      top: flipUp ? rect.top - GAP - MENU_MAX_HEIGHT : rect.bottom + GAP,
+      // right-aligned to the trigger, kept inside the viewport
+      left: Math.max(8, Math.min(rect.right - MENU_WIDTH, window.innerWidth - MENU_WIDTH - 8)),
+    });
+  };
+
   return (
     <div className="relative">
       <button
+        ref={triggerRef}
         type="button"
         aria-label={`Actions for ${admin.name ?? "admin"}`}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={(event) => {
           event.stopPropagation();
-          setOpen((prev) => !prev);
+          toggleMenu();
         }}
         className="cursor-pointer rounded-lg border border-line p-1.5 text-ink-muted transition-colors duration-150 hover:border-slate-300 hover:text-ink"
       >
         <MoreHorizontalIcon className="h-4 w-4" aria-hidden="true" />
       </button>
 
-      {open && (
+      {menuPos && createPortal(
         <div
           role="menu"
-          className="absolute right-0 z-20 mt-1 w-44 overflow-hidden rounded-xl border border-line bg-surface py-1 shadow-pop"
+          onClick={(event) => event.stopPropagation()}
+          style={{ top: menuPos.top, left: menuPos.left, width: MENU_WIDTH }}
+          className="fixed z-50 overflow-hidden rounded-xl border border-line bg-surface py-1 shadow-pop"
         >
           <button
             type="button"
             role="menuitem"
             onClick={() => {
-              setOpen(false);
+              setMenuPos(null);
               onEdit();
             }}
             className="flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-sm text-ink transition-colors duration-150 hover:bg-slate-50"
@@ -95,7 +140,7 @@ function RowMenu({
               type="button"
               role="menuitem"
               onClick={() => {
-                setOpen(false);
+                setMenuPos(null);
                 onToggleStatus(inactive ? "ACTIVE" : "INACTIVE");
               }}
               className="flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-sm text-ink transition-colors duration-150 hover:bg-slate-50"
@@ -114,7 +159,7 @@ function RowMenu({
               type="button"
               role="menuitem"
               onClick={() => {
-                setOpen(false);
+                setMenuPos(null);
                 onDelete();
               }}
               className="flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-sm text-rose-600 transition-colors duration-150 hover:bg-rose-50"
@@ -129,7 +174,8 @@ function RowMenu({
               You cannot deactivate or delete your own account.
             </p>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -137,6 +183,8 @@ function RowMenu({
 
 export function AdminsTable({
   admins,
+  roleLabel = "Admin",
+  rolePlural = "admins",
   currentUserId,
   serialOf,
   onEdit,
@@ -153,7 +201,7 @@ export function AdminsTable({
                 Serial
               </th>
               <th scope="col" className="px-3 py-3">
-                Admin
+                {roleLabel}
               </th>
               <th scope="col" className="px-3 py-3">
                 Status
@@ -235,9 +283,9 @@ export function AdminsTable({
       {admins.length === 0 && (
         <div className="flex flex-col items-center gap-2 px-5 py-16 text-center">
           <UserCheckIcon className="h-6 w-6 text-ink-soft" aria-hidden="true" />
-          <p className="text-sm font-medium text-ink">No admins found</p>
+          <p className="text-sm font-medium text-ink">No {rolePlural} found</p>
           <p className="text-xs text-ink-muted">
-            Click “Add Admin” in the top right to create one.
+            Click “Add {roleLabel}” in the top right to create one.
           </p>
         </div>
       )}

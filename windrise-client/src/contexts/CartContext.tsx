@@ -4,11 +4,14 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
+
+import { getPublicSettings } from "@/services/settings/settings";
 
 export type CartItem = {
   id: string;
@@ -32,6 +35,7 @@ export type ShippingOption = {
 
 const CART_STORAGE_KEY = "windrise-cart";
 
+/** Fallbacks used until the store's configured rates arrive. */
 const SHIPPING_OPTIONS: ShippingOption[] = [
   { id: "DHAKA_CITY", label: "Inside Dhaka", price: 60, method: "Home Delivery", note: "2-3 business days" },
   { id: "DHAKA_SUBURB", label: "Dhaka Suburb", price: 100, method: "Home Delivery", note: "3-4 business days" },
@@ -148,10 +152,48 @@ export function CartProvider({ children }: { children: ReactNode }) {
     writeCart([]);
   }, []);
 
-  const shipping = useMemo(
-    () => SHIPPING_OPTIONS.find((o) => o.id === shippingId) ?? SHIPPING_OPTIONS[0],
-    [shippingId]
+  // Delivery rates are configured on the admin Settings page; fall back to
+  // the defaults above if the request fails so checkout still works.
+  const [rates, setRates] = useState<Record<string, number> | null>(null);
+  const [freeAbove, setFreeAbove] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getPublicSettings()
+      .then((s) => {
+        if (cancelled) return;
+        setRates(s.shipping);
+        setFreeAbove(s.freeShippingThreshold);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const shippingOptions = useMemo(
+    () =>
+      SHIPPING_OPTIONS.map((option) => ({
+        ...option,
+        price: rates?.[option.id] ?? option.price,
+      })),
+    [rates]
   );
+
+  const subtotalForShipping = useMemo(
+    () => items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    [items]
+  );
+
+  const shipping = useMemo(() => {
+    const base =
+      shippingOptions.find((o) => o.id === shippingId) ?? shippingOptions[0];
+    // Free delivery once the order reaches the configured threshold.
+    if (freeAbove !== null && subtotalForShipping >= freeAbove) {
+      return { ...base, price: 0 };
+    }
+    return base;
+  }, [shippingOptions, shippingId, freeAbove, subtotalForShipping]);
 
   const subtotal = useMemo(
     () => items.reduce((sum, item) => sum + item.price * item.quantity, 0),

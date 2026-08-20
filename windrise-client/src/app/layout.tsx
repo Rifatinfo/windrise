@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Providers } from "@/components/providers/Providers";
 import { CookieConsent } from "@/components/modules/CookieConsent/CookieConsent";
-import { CONSENT_MODE_DEFAULT_SCRIPT } from "@/lib/analytics";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
@@ -35,11 +33,6 @@ export default function RootLayout({
       className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable)}
     >
       <body className="min-h-full flex flex-col">
-        <Script
-          id="consent-mode-default"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: CONSENT_MODE_DEFAULT_SCRIPT }}
-        />
         <Providers>{children}</Providers>
         <CookieConsent />
       </body>

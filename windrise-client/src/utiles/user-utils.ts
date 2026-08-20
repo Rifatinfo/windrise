@@ -12,6 +12,8 @@ export const getRoleLabel = (role: string): string => {
             return "Shop Manager";
         case "MEDIA_MANAGER":
             return "Media Manager";
+        case "CUSTOMER_SUPPORT":
+            return "Customer Support";
         case "CUSTOMER":
             return "Customer";
         default:
