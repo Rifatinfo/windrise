@@ -7,40 +7,82 @@ import ApiError from "../../errors/ApiError";
 
 
 
+type SessionResult = Awaited<ReturnType<typeof AuthService.verifyLoginOtp>>;
+type LoginResult = Awaited<ReturnType<typeof AuthService.login>>;
+
+const isOtpChallenge = (
+    result: LoginResult,
+): result is Extract<LoginResult, { otpRequired: true }> =>
+    "otpRequired" in result;
+
+/** Put a freshly minted session on the response as cookies. */
+const setSessionCookies = (res: Response, session: SessionResult) => {
+    const isProduction = process.env.NODE_ENV === "production";
+
+    res.cookie("accessToken", session.accessToken, {
+        secure: isProduction,
+        httpOnly: true,
+        sameSite: "lax",
+        maxAge: session.accessTokenMaxAge,
+    });
+
+    res.cookie("refreshToken", session.refreshToken, {
+        secure: isProduction,
+        httpOnly: true,
+        sameSite: "lax",
+        maxAge: session.refreshTokenMaxAge,
+    });
+};
+
 const login = catchAsync(async (req: Request, res: Response) => {
     const result = await AuthService.login(req.body);
 
-    const {
-        accessToken,
-        refreshToken,
-        accessTokenMaxAge,
-        refreshTokenMaxAge,
-        needPasswordChange,
-    } = result;
+    // Staff roles get a code by email instead of a session. No cookies are set
+    // here — the session only exists once the code is verified.
+    if (isOtpChallenge(result)) {
+        return sendResponse(res, {
+            statusCode: StatusCodes.OK,
+            success: true,
+            message: "A sign-in code has been sent to your email.",
+            data: result,
+        });
+    }
 
-    const isProduction = process.env.NODE_ENV === "production";
-
-    res.cookie("accessToken", accessToken, {
-        secure: isProduction,
-        httpOnly: true,
-        sameSite: "lax",
-        maxAge: accessTokenMaxAge,
-    });
-
-    res.cookie("refreshToken", refreshToken, {
-        secure: isProduction,
-        httpOnly: true,
-        sameSite: "lax",
-        maxAge: refreshTokenMaxAge,
-    });
+    setSessionCookies(res, result);
 
     sendResponse(res, {
         statusCode: 200,
         success: true,
         message: "User Login Successfully!",
         data: {
-            needPasswordChange,
+            needPasswordChange: result.needPasswordChange,
         },
+    });
+});
+
+const verifyLoginOtp = catchAsync(async (req: Request, res: Response) => {
+    const session = await AuthService.verifyLoginOtp(req.body);
+
+    setSessionCookies(res, session);
+
+    sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        message: "User Login Successfully!",
+        data: {
+            needPasswordChange: session.needPasswordChange,
+        },
+    });
+});
+
+const resendLoginOtp = catchAsync(async (req: Request, res: Response) => {
+    const result = await AuthService.resendLoginOtp(req.body);
+
+    sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        message: "A new sign-in code has been sent to your email.",
+        data: result,
     });
 });
 
@@ -126,6 +168,8 @@ const getMe = catchAsync(async (req: Request & { user?: any }, res: Response) =>
 
 export const AuthController = {
     login,
+    verifyLoginOtp,
+    resendLoginOtp,
     refreshToken,
     changePassword,
     forgotPassword,

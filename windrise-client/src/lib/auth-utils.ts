@@ -11,7 +11,10 @@ export type RouteConfig = {
     patterns: RegExp[],
 }
 
-export const authRoutes = ["/login", "/register", "/forgot-password"];
+// Public sign-in screens. A logged-in user hitting one is bounced to their
+// dashboard, which is why /verify-otp belongs here: once the code has been
+// accepted the session exists and the page has nothing left to do.
+export const authRoutes = ["/login", "/register", "/forgot-password", "/verify-otp"];
 
 export const commonProtectedRoutes: RouteConfig = {
     exact: ["/my-profile", "/settings", "/change-password", "/reset-password"],

@@ -9,6 +9,19 @@ import { envVars } from "@/config";
 import { jwtHelper } from "@/app/helpers/jwtHelpers";
 import { UserStatus } from "@prisma/client";
 import { sendEmail } from "@/app/utils/sendEmail";
+import { randomInt } from "crypto";
+import {
+  buildLoginOtpEmailHtml,
+  buildLoginOtpEmailText,
+} from "@/app/utils/otpEmail";
+import {
+  OTP_LENGTH,
+  OTP_MAX_ATTEMPTS,
+  OTP_PURGE_MINUTES,
+  OTP_REQUIRED_ROLES,
+  OTP_RESEND_COOLDOWN_SECONDS,
+  OTP_VALID_MINUTES,
+} from "@/config/otp.config";
 
 
 const convertToMs = (time: string): number => {
@@ -35,6 +48,154 @@ const convertToMs = (time: string): number => {
   }
 };
 
+// ============================== Session issuing =============================
+
+type SessionUser = {
+  id: string;
+  email: string | null;
+  role: string;
+  needPasswordChange: boolean;
+};
+
+/** Mint the access/refresh pair. The only place a session is created. */
+const issueSession = (user: SessionUser) => {
+  const accessTokenExpiresIn = envVars.JWT_SECRET_EXPIRES_IN as string;
+  const refreshTokenExpiresIn = envVars.REFRESH_TOKEN_EXPIRES_IN as string;
+
+  const claims = { id: user.id, email: user.email, role: user.role };
+
+  return {
+    accessToken: jwtHelper.generateToken(
+      claims,
+      envVars.JWT_SECRET as Secret,
+      accessTokenExpiresIn,
+    ),
+    refreshToken: jwtHelper.generateToken(
+      claims,
+      envVars.REFRESH_TOKEN_SECRET as Secret,
+      refreshTokenExpiresIn,
+    ),
+    accessTokenMaxAge: convertToMs(accessTokenExpiresIn),
+    refreshTokenMaxAge: convertToMs(refreshTokenExpiresIn),
+    needPasswordChange: user.needPasswordChange,
+  };
+};
+
+// ============================ Staff one-time codes ==========================
+
+const isOtpRole = (role: string) =>
+  (OTP_REQUIRED_ROLES as readonly string[]).includes(role);
+
+/** Delete every code whose 5-minute lifetime has run out. */
+const purgeExpiredOtps = async () => {
+  const { count } = await prisma.loginOtp.deleteMany({
+    where: { purgeAt: { lte: new Date() } },
+  });
+  return count;
+};
+
+const generateOtpCode = () => {
+  // crypto.randomInt is uniform, unlike Math.random scaled into a range.
+  const max = 10 ** OTP_LENGTH;
+  return randomInt(0, max).toString().padStart(OTP_LENGTH, "0");
+};
+
+/**
+ * A short-lived ticket proving the password step already succeeded. It is
+ * what the verify and resend endpoints authenticate against, so neither can
+ * be used to mail codes to an admin without knowing their password.
+ */
+const signOtpTicket = (userId: string) =>
+  jwtHelper.generateToken(
+    { id: userId, purpose: "login-otp" },
+    envVars.JWT_SECRET as Secret,
+    `${OTP_PURGE_MINUTES}m`,
+  );
+
+const readOtpTicket = (ticket: string): string => {
+  try {
+    const decoded = jwtHelper.verifyToken(ticket, envVars.JWT_SECRET as Secret);
+    if (decoded?.purpose !== "login-otp" || !decoded?.id) {
+      throw new Error("wrong purpose");
+    }
+    return decoded.id as string;
+  } catch {
+    throw new ApiError(
+      StatusCodes.UNAUTHORIZED,
+      "This sign-in attempt has expired. Please log in again.",
+    );
+  }
+};
+
+/** Create a code, store only its hash, and email it. */
+const issueLoginOtp = async (user: {
+  id: string;
+  email: string | null;
+  name: string | null;
+}) => {
+  await purgeExpiredOtps();
+
+  if (!user.email) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      "This account has no email address, so a sign-in code cannot be sent.",
+    );
+  }
+
+  // Only the newest code is ever valid — drop anything outstanding.
+  await prisma.loginOtp.deleteMany({ where: { userId: user.id } });
+
+  const code = generateOtpCode();
+  const now = Date.now();
+
+  await prisma.loginOtp.create({
+    data: {
+      userId: user.id,
+      email: user.email,
+      codeHash: await bcrypt.hash(code, 10),
+      expiresAt: new Date(now + OTP_VALID_MINUTES * 60 * 1000),
+      purgeAt: new Date(now + OTP_PURGE_MINUTES * 60 * 1000),
+    },
+  });
+
+  const sent = await sendEmail({
+    to: user.email,
+    subject: `${code} is your Windrise sign-in code`,
+    html: buildLoginOtpEmailHtml({
+      name: user.name,
+      code,
+      validForMinutes: OTP_VALID_MINUTES,
+    }),
+    text: buildLoginOtpEmailText({ code, validForMinutes: OTP_VALID_MINUTES }),
+  });
+
+  if (!sent) {
+    // Nothing was delivered, so leaving the row would lock the user out for
+    // the cooldown with a code they can never read.
+    await prisma.loginOtp.deleteMany({ where: { userId: user.id } });
+    throw new ApiError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      "We couldn't send your sign-in code. Please try again.",
+    );
+  }
+
+  return {
+    otpRequired: true as const,
+    otpTicket: signOtpTicket(user.id),
+    email: maskEmail(user.email),
+    expiresInSeconds: OTP_VALID_MINUTES * 60,
+    resendAfterSeconds: OTP_RESEND_COOLDOWN_SECONDS,
+  };
+};
+
+/** "mdrifat@gmail.com" -> "md•••••t@gmail.com" */
+const maskEmail = (email: string) => {
+  const [local, domain] = email.split("@");
+  if (!domain) return email;
+  if (local.length <= 2) return `${local[0]}•••@${domain}`;
+  return `${local.slice(0, 2)}${"•".repeat(Math.min(local.length - 3, 6))}${local.slice(-1)}@${domain}`;
+};
+
 const login = async (payload: { email: string; password: string }) => {
   const user = await prisma.user.findUniqueOrThrow({
     where: {
@@ -52,28 +213,94 @@ const login = async (payload: { email: string; password: string }) => {
     throw new ApiError(StatusCodes.BAD_REQUEST, "Password is incorrect!");
   }
 
-  const accessTokenExpiresIn = envVars.JWT_SECRET_EXPIRES_IN as string;
-  const refreshTokenExpiresIn = envVars.REFRESH_TOKEN_EXPIRES_IN as string;
+  // Staff never get a session straight from the password step — they have to
+  // clear an emailed code first, every time they sign in.
+  if (isOtpRole(user.role)) {
+    return issueLoginOtp(user);
+  }
 
-  const accessToken = jwtHelper.generateToken(
-    { id: user.id, email: user.email, role: user.role },
-    envVars.JWT_SECRET as Secret,
-    accessTokenExpiresIn,
+  return issueSession(user);
+};
+
+/** Exchange a correct code for a session. */
+const verifyLoginOtp = async (payload: { otpTicket: string; otp: string }) => {
+  const userId = readOtpTicket(payload.otpTicket);
+  await purgeExpiredOtps();
+
+  const record = await prisma.loginOtp.findFirst({
+    where: { userId, consumedAt: null },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const expired = new ApiError(
+    StatusCodes.BAD_REQUEST,
+    "That code has expired. Request a new one.",
   );
 
-  const refreshToken = jwtHelper.generateToken(
-    { id: user.id, email: user.email, role: user.role },
-    envVars.REFRESH_TOKEN_SECRET as Secret,
-    refreshTokenExpiresIn,
-  );
+  if (!record) throw expired;
+  if (record.expiresAt.getTime() <= Date.now()) throw expired;
 
-  return {
-    accessToken,
-    refreshToken,
-    accessTokenMaxAge: convertToMs(accessTokenExpiresIn),
-    refreshTokenMaxAge: convertToMs(refreshTokenExpiresIn),
-    needPasswordChange: user.needPasswordChange,
-  };
+  if (record.attempts >= OTP_MAX_ATTEMPTS) {
+    await prisma.loginOtp.delete({ where: { id: record.id } });
+    throw new ApiError(
+      StatusCodes.TOO_MANY_REQUESTS,
+      "Too many incorrect codes. Request a new one.",
+    );
+  }
+
+  const matches = await bcrypt.compare(payload.otp.trim(), record.codeHash);
+
+  if (!matches) {
+    const { attempts } = await prisma.loginOtp.update({
+      where: { id: record.id },
+      data: { attempts: { increment: 1 } },
+      select: { attempts: true },
+    });
+
+    const left = Math.max(OTP_MAX_ATTEMPTS - attempts, 0);
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      left > 0
+        ? `That code isn't right. ${left} ${left === 1 ? "try" : "tries"} left.`
+        : "Too many incorrect codes. Request a new one.",
+    );
+  }
+
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: userId, status: UserStatus.ACTIVE },
+  });
+
+  // Burn it before handing out the session so it can never be replayed.
+  await prisma.loginOtp.delete({ where: { id: record.id } });
+
+  return issueSession(user);
+};
+
+/** Send a fresh code for an in-flight sign-in. */
+const resendLoginOtp = async (payload: { otpTicket: string }) => {
+  const userId = readOtpTicket(payload.otpTicket);
+  await purgeExpiredOtps();
+
+  const existing = await prisma.loginOtp.findFirst({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (existing) {
+    const waited = (Date.now() - existing.createdAt.getTime()) / 1000;
+    if (waited < OTP_RESEND_COOLDOWN_SECONDS) {
+      throw new ApiError(
+        StatusCodes.TOO_MANY_REQUESTS,
+        `Please wait ${Math.ceil(OTP_RESEND_COOLDOWN_SECONDS - waited)}s before requesting another code.`,
+      );
+    }
+  }
+
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: userId, status: UserStatus.ACTIVE },
+  });
+
+  return issueLoginOtp(user);
 };
 
 const refreshToken = async (token: string) => {
@@ -388,6 +615,9 @@ const changePassword = async (user: any, payload: any) => {
 
 export const AuthService = {
   login,
+  verifyLoginOtp,
+  resendLoginOtp,
+  purgeExpiredOtps,
   refreshToken,
   getMe,
   resetPassword,
