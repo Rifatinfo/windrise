@@ -56,6 +56,31 @@ router.post(
 );
 
 
+/* ===============================================
+ ========= Shop / Media / Support Created ========
+ Same multipart contract as create-admin: a JSON
+ "data" field plus an optional "file" avatar.
+ ============================================== */
+const staffCreateHandlers = [
+    fileUploader.singleUpload("file"),
+    (req: express.Request, _res: express.Response, next: express.NextFunction) => {
+        try {
+            if (!req.body?.data) {
+                throw new Error("Staff data missing");
+            }
+            const parsed = JSON.parse(req.body.data);
+            req.body = UserValidation.createAdminValidationSchema.parse(parsed);
+            next();
+        } catch (error) {
+            next(error);
+        }
+    },
+] as const;
+
+router.post("/create-shop-manager", ...staffCreateHandlers, UserController.createShopManager);
+router.post("/create-media-manager", ...staffCreateHandlers, UserController.createMediaManager);
+router.post("/create-customer-support", ...staffCreateHandlers, UserController.createCustomerSupport);
+
 router.get("/",   UserController.getAllFromDB);
 
 /* ===============================================

@@ -41,13 +41,26 @@ function NavCollapsible({
 }) {
   const children = item.children ?? [];
   const hasActiveChild = children.some((child) => child.path === pathname);
-  const [open, setOpen] = useState(hasActiveChild);
+
+  // null = follow the route; true/false = the user has toggled it by hand.
+  const [manualOpen, setManualOpen] = useState<boolean | null>(null);
+  const [seenPath, setSeenPath] = useState(pathname);
+
+  // Adjusting state during render (a supported React pattern) so that landing
+  // on a child route — e.g. via the sidebar search — expands its parent group
+  // even though this component is already mounted and collapsed.
+  if (seenPath !== pathname) {
+    setSeenPath(pathname);
+    setManualOpen(null);
+  }
+
+  const open = manualOpen ?? hasActiveChild;
 
   return (
     <div>
       <button
         type="button"
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => setManualOpen(!open)}
         aria-expanded={open}
         className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2.5 text-sm font-medium transition-colors text-slate-600 hover:bg-slate-100 hover:text-black"
       >

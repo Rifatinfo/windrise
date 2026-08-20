@@ -2,6 +2,7 @@
 
 import { NAV_MAIN, NAV_SECONDARY, NAV_ROLE } from "./nav-config";
 import { NavMain } from "./NavMain";
+import { SidebarSearch } from "./SidebarSearch";
 
 import { UserRole } from "@/lib/auth-utils";
 import {
@@ -57,6 +58,10 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+
+        {/* Sits under the logo and above Dashboards. Only surfaces routes
+            this role can already reach. */}
+        <SidebarSearch role={role} />
       </SidebarHeader>
 
       <SidebarContent className="flex flex-col pt-2 bg-white">

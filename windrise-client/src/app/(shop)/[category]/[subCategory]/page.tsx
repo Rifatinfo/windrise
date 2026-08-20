@@ -61,11 +61,7 @@ const SubCategoryPage = async ({ params, searchParams }: PageProps) => {
 
   if (!matchedSubCategory) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div>
-          <ComingSoon />
-        </div>
-      </div>
+      <ComingSoon />
     );
   }
 
@@ -112,9 +108,7 @@ const SubCategoryPage = async ({ params, searchParams }: PageProps) => {
 
       {/* No padding wrapper here — full bleed */}
       {products.length === 0 && (
-        <div className="w-full min-h-screen">
-          <ComingSoon />
-        </div>
+        <ComingSoon />
       )}
 
       {products.length > 0 && (

@@ -2,7 +2,8 @@ import { OrderStatus } from "@prisma/client";
 
 import prisma from "../../../shared/prisma";
 import { InventoryService } from "../inventory/inventory.service";
-import { VALID_ORDER_STATUS_FILTER, LOW_STOCK_THRESHOLD } from "./stats.constant";
+import { VALID_ORDER_STATUS_FILTER } from "./stats.constant";
+import { SettingsService } from "../settings/settings.service";
 
 const round1 = (value: number) => Math.round(value * 10) / 10;
 const round2 = (value: number) => Math.round(value * 100) / 100;
@@ -499,6 +500,8 @@ const getReturnReasons = async (start: Date, end: Date) => {
 // ============================= §15 / §16 — Inventory overview + low stock =============================
 
 const getInventorySummary = async () => {
+  // Admin-configurable cutoff from the Settings page.
+  const LOW_STOCK_THRESHOLD = await SettingsService.getLowStockThreshold();
   const overview = await InventoryService.getInventoryOverview();
 
   const lowStockAlerts = overview.products
@@ -875,6 +878,8 @@ export interface AlertNotification {
 }
 
 const getAlerts = async (): Promise<AlertNotification[]> => {
+  // Admin-configurable cutoff from the Settings page.
+  const LOW_STOCK_THRESHOLD = await SettingsService.getLowStockThreshold();
   const [recentOrders, recentPayments, inventoryOverview, pendingReturns, failedPayments] = await Promise.all([
     prisma.order.findMany({
       orderBy: { createdAt: "desc" },

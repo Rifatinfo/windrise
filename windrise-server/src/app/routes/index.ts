@@ -12,6 +12,7 @@ import { CouponRoutes } from "../modules/coupon/coupon.routes";
 import { ReturnRoutes } from "../modules/returns/returns.routes";
 import { MarketingRoutes } from "../modules/marketing/marketing.routes";
 import { AnalyticsRoutes } from "../modules/analytics/analytics.routes";
+import { SettingsRoutes } from "../modules/settings/settings.routes";
 
 
 const router = express.Router();
@@ -20,6 +21,10 @@ const moduleRoutes = [
   {
     path: "/user",
     route: UserRoutes,
+  },
+  {
+    path: "/settings",
+    route: SettingsRoutes,
   },
   {
     path: "/auth",
