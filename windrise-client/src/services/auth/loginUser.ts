@@ -46,6 +46,27 @@ export const loginUser = async (_currentState: any, formData: any): Promise<any>
         });
 
         const result = await res.json();
+
+        // Staff roles (admin, shop/media manager, customer support) never get a
+        // session from the password step — the backend emails a one-time code
+        // instead. Park the short-lived ticket in an httpOnly cookie and hand
+        // over to the code screen.
+        if (result?.success && result?.data?.otpRequired) {
+            await setCookie("otpTicket", result.data.otpTicket, {
+                secure: true,
+                httpOnly: true,
+                sameSite: "lax",
+                maxAge: 60 * 5,
+                path: "/",
+            });
+
+            const params = new URLSearchParams();
+            if (result.data.email) params.set("to", result.data.email);
+            if (redirectTo) params.set("redirect", redirectTo.toString());
+
+            redirect(`/verify-otp${params.size ? `?${params.toString()}` : ""}`);
+        }
+
         const setCookieHeaders = res.headers.getSetCookie();
 
         if (setCookieHeaders && setCookieHeaders.length > 0) {

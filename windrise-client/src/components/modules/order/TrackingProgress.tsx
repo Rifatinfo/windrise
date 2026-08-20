@@ -88,7 +88,8 @@ export function TrackingProgress({ order }: { order: TrackedOrder }) {
           className="inline-flex h-[22px] w-[22px] items-center justify-center rounded-[4px] border border-[#e0e0e0] text-[#8f8f8f] transition-colors hover:bg-[#f5f5f5] hover:text-[#1a1a1a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#1a1a1a]"
         >
           {copied ? (
-            <CheckIcon className="h-[12px] w-[12px] text-[#1f8a4c]" strokeWidth={2.4} />
+            <CheckIcon 
+             className="h-[12px] w-[12px] text-[#1f8a4c]" strokeWidth={2.4} />
           ) : (
             <CopyIcon className="h-[12px] w-[12px]" strokeWidth={1.8} />
           )}

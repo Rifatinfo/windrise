@@ -29,6 +29,9 @@ interface SendEmailOptions {
     to: string;
     subject: string;
 
+    /** Plain-text alternative, used by clients that do not render HTML. */
+    text?: string;
+
     // OPTION 1: direct HTML string (recommended)
     html?: string;
 
@@ -48,6 +51,7 @@ export const sendEmail = async ({
     to,
     subject,
     html,
+    text,
     templateName,
     templateData,
     attachments,
@@ -93,6 +97,7 @@ export const sendEmail = async ({
             to,
             subject,
             html: finalHtml,
+            text,
             attachments,
         });
 

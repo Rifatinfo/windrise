@@ -2,7 +2,11 @@
 import express, { NextFunction, Request, Response } from 'express'
 import { AuthController } from './auth.controller';
 import auth from '../../middlewares/auth';
-import { authRateLimiter } from '@/app/middlewares/rateLimiter';
+import {
+    authRateLimiter,
+    otpResendRateLimiter,
+    otpVerifyRateLimiter,
+} from '@/app/middlewares/rateLimiter';
 import { UserRole } from '@prisma/client';
 import { GoogleOAuthController } from './googleOAuth.controller';
 
@@ -14,6 +18,20 @@ router.post(
     "/login",
     authRateLimiter,
     AuthController.login
+)
+
+// Staff sign-in second step. Both are guarded by the short-lived OTP ticket
+// the login step returns, and rate limited so codes cannot be brute forced.
+router.post(
+    "/verify-otp",
+    otpVerifyRateLimiter,
+    AuthController.verifyLoginOtp
+)
+
+router.post(
+    "/resend-otp",
+    otpResendRateLimiter,
+    AuthController.resendLoginOtp
 )
 
 router.post(

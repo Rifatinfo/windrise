@@ -10,6 +10,7 @@ model User {
   status             UserStatus     @default(ACTIVE)
   auths              AuthProvider[]
   orders             Order[]
+  loginOtps          LoginOtp[]
 
   customer        Customer?
   shopManager     ShopManager?
