@@ -10,6 +10,11 @@ model OrderReturn {
   refundAmount Float?
   refundStatus RefundStatus @default(PENDING)
 
+  /// When the returned items were added back to stock. Null means the stock
+  /// movement has not been applied, which keeps restocking idempotent no
+  /// matter how many times the return is updated.
+  restockedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

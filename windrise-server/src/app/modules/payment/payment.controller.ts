@@ -35,13 +35,27 @@ const failPayment = catchAsync(async (req: Request, res: Response) => {
 });
 
 const cancelPayment = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as Record<string, string>;
+    // SSLCommerz posts the cancel callback, but can also send the shopper's
+    // browser here as a plain GET. Merge both so either lands on the page.
+    const query = {
+        ...(req.query as Record<string, string>),
+        ...(req.body as Record<string, string>),
+    };
 
     const result = await PaymentService.cancelPayment(query);
 
-    return res.redirect(
-        `${envVars.SSL_CANCEL_FRONTEND_URL}?transactionId=${query.transactionId}&message=${result.message}&status=cancel`
-    );
+    // The cancelled page needs the order to offer a retry and the amount to
+    // show what was attempted, so both travel with the redirect.
+    const params = new URLSearchParams({
+        transactionId: query.transactionId ?? "",
+        orderId: result.orderId ?? "",
+        orderNo: result.orderNo ?? "",
+        amount: String(result.amount ?? ""),
+        message: result.message,
+        status: "cancel",
+    });
+
+    return res.redirect(`${envVars.SSL_CANCEL_FRONTEND_URL}?${params.toString()}`);
 });
 const initPayment = catchAsync(async (req: Request & { user?: { id: string } }, res: Response) => {
     const { orderId } = req.params;

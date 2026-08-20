@@ -30,3 +30,25 @@ export const paymentLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
 });
+
+/**
+ * Guards the public order-tracking lookup. The phone number is the only
+ * secret protecting an order, so wrong guesses are capped tightly.
+ *
+ * Only failed lookups count (`skipSuccessfulRequests`): brute-forcing an
+ * order/phone pair produces misses, whereas a customer watching their own
+ * order — the page re-checks for status changes while it is open — only ever
+ * produces hits and is never throttled.
+ */
+export const orderTrackRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  skipSuccessfulRequests: true,
+  message: {
+    success: false,
+    statusCode: 429,
+    message: "Too many tracking attempts. Please try again in a few minutes.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});

@@ -16,7 +16,11 @@ import { orderSearchableFields } from "./order.constant";
 import { generateInvoice } from "@/app/utils/invoice";
 import { saveInvoicePdf } from "@/app/utils/invoiceUrl";
 import { buildOrderEmailHtml, sendEmail } from "@/app/utils/sendEmail";
-import { DELIVERY_CHARGE } from "@/config/delivery.config";
+import {
+  DEFAULT_DELIVERY_DAYS,
+  DELIVERY_CHARGE,
+  DELIVERY_DAYS,
+} from "@/config/delivery.config";
 import { parseDeliveryType } from "@/app/utils/parseDeliveryType";
 import { SSLService } from "../sslCommerz/sslCommerz.service";
 import { paginationHelper } from "@/app/helpers/paginationHelper";
@@ -311,6 +315,11 @@ const createOrderService = async ({
         items: {
           create: preparedOrderItems,
         },
+
+        // First entry of the timeline the customer sees on /order-tracking.
+        statusEvents: {
+          create: { status: OrderStatus.PLACED },
+        },
       },
       include: {
         items: true,
@@ -502,7 +511,14 @@ const updateOrderStatusService = async (
     where: { id: orderId },
     // Moving the order along the pipeline re-syncs both columns: clearing the
     // overrides lets them derive from the new order status again.
-    data: { orderStatus: status, shipmentStatus: null, afterSalesStatus: null },
+    data: {
+      orderStatus: status,
+      shipmentStatus: null,
+      afterSalesStatus: null,
+      // Stamps the transition so the customer tracking timeline can show the
+      // date this step actually happened.
+      statusEvents: { create: { status } },
+    },
     include: { items: true, payment: true },
   });
 };
@@ -886,8 +902,145 @@ const getOrderByIdService = async (orderId: string) => {
 };
 
 
+// ============================ Public order tracking ==========================
+
+/** Digits only, last 10 — so "01712345678", "+8801712345678" and
+ *  "8801712345678" all compare equal. */
+const normalizePhone = (value: string) => value.replace(/\D/g, "").slice(-10);
+
+/**
+ * Bangladesh's weekend is Friday–Saturday, so those days don't count toward
+ * the delivery window quoted at checkout.
+ */
+const addBusinessDays = (from: Date, days: number) => {
+  const date = new Date(from);
+  let remaining = days;
+  while (remaining > 0) {
+    date.setDate(date.getDate() + 1);
+    const day = date.getDay(); // 5 = Friday, 6 = Saturday
+    if (day !== 5 && day !== 6) remaining -= 1;
+  }
+  return date;
+};
+
+type TrackedOrderRow = Prisma.OrderGetPayload<{
+  include: { statusEvents: true; items: true };
+}>;
+
+/**
+ * Real dates for the timeline. Orders created before the status log existed
+ * have no rows, so their first and current steps fall back to the order's own
+ * `createdAt` / `updatedAt` — both real timestamps, never invented ones.
+ * Steps in between simply carry no date.
+ */
+const buildStatusHistory = (order: TrackedOrderRow) => {
+  const history = order.statusEvents.map((event) => ({
+    status: event.status,
+    at: event.createdAt.toISOString(),
+  }));
+
+  const recorded = new Set(history.map((event) => event.status));
+
+  if (!recorded.has(OrderStatus.PLACED)) {
+    history.push({
+      status: OrderStatus.PLACED,
+      at: order.createdAt.toISOString(),
+    });
+  }
+
+  if (
+    order.orderStatus !== OrderStatus.PLACED &&
+    !recorded.has(order.orderStatus)
+  ) {
+    history.push({
+      status: order.orderStatus,
+      at: order.updatedAt.toISOString(),
+    });
+  }
+
+  return history.sort(
+    (a, b) => new Date(a.at).getTime() - new Date(b.at).getTime(),
+  );
+};
+
+/**
+ * Customer-facing order lookup — no authentication, so the order number and
+ * the phone number on the order must BOTH match. A miss on either returns the
+ * same 404, which stops the endpoint from being used to probe whether a given
+ * order number exists.
+ *
+ * The response is deliberately narrow: delivery address, email, billing
+ * details and payment/gateway records are all withheld. Only what the tracking
+ * page renders is returned.
+ */
+const trackOrderService = async (rawOrderNo: string, rawPhone: string) => {
+  const orderNo = rawOrderNo.trim().replace(/^#+/, "");
+  const phone = normalizePhone(rawPhone);
+
+  const notFound = new ApiError(
+    StatusCodes.NOT_FOUND,
+    "We couldn't find an order with that Order ID and phone number. Please check both and try again.",
+  );
+
+  if (!orderNo || !phone) throw notFound;
+
+  const order = await prisma.order.findFirst({
+    where: { OR: [{ orderNo }, { id: orderNo }] },
+    include: { statusEvents: true, items: true },
+  });
+
+  if (!order || normalizePhone(order.phone) !== phone) throw notFound;
+
+  const history = buildStatusHistory(order);
+  const deliveredEvent = history.find(
+    (event) => event.status === OrderStatus.DELIVERED,
+  );
+
+  const deliveryDays =
+    (order.deliveryType && DELIVERY_DAYS[order.deliveryType]) ??
+    DEFAULT_DELIVERY_DAYS;
+
+  return {
+    orderNo: order.orderNo,
+    placedAt: order.createdAt.toISOString(),
+    updatedAt: order.updatedAt.toISOString(),
+
+    orderStatus: order.orderStatus,
+    shipmentStatus: order.shipmentStatus ?? null,
+    afterSalesStatus: order.afterSalesStatus ?? null,
+
+    /** Recorded transitions, oldest first. */
+    history,
+
+    /** Actual delivery date once delivered, otherwise null. */
+    deliveredAt: deliveredEvent?.at ?? null,
+    estimatedDeliveryAt: addBusinessDays(
+      order.createdAt,
+      deliveryDays,
+    ).toISOString(),
+
+    subtotal: order.subtotal,
+    deliveryCharge: order.deliveryCharge ? Number(order.deliveryCharge) : 0,
+    discountAmount: order.discountAmount,
+    totalAmount: order.totalAmount,
+
+    items: order.items.map((item) => ({
+      id: item.id,
+      productName: item.productName,
+      sku: item.sku ?? null,
+      size: item.size ?? null,
+      color: item.color ?? null,
+      quantity: item.quantity,
+      price: item.price,
+      total: item.total,
+      productImage: item.productImage ?? null,
+    })),
+  };
+};
+
 export const orderService = {
   createOrderService,
+  trackOrderService,
   getAllOrdersService,
   getMyOrdersService,
   updateOrderStatusService,

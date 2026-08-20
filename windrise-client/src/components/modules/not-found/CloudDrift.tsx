@@ -32,7 +32,7 @@ export function CloudDrift({
 
   return (
     <div
-      className="pointer-events-none absolute inset-x-0 top-0 overflow-hidden"
+      className="pointer-events-none absolute inset-x-0 top-0 overflow-hidden "
       style={{
         height,
         WebkitMaskImage: fade,
@@ -53,7 +53,7 @@ export function CloudDrift({
         }}
       >
         {[0, 1, 2, 3].map((index) => (
-          <div key={index} className="h-full w-1/4 flex-none overflow-hidden">
+          <div key={index} className="h-full w-1/4 flex-none overflow-hidden ">
             <img
               src={src}
               alt=""

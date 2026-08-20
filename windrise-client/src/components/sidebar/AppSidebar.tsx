@@ -42,13 +42,13 @@ export function AppSidebar() {
   
   return (
     <Sidebar collapsible="offcanvas">
-      <SidebarHeader className="bg-white">
+      <SidebarHeader className="bg-white md:pt-6">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton>
               <Link href="/dashboard">
                 <Image
-                  className="block dark:hidden mx-auto mb-1"
+                  className="block dark:hidden mx-auto mb-1 ml-2"
                   src="/assets/Logo_Black.png"
                   width={140}
                   height={120}

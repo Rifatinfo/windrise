@@ -343,15 +343,25 @@ const cancelPayment = async (query: Record<string, string>) => {
 
   const payment = await prisma.payment.findUnique({
     where: { transactionId },
+    include: { order: { select: { orderNo: true } } },
   });
 
   if (!payment) {
     throw new ApiError(StatusCodes.NOT_FOUND, "Payment not found");
   }
 
+  // The cancelled page shows the attempted amount and offers a retry, so both
+  // outcomes carry back the order details it needs. The amount comes from the
+  // payment record rather than the gateway's query string.
+  const details = {
+    orderId: payment.orderId,
+    orderNo: payment.order?.orderNo ?? null,
+    amount: Number(payment.amount),
+  };
+
   // Prevent double update
   if (payment.paymentStatus === PaymentStatus.PAID) {
-    return { success: false, message: "Payment already completed" };
+    return { success: false, message: "Payment already completed", ...details };
   }
 
   await prisma.$transaction(async (tx) => {
@@ -372,7 +382,7 @@ const cancelPayment = async (query: Record<string, string>) => {
     });
   });
 
-  return { success: true, message: "Payment cancelled" };
+  return { success: true, message: "Payment cancelled", ...details };
 };
 
 const initPayment = async (orderId: string) => {

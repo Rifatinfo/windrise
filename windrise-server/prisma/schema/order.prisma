@@ -42,6 +42,9 @@ model Order {
 
   return OrderReturn?
 
+  /// Audit trail of every status transition, read by the customer tracking page.
+  statusEvents OrderStatusEvent[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -70,4 +73,21 @@ model OrderItem {
   order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@map("order_items")
+}
+
+/// One row per order-status transition: written when the order is placed and
+/// again each time an admin moves it along the pipeline. The customer-facing
+/// order-tracking timeline reads these so every completed step shows the date
+/// it actually happened rather than a guess derived from `createdAt`.
+model OrderStatusEvent {
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  status OrderStatus
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId, createdAt])
+  @@map("order_status_events")
 }

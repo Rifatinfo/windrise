@@ -32,7 +32,7 @@ export function NotFound({ onBackHome }: NotFoundProps) {
       }}
     >
       {/* Single cloud image traversing left to right, forever */}
-      <CloudDrift src={CLOUD_SRC} duration={120} height="85%" />
+      <CloudDrift src={CLOUD_SRC} duration={120} height="80%" />
 
       <div className="relative z-10 mx-auto flex w-full flex-1 flex-col items-center justify-center gap-7 px-5 py-10 sm:gap-9 sm:px-8 lg:gap-11 lg:py-14">
         {/* 404 with the character standing in front */}
@@ -40,7 +40,7 @@ export function NotFound({ onBackHome }: NotFoundProps) {
           <img
             src={NUMBER_SRC}
             alt="404"
-            className=" h-[450px] w-full select-none object-contain"
+            className=" h-[450px] w-full select-none object-contain "
             draggable={false}
           />
 
