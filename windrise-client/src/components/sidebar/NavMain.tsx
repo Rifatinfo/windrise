@@ -15,7 +15,15 @@ function SectionLabel({ label }: { label: string }) {
   );
 }
 
-function NavLink({ item, isActive }: { item: NavItem; isActive: boolean }) {
+function NavLink({
+  item,
+  isActive,
+  count,
+}: {
+  item: NavItem;
+  isActive: boolean;
+  count?: number;
+}) {
   return (
     <Link
       href={item.path || "#"}
@@ -28,6 +36,16 @@ function NavLink({ item, isActive }: { item: NavItem; isActive: boolean }) {
     >
       <item.icon className="h-5 w-5 shrink-0" />
       <span className="truncate">{item.label}</span>
+      {typeof count === "number" && (
+        <span
+          className={cn(
+            "ml-auto shrink-0 text-xs tabular-nums",
+            isActive ? "text-white/70" : "text-slate-400"
+          )}
+        >
+          {count}
+        </span>
+      )}
     </Link>
   );
 }
@@ -107,7 +125,16 @@ function NavCollapsible({
   );
 }
 
-export function NavMain({ items, title }: { items: NavItem[]; title?: string }) {
+export function NavMain({
+  items,
+  title,
+  counts,
+}: {
+  items: NavItem[];
+  title?: string;
+  /** Live badge numbers, keyed by each item's `countKey`. */
+  counts?: Partial<Record<string, number>>;
+}) {
   const pathname = usePathname();
   if (!items.length) return null;
 
@@ -120,7 +147,14 @@ export function NavMain({ items, title }: { items: NavItem[]; title?: string }) 
             return <NavCollapsible key={item.id} item={item} pathname={pathname} />;
           }
           const isActive = item.path ? pathname === item.path : false;
-          return <NavLink key={item.id} item={item} isActive={isActive} />;
+          return (
+            <NavLink
+              key={item.id}
+              item={item}
+              isActive={isActive}
+              count={item.countKey ? counts?.[item.countKey] : undefined}
+            />
+          );
         })}
       </nav>
     </div>

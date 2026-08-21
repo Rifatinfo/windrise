@@ -112,6 +112,9 @@ export function TrackingProgress({ order }: { order: TrackedOrder }) {
             const reached = step.state !== "upcoming";
             const nextReached =
               index < steps.length - 1 && steps[index + 1].state !== "upcoming";
+            // The step the order is sitting on gets the wave — but a delivered
+            // order has finished moving, so nothing pulses once it lands.
+            const pulsing = step.state === "current" && !order.deliveredAt;
 
             return (
               <li
@@ -123,23 +126,33 @@ export function TrackingProgress({ order }: { order: TrackedOrder }) {
                   <span
                     aria-hidden="true"
                     className={`absolute left-[13px] top-[30px] h-[calc(100%-30px)] w-[2px] sm:left-1/2 sm:top-[13px] sm:h-[2px] sm:w-full ${
-                      nextReached ? "bg-[#22a25b]" : "bg-[#e6e6e6]"
+                      nextReached ? "bg-[#13b601]" : "bg-[#e6e6e6]"
                     }`}
                   />
                 )}
 
-                <span
-                  className={`relative z-10 flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-full border-2 ${
-                    reached
-                      ? "border-[#22a25b] bg-[#22a25b] text-white"
-                      : "border-[#e0e0e0] bg-white text-[#b5b5b5]"
-                  }`}
-                >
-                  {reached ? (
-                    <CheckIcon className="h-[15px] w-[15px]" strokeWidth={3} />
-                  ) : (
-                    <Icon className="h-[14px] w-[14px]" strokeWidth={1.8} />
+                <span className="relative z-10 flex h-[28px] w-[28px] shrink-0 items-center justify-center">
+                  {/* Wave rings, behind the node and non-interactive */}
+                  {pulsing && (
+                    <span aria-hidden="true" className="pointer-events-none absolute inset-0">
+                      <span className="track-node track-wave absolute inset-0 rounded-full" />
+                      <span className="track-node track-wave track-wave-delayed absolute inset-0 rounded-full" />
+                    </span>
                   )}
+
+                  <span
+                    className={`relative flex h-full w-full items-center justify-center rounded-full border-2 ${
+                      reached
+                        ? "track-node border-transparent text-white"
+                        : "border-[#e0e0e0] bg-white text-[#b5b5b5]"
+                    }`}
+                  >
+                    {reached ? (
+                      <CheckIcon className="h-[15px] w-[15px]" strokeWidth={3} />
+                    ) : (
+                      <Icon className="h-[14px] w-[14px]" strokeWidth={1.8} />
+                    )}
+                  </span>
                 </span>
 
                 <div className="min-w-0 sm:px-1">

@@ -390,3 +390,52 @@ body {
   background: var(--color-canvas);
   font-weight: 600;
 }
+/* ── Order tracking milestones ───────────────────────────────────────────── */
+
+:root {
+  /* Linear fill for a completed milestone: solid through the first half,
+     easing into the pale tint at the far corner. */
+  --track-node-fill: linear-gradient(
+    135deg,
+    #13b601 0%,
+    #13b601 52%,
+    #cbf4b4 100%
+  );
+  --track-node-green: #13b601;
+}
+
+.track-node {
+  background-image: var(--track-node-fill);
+}
+
+/* Rings breaking outward from the milestone the order is sitting on. Two
+   copies offset in time read as a wave rather than a single blip. */
+@keyframes track-wave {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  70% {
+    transform: scale(2.15);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.15);
+    opacity: 0;
+  }
+}
+
+.track-wave {
+  animation: track-wave 1.9s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.track-wave-delayed {
+  animation-delay: 0.95s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track-wave {
+    animation: none;
+    opacity: 0;
+  }
+}

@@ -113,3 +113,36 @@ enum AnalyticsEventType {
   ADD_TO_CART
   CHECKOUT_START
 }
+
+// ========= Blog / Content Related ========//
+
+enum BlogStatus {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
+  ARCHIVED
+}
+
+enum BlogVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+/// Our own promo vs. a paid third-party placement.
+enum AdType {
+  INTERNAL
+  SPONSORED
+}
+
+enum AdStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  SCHEDULED
+  EXPIRED
+}
+
+enum AdEventType {
+  IMPRESSION
+  CLICK
+}

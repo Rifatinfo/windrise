@@ -2,6 +2,7 @@ import app from "./app";
 import { envVars } from "./config";
 import { startRestoreStockCron } from "./cron/restoreStock.cron";
 import { startOtpCleanup } from "./app/utils/otpCleanup";
+import { AdsService } from "./app/modules/ads/ads.service";
 import { Server } from "http";
 
 const PORT = envVars.PORT;
@@ -23,6 +24,9 @@ async function bootstrap() {
       console.log(`🚀 Server is running on http://localhost:${envVars.PORT}`);
       startRestoreStockCron();
       startOtpCleanup();
+      // Ensures the five built-in ad slots exist before the Placements board
+      // is ever opened.
+      void AdsService.seedSystemPlacements();
     });
 
     // Function to gracefully shut down the server

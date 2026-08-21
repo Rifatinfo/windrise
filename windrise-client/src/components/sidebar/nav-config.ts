@@ -22,6 +22,8 @@ import {
   WarehouseIcon,
   CarIcon,
   BadgePercentIcon,
+  NewspaperIcon,
+  MegaphoneIcon,
 } from "lucide-react";
 import { UserRole } from "@/types/role";
 import { PiInvoice } from "react-icons/pi";
@@ -34,6 +36,8 @@ export type NavItem = {
   roles: UserRole[];
   path?: string;
   children?: NavItem[];
+  /** Key into the live counts map; rendered as a badge on the right. */
+  countKey?: "posts" | "ads";
 };
 
 // =====================
@@ -78,41 +82,6 @@ export const NAV_MAIN: NavItem[] = [
     roles: ["ADMIN", "SHOP_MANAGER"],
     path: "/admin/inventory-management",
   },
-  // {
-  //   id: "coupons",
-  //   label: "Coupons",
-  //   icon: BadgePercentIcon,
-  //   roles: ["ADMIN", "SHOP_MANAGER"],
-  //   path: "/admin/coupons",
-  // },
-  // {
-  //   id: "all-product",
-  //   label: "All Product",
-  //   icon: BoxesIcon,
-  //   roles: ["ADMIN", "MEDIA_MANAGER"],
-  //   path: "/admin/all-product",
-  // },
-  // {
-  //   id: "add-product",
-  //   label: "Add Product",
-  //   icon: PackagePlusIcon,
-  //   roles: ["ADMIN", "MEDIA_MANAGER"],
-  //   path: "/admin/add-product",
-  // },
-  // {
-  //   id: "invoices",
-  //   label: "Invoices",
-  //   icon: PiInvoice,
-  //   roles: ["ADMIN", "MEDIA_MANAGER"],
-  //   path: "/admin/invoices",
-  // },
-  // {
-  //   id: "shipping",
-  //   label: "Shipping",
-  //   icon: FaShippingFast,
-  //   roles: ["ADMIN", "MEDIA_MANAGER"],
-  //   path: "/admin/shipping",
-  // },
   {
   id: "products",
   label: "Products",
@@ -288,5 +257,27 @@ export const NAV_ROLE: NavItem[] = [
     icon: FileTextIcon,
     roles: ["MEDIA_MANAGER"],
     path: "/shop-dashboard/media-posts",
+  },
+];
+
+// =====================
+// Content Section
+// =====================
+export const NAV_CONTENT: NavItem[] = [
+  {
+    id: "blogs",
+    label: "Blogs",
+    icon: NewspaperIcon,
+    roles: ["ADMIN", "MEDIA_MANAGER"],
+    path: "/admin/blogs",
+    countKey: "posts",
+  },
+  {
+    id: "ads",
+    label: "Ads",
+    icon: MegaphoneIcon,
+    roles: ["ADMIN", "MEDIA_MANAGER"],
+    path: "/admin/ads",
+    countKey: "ads",
   },
 ];
