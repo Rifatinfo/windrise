@@ -102,17 +102,17 @@ export function OrderTrackingLookup() {
   };
 
   return (
-    <div className="min-h-[60vh] w-full bg-white">
+    <div className="min-h-[100vh] w-full bg-white">
       {/* The site header is fixed (64px, 80px from lg), so the page clears it
           itself rather than starting underneath it. */}
-      <div className="mx-auto w-full max-w-[1440px] px-5 pb-4 pt-[76px] sm:px-10 lg:px-14 lg:pb-6 lg:pt-[96px]">
+      <div className="mx-auto w-full max-w-[1440px] px-5 pb-4 pt-[76px] sm:px-10 lg:px-[48px] lg:pb-6 lg:pt-[96px]">
         <Breadcrumb current="Order Tracking" />
       </div>
 
       {order ? (
         <TrackingResult order={order} onTrackAnother={handleTrackAnother} onGoHome={() => router.push("/")} />
       ) : (
-        <section className="px-5 pb-20 pt-6 sm:px-10 lg:pb-28 lg:pt-10">
+        <section className="px-5 pb-20 pt-16 sm:px-10 lg:pb-28 lg:pt-30">
           <div className="mx-auto w-full max-w-[340px]">
             <h1 className="text-[16px] font-medium text-[#1a1a1a] lg:text-[18px]">
               Order Tracking

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 
 import { ConsentState } from "@/lib/cookie-consent";
+import { ToggleSwitch } from "@/components/ui/toggle-switch";
 
 type CookiePreferencesProps = {
   consent: ConsentState;
@@ -115,22 +116,11 @@ function PreferenceRow({
           {statusLabel}
         </span>
       ) : (
-        <button
-          type="button"
-          role="switch"
-          aria-checked={checked}
-          aria-label={title}
-          onClick={() => onChange?.(!checked)}
-          className={`relative h-6 w-11 shrink-0 rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black ${
-            checked ? "bg-[#0b0b0b]" : "bg-[#d9d9d9]"
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-              checked ? "translate-x-5" : "translate-x-0.5"
-            }`}
-          />
-        </button>
+        <ToggleSwitch
+          checked={checked}
+          onChange={(next) => onChange?.(next)}
+          label={title}
+        />
       )}
     </div>
   );

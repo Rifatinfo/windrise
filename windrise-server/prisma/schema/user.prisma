@@ -11,6 +11,7 @@ model User {
   auths              AuthProvider[]
   orders             Order[]
   loginOtps          LoginOtp[]
+  blogPosts          BlogPost[]
 
   customer        Customer?
   shopManager     ShopManager?

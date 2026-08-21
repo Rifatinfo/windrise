@@ -13,6 +13,8 @@ import { ReturnRoutes } from "../modules/returns/returns.routes";
 import { MarketingRoutes } from "../modules/marketing/marketing.routes";
 import { AnalyticsRoutes } from "../modules/analytics/analytics.routes";
 import { SettingsRoutes } from "../modules/settings/settings.routes";
+import { BlogRoutes } from "../modules/blog/blog.routes";
+import { AdsRoutes } from "../modules/ads/ads.routes";
 
 
 const router = express.Router();
@@ -25,6 +27,14 @@ const moduleRoutes = [
   {
     path: "/settings",
     route: SettingsRoutes,
+  },
+  {
+    path: "/blog",
+    route: BlogRoutes,
+  },
+  {
+    path: "/ads",
+    route: AdsRoutes,
   },
   {
     path: "/auth",
