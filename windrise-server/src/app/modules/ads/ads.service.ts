@@ -55,6 +55,33 @@ const SYSTEM_PLACEMENTS = [
     isNative: false,
     sortOrder: 5,
   },
+  {
+    key: "blog-grid-card",
+    name: "Stories Grid Card",
+    description: "Takes a card's place in the Stories grid, every 9th slot",
+    width: 486,
+    height: 267,
+    isNative: false,
+    sortOrder: 6,
+  },
+  {
+    key: "sidebar-tower",
+    name: "Sidebar Tower",
+    description: "Tall unit at the top of a post's right rail",
+    width: 300,
+    height: 600,
+    isNative: false,
+    sortOrder: 7,
+  },
+  {
+    key: "sidebar-square",
+    name: "Sidebar Square",
+    description: "Square unit below the tower in a post's right rail",
+    width: 300,
+    height: 300,
+    isNative: false,
+    sortOrder: 8,
+  },
 ];
 
 export const seedSystemPlacements = async () => {

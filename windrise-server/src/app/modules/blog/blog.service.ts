@@ -644,6 +644,10 @@ const listPublicPosts = async (filters: {
   tagSlug?: string;
   page?: number;
   limit?: number;
+  /** "popular" powers the Popular Posts rail; anything else is newest first. */
+  sort?: string;
+  /** Slug to leave out — the post already on screen. */
+  excludeSlug?: string;
 }) => {
   const page = Number(filters.page) > 0 ? Number(filters.page) : 1;
   const limit = Number(filters.limit) > 0 ? Number(filters.limit) : 9;
@@ -654,13 +658,19 @@ const listPublicPosts = async (filters: {
     publishedAt: { lte: new Date() },
     ...(filters.categorySlug ? { category: { slug: filters.categorySlug } } : {}),
     ...(filters.tagSlug ? { tags: { some: { slug: filters.tagSlug } } } : {}),
+    ...(filters.excludeSlug ? { slug: { not: filters.excludeSlug } } : {}),
   };
+
+  const orderBy: Prisma.BlogPostOrderByWithRelationInput[] =
+    filters.sort === "popular"
+      ? [{ views: "desc" }, { publishedAt: "desc" }]
+      : [{ publishedAt: "desc" }];
 
   const [rows, total] = await Promise.all([
     prisma.blogPost.findMany({
       where,
       include: POST_INCLUDE,
-      orderBy: { publishedAt: "desc" },
+      orderBy,
       skip: (page - 1) * limit,
       take: limit,
     }),
@@ -687,7 +697,20 @@ const getPublicPostBySlug = async (slug: string) => {
     .update({ where: { id: post.id }, data: { views: { increment: 1 } } })
     .catch(() => undefined);
 
-  return shapePost(post);
+  // The "Next" link at the foot of a post: the one published just before it,
+  // so readers move backwards through the archive rather than hitting a wall.
+  const next = await prisma.blogPost.findFirst({
+    where: {
+      status: BlogStatus.PUBLISHED,
+      visibility: "PUBLIC",
+      publishedAt: { lt: post.publishedAt ?? new Date() },
+      id: { not: post.id },
+    },
+    orderBy: { publishedAt: "desc" },
+    select: { title: true, slug: true },
+  });
+
+  return { ...shapePost(post), next };
 };
 
 export const BlogService = {
