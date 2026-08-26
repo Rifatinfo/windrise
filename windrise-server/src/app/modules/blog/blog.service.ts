@@ -4,8 +4,8 @@ import slugify from "slugify";
 
 import prisma from "../../../shared/prisma";
 import ApiError from "../../errors/ApiError";
-import { sanitizeProductDescription } from "../../../shared/sanitizeHtml";
-import { optimizeAndSaveImage } from "../../utils/imageOptimizer";
+import { sanitizePostContent } from "../../../shared/sanitizeHtml";
+import { optimizeAndSaveImage, saveRawFile } from "../../utils/imageOptimizer";
 import { buildSeoChecks, computeSeoScore, countWords } from "./blog.seo";
 import { suggestSeoFields, type SeoSuggestInput } from "./blog.ai";
 
@@ -61,11 +61,20 @@ const shapeAuthor = (post: PostRow) => {
   return { id: null, name: "Unassigned", avatar: null, isCustom: false };
 };
 
+/**
+ * The highlight is optional, and "optional" has to mean absent rather than
+ * blank: an empty or whitespace-only value is stored as null so the reader is
+ * never shown an empty highlight block.
+ */
+const normalizeHighlight = (value: string | null | undefined) =>
+  value?.trim() ? value.trim() : null;
+
 const shapePost = (post: PostRow) => ({
   id: post.id,
   title: post.title,
   slug: post.slug,
   excerpt: post.excerpt,
+  highlight: post.highlight,
   content: post.content,
   status: post.status,
   visibility: post.visibility,
@@ -102,6 +111,7 @@ export type BlogPostPayload = {
   title: string;
   slug?: string | null;
   excerpt?: string | null;
+  highlight?: string | null;
   content?: string | null;
   status?: BlogStatus;
   visibility?: "PUBLIC" | "PRIVATE";
@@ -170,7 +180,7 @@ const resolveStatus = (
 
 const createPost = async (payload: BlogPostPayload) => {
   const slug = await uniquePostSlug(payload.slug || payload.title);
-  const content = payload.content ? sanitizeProductDescription(payload.content) : null;
+  const content = payload.content ? sanitizePostContent(payload.content) : null;
   const publishedAt = payload.publishedAt ? new Date(payload.publishedAt) : null;
   const status = resolveStatus(payload.status, publishedAt);
 
@@ -179,6 +189,7 @@ const createPost = async (payload: BlogPostPayload) => {
       title: payload.title,
       slug,
       excerpt: payload.excerpt ?? null,
+      highlight: normalizeHighlight(payload.highlight),
       content,
       status,
       visibility: payload.visibility ?? "PUBLIC",
@@ -214,7 +225,7 @@ const updatePost = async (id: string, payload: Partial<BlogPostPayload>) => {
   const content =
     payload.content !== undefined
       ? payload.content
-        ? sanitizeProductDescription(payload.content)
+        ? sanitizePostContent(payload.content)
         : null
       : existing.content;
 
@@ -242,6 +253,9 @@ const updatePost = async (id: string, payload: Partial<BlogPostPayload>) => {
       ...(payload.title !== undefined && { title: payload.title }),
       slug,
       ...(payload.excerpt !== undefined && { excerpt: payload.excerpt }),
+      ...(payload.highlight !== undefined && {
+        highlight: normalizeHighlight(payload.highlight),
+      }),
       ...(payload.content !== undefined && { content }),
       status,
       ...(payload.visibility !== undefined && { visibility: payload.visibility }),
@@ -382,6 +396,7 @@ const duplicatePost = async (id: string) => {
       title: `${source.title} (Copy)`,
       slug: await uniquePostSlug(`${source.title}-copy`),
       excerpt: source.excerpt,
+      highlight: source.highlight,
       content: source.content,
       status: BlogStatus.DRAFT,
       visibility: source.visibility,
@@ -591,6 +606,27 @@ const uploadImage = async (file: Express.Multer.File) => {
   return { url: `/uploads/blog/${filename}` };
 };
 
+/**
+ * Upload for anything the post editor can embed. Images still go through
+ * sharp (resized, re-encoded to webp); video, audio and documents are stored
+ * as-is, since re-encoding them would be both lossy and pointless.
+ */
+const uploadMedia = async (file: Express.Multer.File) => {
+  const isImage = file.mimetype.startsWith("image/");
+  const folder = isImage ? "blog" : "blog/media";
+
+  const filename = isImage
+    ? await optimizeAndSaveImage(file, folder)
+    : await saveRawFile(file, folder);
+
+  return {
+    url: `/uploads/${folder}/${filename}`,
+    name: file.originalname,
+    mimeType: file.mimetype,
+    size: file.size,
+  };
+};
+
 // ------------------------------- SEO helpers -------------------------------
 
 const seoSuggest = async (input: SeoSuggestInput) => suggestSeoFields(input);
@@ -674,6 +710,7 @@ export const BlogService = {
   deleteTag,
   listAuthors,
   uploadImage,
+  uploadMedia,
   seoSuggest,
   seoPreview,
   listPublicPosts,

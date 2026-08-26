@@ -24,6 +24,9 @@ import {
   BadgePercentIcon,
   NewspaperIcon,
   MegaphoneIcon,
+  CircleDollarSign,
+  BadgeDollarSign,
+  Receipt,
 } from "lucide-react";
 import { UserRole } from "@/types/role";
 import { PiInvoice } from "react-icons/pi";
@@ -51,7 +54,6 @@ export const NAV_MAIN: NavItem[] = [
     roles: ["ADMIN", "SHOP_MANAGER", "MEDIA_MANAGER"],
     path: "/admin",
   },
-
   {
     id: "analytics",
     label: "Analytics",
@@ -60,13 +62,19 @@ export const NAV_MAIN: NavItem[] = [
     path: "/admin/analytics",
   },
   {
+    id: "finance",
+    label: "Finance",
+    icon: BadgeDollarSign ,
+    roles: ["ADMIN"],
+    path: "/admin/finance",
+  },
+  {
     id: "customer",
     label: "Customers",
     icon: UserIcon,
     roles: ["ADMIN", "SHOP_MANAGER"],
     path: "/admin/customer",
   },
-
   {
     id: "orders",
     label: "Orders",
@@ -74,7 +82,6 @@ export const NAV_MAIN: NavItem[] = [
     roles: ["ADMIN", "SHOP_MANAGER"],
     path: "/admin/orders",
   },
-
   {
     id: "inventory",
     label: "Inventory",
@@ -116,6 +123,13 @@ export const NAV_MAIN: NavItem[] = [
       icon: PiInvoice,
       roles: ["ADMIN", "MEDIA_MANAGER"],
       path: "/admin/invoices",
+    },
+    {
+      id: "pricing",
+      label: "Pricing",
+      icon: Receipt  ,
+      roles: ["ADMIN"],
+      path: "/admin/pricing",
     },
     {
       id: "shipping",

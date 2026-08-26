@@ -15,6 +15,8 @@ import { AnalyticsRoutes } from "../modules/analytics/analytics.routes";
 import { SettingsRoutes } from "../modules/settings/settings.routes";
 import { BlogRoutes } from "../modules/blog/blog.routes";
 import { AdsRoutes } from "../modules/ads/ads.routes";
+import { PricingRoutes } from "../modules/pricing/pricing.routes";
+import { FinanceRoutes } from "../modules/finance/finance.routes";
 
 
 const router = express.Router();
@@ -35,6 +37,14 @@ const moduleRoutes = [
   {
     path: "/ads",
     route: AdsRoutes,
+  },
+  {
+    path: "/pricing",
+    route: PricingRoutes,
+  },
+  {
+    path: "/finance",
+    route: FinanceRoutes,
   },
   {
     path: "/auth",

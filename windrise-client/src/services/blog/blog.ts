@@ -141,6 +141,35 @@ async function uploadTo(path: string, file: File) {
 
 export const uploadBlogImage = (file: File) => uploadTo("/blog/upload", file);
 
+export type UploadedMedia = {
+  url: string;
+  name: string;
+  mimeType: string;
+  size: number;
+};
+
+/**
+ * Upload for anything the post editor embeds — images, video, audio and
+ * document attachments. Images are optimized server-side; everything else is
+ * stored byte-for-byte.
+ */
+export async function uploadBlogMedia(file: File) {
+  const form = new FormData();
+  form.append("file", file);
+
+  const res = await fetch(`${API_URL}/api/v1/blog/upload-media`, {
+    method: "POST",
+    credentials: "include",
+    body: form,
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.message ?? "Upload failed");
+  }
+  return (await res.json()) as ApiResponse<UploadedMedia>;
+}
+
 /**
  * Uploads come back as `/uploads/...`. next.config rewrites that path to the
  * API server, so leaving it relative keeps the request same-origin — pointing

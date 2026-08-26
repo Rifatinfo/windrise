@@ -15,6 +15,10 @@ interface ColorSwatchPopoverProps {
   icon: React.ReactNode
   colors: string[]
   activeColor?: string | null
+  /** Swatches per row — the blog editor uses wider grids than the product one. */
+  columns?: number
+  /** Overrides the caption on the "no colour" swatch. */
+  clearLabel?: string
   onSelect: (color: string) => void
   onClear: () => void
 }
@@ -24,6 +28,8 @@ export function ColorSwatchPopover({
   icon,
   colors,
   activeColor,
+  columns = 6,
+  clearLabel = "Remove color",
   onSelect,
   onClear,
 }: ColorSwatchPopoverProps) {
@@ -41,14 +47,18 @@ export function ColorSwatchPopover({
         {icon}
       </PopoverTrigger>
 
-      <PopoverContent align="start" className="w-44 p-2.5">
+      <PopoverContent align="start" className="w-auto p-2.5">
         <p className="mb-1.5 px-0.5 text-xs font-medium text-muted-foreground">
           {label}
         </p>
-        <div className="grid grid-cols-6 gap-1.5">
+        <div
+          className="grid gap-1.5"
+          style={{ gridTemplateColumns: `repeat(${columns}, 24px)` }}
+        >
           <button
             type="button"
-            aria-label="Remove color"
+            aria-label={clearLabel}
+            title={clearLabel}
             onClick={() => {
               onClear()
               setOpen(false)

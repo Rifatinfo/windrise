@@ -125,6 +125,11 @@ const uploadImage = catchAsync(async (req: Request, res: Response) => {
   ok(res, "Image uploaded", await BlogService.uploadImage(req.file));
 });
 
+const uploadMedia = catchAsync(async (req: Request, res: Response) => {
+  if (!req.file) throw new ApiError(StatusCodes.BAD_REQUEST, "No file uploaded");
+  ok(res, "File uploaded", await BlogService.uploadMedia(req.file));
+});
+
 // -------------------------------- Storefront -------------------------------
 
 const listPublicPosts = catchAsync(async (req: Request, res: Response) => {
@@ -157,6 +162,7 @@ export const BlogController = {
   listAuthors,
   seoSuggest,
   uploadImage,
+  uploadMedia,
   listPublicPosts,
   getPublicPost,
 };

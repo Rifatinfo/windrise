@@ -11,7 +11,9 @@ import {
 } from "lucide-react";
 
 import { RichTextEditor } from "@/components/shared/richTextEditor/RichTextEditor";
+import type { SaveState } from "@/components/shared/richTextEditor/EditorFooter";
 import { ToggleSwitch } from "@/components/ui/toggle-switch";
+import { FieldSelect } from "@/components/ui/field-select";
 import { Toast } from "@/components/shared/Toast/Toast";
 import {
   createPost,
@@ -109,6 +111,7 @@ export function PostEditorTab({
   const [slugTouched, setSlugTouched] = useState(false);
   const [editingSlug, setEditingSlug] = useState(false);
   const [excerpt, setExcerpt] = useState("");
+  const [highlight, setHighlight] = useState("");
   const [content, setContent] = useState("");
 
   const [status, setStatus] = useState<BlogStatus>("PUBLISHED");
@@ -145,6 +148,21 @@ export function PostEditorTab({
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
 
+  // ---- Autosave bookkeeping ------------------------------------------------
+  const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  /** The post autosave writes to; null until an explicit save creates one. */
+  const savedPostId = useRef<string | null>(postId);
+  /** Read inside the autosave callback without re-arming it on every keystroke. */
+  const contentRef = useRef(content);
+  const lastSavedContent = useRef<string | null>(null);
+
+  // Ref writes belong in an effect, not the render pass; the autosave timer
+  // fires long after effects have flushed, so it always sees the latest text.
+  useEffect(() => {
+    contentRef.current = content;
+  });
+
   // ---- Load reference data + the post being edited -------------------------
 
   useEffect(() => {
@@ -173,7 +191,10 @@ export function PostEditorTab({
         setSlugDraft(post.slug);
         setSlugTouched(true);
         setExcerpt(post.excerpt ?? "");
+        setHighlight(post.highlight ?? "");
         setContent(post.content ?? "");
+        // Baseline for autosave: what the server already has.
+        lastSavedContent.current = post.content ?? "";
         setStatus(post.status);
         setPublicationDate(post.publishedAt ? post.publishedAt.slice(0, 10) : "");
         setVisibility(post.visibility);
@@ -292,6 +313,8 @@ export function PostEditorTab({
       title: title.trim(),
       slug: slug || slugify(title),
       excerpt: excerpt.trim() || null,
+      // Blank stays null, so an empty highlight never reaches the reader.
+      highlight: highlight.trim() || null,
       content: content || null,
       status: nextStatus,
       visibility,
@@ -317,32 +340,33 @@ export function PostEditorTab({
       showAds,
     }),
     [
-      title, slug, excerpt, content, visibility, publicationDate, featuredImage,
+      title, slug, excerpt, highlight, content, visibility, publicationDate, featuredImage,
       useCustomAuthor, authorId, customAuthorName, customAuthorAvatar, categoryId,
       tags, metaTitle, metaDescription, focusKeyword, keywords, canonicalUrl,
       isFeatured, allowComments, showAds,
     ]
   );
 
+  /** Everything a save needs before it is worth sending. */
+  const validate = useCallback(() => {
+    if (!title.trim()) return "A post needs a title";
+    if (useCustomAuthor && !customAuthorName.trim()) return "Enter the custom author's name";
+    if (!useCustomAuthor && !authorId) return "Select an author";
+    return null;
+  }, [title, useCustomAuthor, customAuthorName, authorId]);
+
   const save = async (nextStatus: BlogStatus) => {
-    if (!title.trim()) {
-      Toast.fire({ icon: "error", title: "A post needs a title" });
-      return;
-    }
-    if (useCustomAuthor && !customAuthorName.trim()) {
-      Toast.fire({ icon: "error", title: "Enter the custom author's name" });
-      return;
-    }
-    if (!useCustomAuthor && !authorId) {
-      Toast.fire({ icon: "error", title: "Select an author" });
+    const problem = validate();
+    if (problem) {
+      Toast.fire({ icon: "error", title: problem });
       return;
     }
 
     setSaving(true);
     try {
       const payload = buildPayload(nextStatus);
-      if (postId) {
-        await updatePost(postId, payload);
+      if (savedPostId.current) {
+        await updatePost(savedPostId.current, payload);
         Toast.fire({ icon: "success", title: "Post updated" });
       } else {
         await createPost(payload);
@@ -357,6 +381,75 @@ export function PostEditorTab({
       Toast.fire({
         icon: "error",
         title: error instanceof Error ? error.message : "Save failed",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /**
+   * Background save behind the editor's autosave indicator.
+   *
+   * Only ever updates a post that already exists — creating one silently
+   * would litter the list with half-written drafts the author never asked for.
+   */
+  const autoSave = useCallback(async () => {
+    if (!savedPostId.current || saving) return;
+    if (validate()) return;
+    if (contentRef.current === lastSavedContent.current) return;
+
+    setSaveState("saving");
+    try {
+      await updatePost(savedPostId.current, buildPayload(status));
+      lastSavedContent.current = contentRef.current;
+      setSavedAt(new Date());
+      setSaveState("saved");
+      onSaved();
+    } catch {
+      // Leave the indicator alone; the explicit Save/Publish path reports errors.
+      setSaveState("idle");
+    }
+  }, [buildPayload, onSaved, saving, status, validate]);
+
+  /**
+   * Footer "Schedule for later" — takes the datetime the editor's dialog
+   * collected, mirrors it into the Publish panel, and saves as SCHEDULED.
+   */
+  const schedule = async (publishAt: string) => {
+    const problem = validate();
+    if (problem) {
+      Toast.fire({ icon: "error", title: problem });
+      return;
+    }
+
+    const when = new Date(publishAt);
+    if (Number.isNaN(when.getTime())) {
+      Toast.fire({ icon: "error", title: "Pick a valid date and time" });
+      return;
+    }
+
+    // The Publish panel's date field is the single source of truth for the
+    // payload, so drive it from the dialog rather than saving around it.
+    setPublicationDate(publishAt.slice(0, 10));
+    setStatus("SCHEDULED");
+    setSaveState("scheduled");
+
+    setSaving(true);
+    try {
+      const payload = { ...buildPayload("SCHEDULED"), publishedAt: when.toISOString() };
+      if (savedPostId.current) await updatePost(savedPostId.current, payload);
+      else await createPost(payload);
+
+      Toast.fire({
+        icon: "success",
+        title: `Scheduled for ${when.toLocaleString()}`,
+      });
+      onSaved();
+      onDone();
+    } catch (error) {
+      Toast.fire({
+        icon: "error",
+        title: error instanceof Error ? error.message : "Couldn't schedule the post",
       });
     } finally {
       setSaving(false);
@@ -441,6 +534,34 @@ export function PostEditorTab({
           </Field>
 
           <div className="mt-5">
+            <Field
+              label="Blog Highlight"
+              counter={`${highlight.length} / 500`}
+              hint="Optional. Leave it blank and readers see no highlight at all."
+            >
+              <textarea
+                value={highlight}
+                maxLength={500}
+                onChange={(event) => setHighlight(event.target.value)}
+                rows={2}
+                placeholder="A key line to pull out above the post — a takeaway, a quote, the one thing worth remembering"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+              />
+            </Field>
+
+            {highlight.trim() && (
+              <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                  Reader preview
+                </p>
+                <blockquote className="post-highlight mt-1.5">
+                  {highlight.trim()}
+                </blockquote>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-5">
             <div className="flex items-baseline justify-between">
               <label className="text-[13px] font-semibold text-slate-800">Content</label>
               <span className="text-[11px] text-slate-400">
@@ -449,10 +570,21 @@ export function PostEditorTab({
             </div>
             <div className="mt-1.5">
               <RichTextEditor
+                variant="full"
                 value={content}
                 onChange={setContent}
                 minHeight={320}
                 placeholder="Start writing your post... select text and use the toolbar, or type directly."
+                saveState={saveState}
+                savedAt={savedAt}
+                onAutoSave={autoSave}
+                footerActions={{
+                  busy: saving,
+                  publishLabel: postId ? "Update" : "Publish",
+                  onSaveDraft: () => save("DRAFT"),
+                  onPublish: () => save("PUBLISHED"),
+                  onSchedule: schedule,
+                }}
               />
             </div>
           </div>
@@ -564,16 +696,17 @@ export function PostEditorTab({
 
           <div className="mt-4 space-y-4">
             <Field label="Status">
-              <select
+              <FieldSelect
+                label="Status"
                 value={status}
-                onChange={(event) => setStatus(event.target.value as BlogStatus)}
-                className={inputClass}
-              >
-                <option value="PUBLISHED">Published</option>
-                <option value="DRAFT">Draft</option>
-                <option value="SCHEDULED">Scheduled</option>
-                <option value="ARCHIVED">Archived</option>
-              </select>
+                onValueChange={(next) => setStatus(next as BlogStatus)}
+                options={[
+                  { value: "PUBLISHED", label: "Published" },
+                  { value: "DRAFT", label: "Draft" },
+                  { value: "SCHEDULED", label: "Scheduled" },
+                  { value: "ARCHIVED", label: "Archived" },
+                ]}
+              />
             </Field>
 
             <Field
@@ -589,16 +722,15 @@ export function PostEditorTab({
             </Field>
 
             <Field label="Visibility">
-              <select
+              <FieldSelect
+                label="Visibility"
                 value={visibility}
-                onChange={(event) =>
-                  setVisibility(event.target.value as "PUBLIC" | "PRIVATE")
-                }
-                className={inputClass}
-              >
-                <option value="PUBLIC">Public</option>
-                <option value="PRIVATE">Private</option>
-              </select>
+                onValueChange={(next) => setVisibility(next as "PUBLIC" | "PRIVATE")}
+                options={[
+                  { value: "PUBLIC", label: "Public" },
+                  { value: "PRIVATE", label: "Private" },
+                ]}
+              />
             </Field>
           </div>
 
@@ -773,18 +905,16 @@ export function PostEditorTab({
           ) : (
             <div className="mt-4">
               <Field label="Select Author" required>
-                <select
+                <FieldSelect
+                  label="Select Author"
+                  placeholder="Choose an author"
                   value={authorId}
-                  onChange={(event) => setAuthorId(event.target.value)}
-                  className={inputClass}
-                >
-                  <option value="">Choose an author</option>
-                  {authors.map((author) => (
-                    <option key={author.id} value={author.id}>
-                      {author.name}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={setAuthorId}
+                  options={authors.map((author) => ({
+                    value: author.id,
+                    label: author.name,
+                  }))}
+                />
               </Field>
             </div>
           )}

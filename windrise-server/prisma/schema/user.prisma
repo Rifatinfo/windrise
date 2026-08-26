@@ -12,6 +12,8 @@ model User {
   orders             Order[]
   loginOtps          LoginOtp[]
   blogPosts          BlogPost[]
+  pricingTemplates   PricingTemplate[]
+  investments        Investment[]
 
   customer        Customer?
   shopManager     ShopManager?

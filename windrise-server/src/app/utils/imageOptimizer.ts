@@ -29,3 +29,29 @@ export const optimizeAndSaveImage = async (
 
   return filename;
 };
+
+/** Strip anything that could escape the upload folder or fake an extension. */
+const safeExtension = (originalname: string) => {
+  const match = /\.([a-z0-9]{1,8})$/i.exec(originalname ?? "");
+  return match ? `.${match[1].toLowerCase()}` : "";
+};
+
+/**
+ * Stores a file byte-for-byte. Used for video, audio and document
+ * attachments, which must not go through sharp.
+ */
+
+export const saveRawFile = async (
+  file: Express.Multer.File,
+  folder: string
+): Promise<string> => {
+  const uploadDir = path.join(process.cwd(), "uploads", folder);
+  await ensureDir(uploadDir);
+
+  const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExtension(
+    file.originalname
+  )}`;
+
+  await fs.writeFile(path.join(uploadDir, filename), file.buffer);
+  return filename;
+};

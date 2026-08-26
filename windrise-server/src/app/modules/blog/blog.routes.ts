@@ -3,7 +3,7 @@ import { UserRole } from "@prisma/client";
 import multer from "multer";
 
 import auth from "../../middlewares/auth";
-import { multerConfig } from "../../utils/fileUploader";
+import { mediaMulterConfig, multerConfig } from "../../utils/fileUploader";
 import { BlogController } from "./blog.controller";
 import { BlogValidation } from "./blog.validation";
 
@@ -100,6 +100,14 @@ router.post(
   canManage,
   multer(multerConfig).single("file"),
   BlogController.uploadImage,
+);
+
+// Post content can embed video, audio and documents, not just images.
+router.post(
+  "/upload-media",
+  canManage,
+  multer(mediaMulterConfig).single("file"),
+  BlogController.uploadMedia,
 );
 
 export const BlogRoutes = router;

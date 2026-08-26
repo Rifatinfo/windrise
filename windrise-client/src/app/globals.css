@@ -390,6 +390,195 @@ body {
   background: var(--color-canvas);
   font-weight: 600;
 }
+
+/* ==========================================================================
+   Media frames — resize, rotate, and free placement.
+
+   Images, figures, video and embeds render inside .rte-media-frame while
+   being edited, and as a plain element carrying the same geometry (inline
+   width/height/transform plus data-align / data-free) once saved. Both
+   surfaces need these rules: the editor so the handles sit on the box and a
+   drag actually moves something, the published page so a hand-placed image
+   lands exactly where the author put it.
+   ========================================================================== */
+
+.rte-content,
+.product-description {
+  /* Free blocks are taken out of the flow and positioned against the content
+     column. Without this they would anchor to whatever ancestor happens to be
+     positioned, and their offsets would be meaningless. */
+  position: relative;
+}
+
+.rte-media-frame {
+  position: relative;
+  display: block;
+  /* Shrink-wrap the media until a handle sets an explicit width. */
+  width: fit-content;
+  max-width: 100%;
+  transform-origin: center center;
+}
+
+/* Until a handle sets a size, the media keeps its natural dimensions — a
+   child stretched to width:100% would defeat the frame's shrink-wrap and
+   blow every unsized image up to the full column. */
+.rte-media-frame > img,
+.rte-media-frame > video,
+.rte-content .post-figure > img,
+.product-description .post-figure > img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+/* Once it has been resized, the media fills the box it was given. */
+.rte-media-frame[data-sized="true"] > img,
+.rte-media-frame[data-sized="true"] > video,
+.rte-content .post-figure[data-sized="true"] > img,
+.product-description .post-figure[data-sized="true"] > img {
+  width: 100%;
+  height: 100%;
+}
+
+.rte-media-frame > iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 8px;
+}
+
+/* An iframe has no intrinsic size, so fit-content would collapse it. */
+.rte-media-frame.embed-wrap {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+}
+
+.rte-media-frame > video {
+  min-width: 240px;
+}
+
+.rte-media-frame.is-selected {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+/* A selected image is dragged by its body, so say so. */
+.rte-media-frame.is-selected > img {
+  cursor: move;
+}
+
+/* Nothing inside the frame may start a text selection mid-gesture. */
+.rte-media-frame.is-busy,
+.rte-media-frame.is-busy * {
+  user-select: none;
+}
+
+/* ── Free placement ─────────────────────────────────────────────────────────
+   The editor frame and the saved markup both opt in with data-free, so one
+   rule covers Write and the published post. */
+
+.rte-media-frame.is-free,
+.rte-content [data-free="true"],
+.product-description [data-free="true"] {
+  position: absolute;
+  z-index: 5;
+  margin: 0;
+}
+
+/* ── Column alignment, for blocks still in the text flow ─────────────────── */
+
+.rte-content [data-align="left"]:not([data-free="true"]),
+.product-description [data-align="left"]:not([data-free="true"]) {
+  margin-right: auto;
+  margin-left: 0;
+}
+
+.rte-content [data-align="center"]:not([data-free="true"]),
+.product-description [data-align="center"]:not([data-free="true"]) {
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.rte-content [data-align="right"]:not([data-free="true"]),
+.product-description [data-align="right"]:not([data-free="true"]) {
+  margin-right: 0;
+  margin-left: auto;
+}
+
+/* ── The controls pinned to a selected block ─────────────────────────────── */
+
+.rte-media-toolbar {
+  position: absolute;
+  top: 0;
+  /* Down the right-hand edge, clear of the rotation grip above the box. */
+  left: calc(100% + 12px);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 6px 16px rgb(15 23 42 / 0.12);
+}
+
+.rte-media-toolbar-divider {
+  margin: 2px 0;
+  height: 1px;
+  width: 100%;
+  background: var(--color-line);
+}
+
+/* An image hard against the right edge would push its toolbar off-screen. */
+@media (max-width: 900px) {
+  .rte-media-toolbar {
+    top: calc(100% + 10px);
+    left: 0;
+    flex-direction: row;
+  }
+
+  .rte-media-toolbar-divider {
+    margin: 0 2px;
+    height: 100%;
+    width: 1px;
+  }
+}
+
+/* ── Blog highlight ──────────────────────────────────────────────────────
+   The optional pull-quote above a post body. Only ever rendered when the
+   author actually wrote one, so there is no empty state to style. */
+
+.post-highlight {
+  margin: 0;
+  border-left: 3px solid var(--color-brand);
+  border-radius: 0 8px 8px 0;
+  background: var(--color-brand-soft);
+  padding: 0.75em 1em;
+  color: var(--color-ink);
+  font-size: 1.05em;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+/* ── Figure captions ────────────────────────────────────────────────────── */
+
+.rte-content .post-figure > figcaption,
+.product-description .post-figure > figcaption {
+  margin-top: 0.5em;
+  color: var(--color-ink-soft);
+  font-size: 0.85em;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.rte-content .post-figure > figcaption:empty::before {
+  content: attr(data-placeholder);
+  color: var(--color-ink-muted);
+}
+
 /* ── Order tracking milestones ───────────────────────────────────────────── */
 
 :root {

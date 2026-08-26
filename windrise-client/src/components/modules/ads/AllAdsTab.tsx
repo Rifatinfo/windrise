@@ -20,6 +20,14 @@ import {
   mediaUrl,
 } from "@/services/blog/blog";
 import type { Ad, AdPlacementSlot, AdStats, AdStatus } from "@/types/blog";
+import { FieldSelect } from "@/components/ui/field-select";
+
+/** Statuses an operator can set directly; the rest are date-derived. */
+const BULK_STATUS_OPTIONS = [
+  { value: "ACTIVE", label: "Active" },
+  { value: "PAUSED", label: "Paused" },
+  { value: "DRAFT", label: "Draft" },
+];
 
 const STATUS_STYLES: Record<AdStatus, string> = {
   ACTIVE: "bg-emerald-50 text-emerald-700",
@@ -268,18 +276,17 @@ export function AllAdsTab({ onEdit }: { onEdit: (adId: string) => void }) {
         <div className="flex flex-wrap items-center gap-3 rounded-xl bg-slate-900 px-4 py-3 text-white">
           <span className="text-[13px] font-semibold">{selection.length} selected</span>
           <span className="text-slate-500">|</span>
-          <select
-            aria-label="Change status of selected ads"
-            disabled={busy}
+          {/* Acts as a menu rather than a field: the value is never held, it
+              fires the bulk action and falls back to the placeholder. */}
+          <FieldSelect
+            label="Change status of selected ads"
+            placeholder="Change status"
             value=""
-            onChange={(event) => event.target.value && runBulkStatus(event.target.value)}
-            className="h-8 rounded-md border border-white/25 bg-transparent px-2 text-[12px] text-white outline-none disabled:opacity-50 [&>option]:text-slate-900"
-          >
-            <option value="">Change status</option>
-            <option value="ACTIVE">Active</option>
-            <option value="PAUSED">Paused</option>
-            <option value="DRAFT">Draft</option>
-          </select>
+            disabled={busy}
+            onValueChange={(next) => next && runBulkStatus(next)}
+            options={BULK_STATUS_OPTIONS}
+            triggerClassName="h-8 w-auto rounded-md border-white/25 bg-transparent px-2 text-[12px] text-white data-placeholder:text-white"
+          />
           <button
             type="button"
             onClick={runBulkDelete}
@@ -310,53 +317,55 @@ export function AllAdsTab({ onEdit }: { onEdit: (adId: string) => void }) {
           />
         </div>
 
-        <select
-          aria-label="Filter by type"
+        <FieldSelect
+          label="Filter by type"
           value={type}
-          onChange={(event) => {
+          onValueChange={(next) => {
             setLoading(true);
-            setType(event.target.value);
+            setType(next);
           }}
-          className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-[13px] outline-none focus:border-slate-400"
-        >
-          <option value="ALL">All types</option>
-          <option value="INTERNAL">Internal</option>
-          <option value="SPONSORED">Sponsored</option>
-        </select>
+          options={[
+            { value: "ALL", label: "All types" },
+            { value: "INTERNAL", label: "Internal" },
+            { value: "SPONSORED", label: "Sponsored" },
+          ]}
+          triggerClassName="w-[135px]"
+        />
 
-        <select
-          aria-label="Filter by placement"
+        <FieldSelect
+          label="Filter by placement"
           value={placementId}
-          onChange={(event) => {
+          onValueChange={(next) => {
             setLoading(true);
-            setPlacementId(event.target.value);
+            setPlacementId(next);
           }}
-          className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-[13px] outline-none focus:border-slate-400"
-        >
-          <option value="ALL">All placements</option>
-          {placements.map((placement) => (
-            <option key={placement.id} value={placement.id}>
-              {placement.name}
-            </option>
-          ))}
-        </select>
+          options={[
+            { value: "ALL", label: "All placements" },
+            ...placements.map((placement) => ({
+              value: placement.id,
+              label: placement.name,
+            })),
+          ]}
+          triggerClassName="w-[175px]"
+        />
 
-        <select
-          aria-label="Filter by status"
+        <FieldSelect
+          label="Filter by status"
           value={status}
-          onChange={(event) => {
+          onValueChange={(next) => {
             setLoading(true);
-            setStatus(event.target.value);
+            setStatus(next);
           }}
-          className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-[13px] outline-none focus:border-slate-400"
-        >
-          <option value="ALL">All statuses</option>
-          <option value="ACTIVE">Active</option>
-          <option value="SCHEDULED">Scheduled</option>
-          <option value="PAUSED">Paused</option>
-          <option value="EXPIRED">Expired</option>
-          <option value="DRAFT">Draft</option>
-        </select>
+          options={[
+            { value: "ALL", label: "All statuses" },
+            { value: "ACTIVE", label: "Active" },
+            { value: "SCHEDULED", label: "Scheduled" },
+            { value: "PAUSED", label: "Paused" },
+            { value: "EXPIRED", label: "Expired" },
+            { value: "DRAFT", label: "Draft" },
+          ]}
+          triggerClassName="w-[150px]"
+        />
       </div>
 
       {/* Table */}

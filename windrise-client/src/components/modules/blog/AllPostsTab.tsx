@@ -23,6 +23,7 @@ import {
 } from "@/services/blog/blog";
 import type { BlogCategory, BlogPost, BlogStats } from "@/types/blog";
 import { seoBand } from "@/utils/seoScore";
+import { FieldSelect } from "@/components/ui/field-select";
 
 const PAGE_SIZE = 5;
 
@@ -32,6 +33,14 @@ const STATUS_STYLES: Record<string, string> = {
   SCHEDULED: "bg-amber-50 text-amber-700",
   ARCHIVED: "bg-rose-50 text-rose-700",
 };
+
+/** Shared by the bulk-action menu and the status filter. */
+const STATUS_OPTIONS = [
+  { value: "PUBLISHED", label: "Published" },
+  { value: "DRAFT", label: "Draft" },
+  { value: "SCHEDULED", label: "Scheduled" },
+  { value: "ARCHIVED", label: "Archived" },
+];
 
 const STATUS_DOT: Record<string, string> = {
   PUBLISHED: "bg-emerald-500",
@@ -302,19 +311,17 @@ export function AllPostsTab({ onEdit }: { onEdit: (postId: string) => void }) {
           <span className="text-[13px] font-semibold">{selection.length} selected</span>
           <span className="text-slate-500">|</span>
 
-          <select
-            aria-label="Change status of selected posts"
-            disabled={busy}
+          {/* Acts as a menu rather than a field: the value is never held, it
+              fires the bulk action and falls back to the placeholder. */}
+          <FieldSelect
+            label="Change status of selected posts"
+            placeholder="Change status"
             value=""
-            onChange={(event) => event.target.value && runBulkStatus(event.target.value)}
-            className="h-8 rounded-md border border-white/25 bg-transparent px-2 text-[12px] text-white outline-none disabled:opacity-50 [&>option]:text-slate-900"
-          >
-            <option value="">Change status</option>
-            <option value="PUBLISHED">Published</option>
-            <option value="DRAFT">Draft</option>
-            <option value="SCHEDULED">Scheduled</option>
-            <option value="ARCHIVED">Archived</option>
-          </select>
+            disabled={busy}
+            onValueChange={(next) => next && runBulkStatus(next)}
+            options={STATUS_OPTIONS}
+            triggerClassName="h-8 w-auto rounded-md border-white/25 bg-transparent px-2 text-[12px] text-white data-placeholder:text-white"
+          />
 
           <button
             type="button"
@@ -347,38 +354,33 @@ export function AllPostsTab({ onEdit }: { onEdit: (postId: string) => void }) {
           />
         </div>
 
-        <select
-          aria-label="Filter by status"
+        <FieldSelect
+          label="Filter by status"
           value={status}
-          onChange={(event) => {
+          onValueChange={(next) => {
             setLoading(true);
-            setStatus(event.target.value);
+            setStatus(next);
           }}
-          className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-[13px] outline-none transition focus:border-slate-400"
-        >
-          <option value="ALL">All statuses</option>
-          <option value="PUBLISHED">Published</option>
-          <option value="DRAFT">Draft</option>
-          <option value="SCHEDULED">Scheduled</option>
-          <option value="ARCHIVED">Archived</option>
-        </select>
+          options={[{ value: "ALL", label: "All statuses" }, ...STATUS_OPTIONS]}
+          triggerClassName="w-[150px]"
+        />
 
-        <select
-          aria-label="Filter by category"
+        <FieldSelect
+          label="Filter by category"
           value={categoryId}
-          onChange={(event) => {
+          onValueChange={(next) => {
             setLoading(true);
-            setCategoryId(event.target.value);
+            setCategoryId(next);
           }}
-          className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-[13px] outline-none transition focus:border-slate-400"
-        >
-          <option value="ALL">All categories</option>
-          {categories.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.name}
-            </option>
-          ))}
-        </select>
+          options={[
+            { value: "ALL", label: "All categories" },
+            ...categories.map((category) => ({
+              value: category.id,
+              label: category.name,
+            })),
+          ]}
+          triggerClassName="w-[170px]"
+        />
 
         <span className="ml-auto text-[12px] text-slate-400">Sorted by newest</span>
       </div>
