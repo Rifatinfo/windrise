@@ -6,22 +6,19 @@ import {
   ChevronRightIcon,
   HeartIcon,
   PackageIcon,
-  SearchIcon,
   ShoppingBagIcon,
   UserRoundIcon,
-  XIcon,
   LucideIcon,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AccordionMenu } from './AccordionMenu'
-import { IconButton } from './IconButton'
+import { MENU_DURATION, MENU_EASE } from './MenuToggle'
 import {
   getNavigationCategory,
   navigationData,
   NavigationCategory,
   NavigationCategoryId,
 } from './Navigationdataset'
-import WhiteLogo from '@/components/shared/logo/WhiteLogo';
 
 type MobileDrawerProps = {
   isOpen: boolean
@@ -118,7 +115,10 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
           <motion.button
             type="button"
             aria-label="Close navigation menu"
-            className="fixed inset-0 z-50 bg-black/45"
+            // Below the site header (z-9999): the header stays visible above
+            // the panel and carries the only menu control, which is what lets
+            // the bars morph into the cross instead of being swapped out.
+            className="fixed inset-0 z-[9990] bg-black/45"
             initial={{
               opacity: 0,
             }}
@@ -138,28 +138,26 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
             role="dialog"
             aria-modal="true"
             aria-label="Navigation menu"
+            // Drops in from above and retracts upward, sharing the toggle's
+            // timing so the bars and the panel read as one movement.
             initial={{
-              x: '100%',
+              y: '-100%',
             }}
             animate={{
-              x: 0,
+              y: 0,
             }}
             exit={{
-              x: '100%',
+              y: '-100%',
             }}
             transition={{
-              duration: 0.42,
-              ease: [0.32, 0.72, 0, 1] as const,
+              duration: MENU_DURATION,
+              ease: MENU_EASE,
             }}
-            className="fixed inset-0 z-[60] flex h-dvh w-screen flex-col overflow-hidden bg-[#080808] text-white font-dm-sans"
+            className="fixed inset-0 z-[9995] flex h-dvh w-screen flex-col overflow-hidden bg-[#080808] text-white font-dm-sans"
           >
-            <div className="relative z-20 flex h-16 shrink-0 items-center justify-between bg-[#080808] px-5">
-              <WhiteLogo/>
-              <div className="flex items-center gap-1">
-                <IconButton icon={SearchIcon} label="Search" />
-                <IconButton icon={XIcon} label="Close menu" onClick={onClose} />
-              </div>
-            </div>
+            {/* Clears the fixed header, which stays visible above the panel
+                and holds the only menu control. */}
+            <div className="h-16 shrink-0" aria-hidden="true" />
 
             <div className="relative min-h-0 flex-1 overflow-hidden bg-[#080808]">
               <AnimatePresence initial={false} custom={direction} >
