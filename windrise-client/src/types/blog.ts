@@ -15,6 +15,8 @@ export type BlogPost = {
   title: string;
   slug: string;
   excerpt: string | null;
+  /** Optional pull-quote. Null when the author left it blank — nothing renders. */
+  highlight: string | null;
   content: string | null;
   status: BlogStatus;
   visibility: BlogVisibility;

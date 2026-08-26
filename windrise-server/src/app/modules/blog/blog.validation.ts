@@ -6,6 +6,8 @@ const postBody = {
   title: z.string().trim().min(1, "Title is required").max(200),
   slug: nullableString,
   excerpt: z.string().trim().max(750).nullable().optional(),
+  /** Optional pull-quote. Blank means the reader sees no highlight at all. */
+  highlight: z.string().trim().max(500).nullable().optional(),
   content: z.string().nullable().optional(),
   status: z.enum(["DRAFT", "PUBLISHED", "SCHEDULED", "ARCHIVED"]).optional(),
   visibility: z.enum(["PUBLIC", "PRIVATE"]).optional(),

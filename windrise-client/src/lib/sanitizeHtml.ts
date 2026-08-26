@@ -68,6 +68,78 @@ export function sanitizeProductDescription(
   }).trim()
 }
 
+/**
+ * Blog posts carry richer blocks than product descriptions — embeds, media,
+ * galleries, callouts, accordions — so they get their own, wider allowlist.
+ * Still an allowlist: no scripts, no event handlers, no arbitrary elements.
+ */
+export const POST_CONTENT_ALLOWED_TAGS = [
+  ...PRODUCT_DESCRIPTION_ALLOWED_TAGS,
+  "div",
+  "figure",
+  "figcaption",
+  "iframe",
+  "video",
+  "audio",
+  "source",
+  "details",
+  "summary",
+  "sup",
+  "sub",
+  "kbd",
+  "small",
+  // Column widths from a resized table are serialized as a colgroup.
+  "colgroup",
+  "col",
+]
+
+export const POST_CONTENT_ALLOWED_ATTR = [
+  ...PRODUCT_DESCRIPTION_ALLOWED_ATTR,
+  "class",
+  "id",
+  // Block alignment for images, video and embeds.
+  "data-align",
+  "data-free",
+  "controls",
+  "loading",
+  "allow",
+  "allowfullscreen",
+  "download",
+  "open",
+  "width",
+  "height",
+  "type",
+]
+
+/** Only these hosts may be framed into a post. */
+const ALLOWED_IFRAME_HOSTS = [
+  "www.youtube.com",
+  "youtube.com",
+  "www.youtube-nocookie.com",
+  "player.vimeo.com",
+]
+
+DOMPurify.addHook("afterSanitizeAttributes", (node) => {
+  if (node.tagName !== "IFRAME") return
+  const src = node.getAttribute("src") ?? ""
+  let host = ""
+  try {
+    host = new URL(src, "https://example.com").hostname
+  } catch {
+    host = ""
+  }
+  if (!ALLOWED_IFRAME_HOSTS.includes(host)) node.remove()
+})
+
+export function sanitizePostContent(html: string | null | undefined): string {
+  if (!html) return ""
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: POST_CONTENT_ALLOWED_TAGS,
+    ALLOWED_ATTR: POST_CONTENT_ALLOWED_ATTR,
+    ADD_URI_SAFE_ATTR: ["download"],
+  }).trim()
+}
+
 export function stripHtmlToText(html: string | null | undefined): string {
   if (!html) return ""
   const text = DOMPurify.sanitize(html, {

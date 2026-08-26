@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { useEditorState, type Editor } from "@tiptap/react"
 import { sinkListItem, liftListItem } from "@tiptap/pm/schema-list"
 import {
@@ -15,43 +16,62 @@ import {
   Italic,
   List,
   ListOrdered,
+  Maximize2,
+  Minimize2,
   Minus,
   Palette,
   Quote,
   Redo2,
   RemoveFormatting,
   Strikethrough,
+  Subscript as SubscriptIcon,
+  Superscript as SuperscriptIcon,
   Table as TableIcon,
   Underline as UnderlineIcon,
   Undo2,
 } from "lucide-react"
 
 import { HeadingDropdown } from "./HeadingDropdown"
-import { LinkPopover } from "./LinkPopover"
+import { LinkPopover, type LinkPopoverHandle } from "./LinkPopover"
 import { ColorSwatchPopover } from "./ColorSwatchPopover"
 import { ToolbarButton, ToolbarSeparator } from "./ToolbarButton"
+import { TableGridPicker } from "./toolbar/TableGridPicker"
+import { activeAlignment, applyAlignment } from "./editorActions"
 
 const TEXT_COLORS = [
-  "#1a1a1a",
-  "#64748b",
-  "#e5484d",
-  "#f59e0b",
-  "#16a34a",
-  "#5b5bf5",
-  "#0ea5e9",
-  "#a855f7",
+  "#1a1a1a", "#334155", "#64748b", "#94a3b8", "#e5484d", "#f97316",
+  "#f59e0b", "#16a34a", "#0d9488", "#0ea5e9", "#5b5bf5", "#a855f7",
 ]
 
 const HIGHLIGHT_COLORS = [
-  "#fef08a",
-  "#fecaca",
-  "#bbf7d0",
-  "#bfdbfe",
-  "#e9d5ff",
-  "#fed7aa",
+  "#fef08a", "#fecaca", "#bbf7d0", "#bfdbfe",
+  "#e9d5ff", "#fed7aa", "#cffafe", "#e2e8f0",
 ]
 
-export function EditorToolbar({ editor }: { editor: Editor }) {
+/**
+ * Toolbar row one — the core formatting controls.
+ *
+ * `full` turns on the extras the blog editor needs (super/subscript, the
+ * table grid picker, fullscreen). The product editor keeps the shorter row.
+ */
+export function EditorToolbar({
+  editor,
+  full,
+  fullscreen,
+  onToggleFullscreen,
+  lastColor,
+  onColorUsed,
+  linkRef,
+}: {
+  editor: Editor
+  full?: boolean
+  fullscreen?: boolean
+  onToggleFullscreen?: () => void
+  lastColor?: string
+  onColorUsed?: (color: string) => void
+  /** Lets ⌘K open the link editor from outside the toolbar. */
+  linkRef?: React.Ref<LinkPopoverHandle>
+}) {
   const listItemType = editor.schema.nodes.listItem
 
   // Tiptap v3's `useEditor` does not re-render on transactions
@@ -66,15 +86,16 @@ export function EditorToolbar({ editor }: { editor: Editor }) {
       isItalic: editor.isActive("italic"),
       isUnderline: editor.isActive("underline"),
       isStrike: editor.isActive("strike"),
+      isSuperscript: editor.isActive("superscript"),
+      isSubscript: editor.isActive("subscript"),
       isBulletList: editor.isActive("bulletList"),
       isOrderedList: editor.isActive("orderedList"),
       isBlockquote: editor.isActive("blockquote"),
       isCode: editor.isActive("code"),
       isLink: editor.isActive("link"),
-      alignLeft: editor.isActive({ textAlign: "left" }),
-      alignCenter: editor.isActive({ textAlign: "center" }),
-      alignRight: editor.isActive({ textAlign: "right" }),
-      alignJustify: editor.isActive({ textAlign: "justify" }),
+      // Media blocks report their own alignment, so the buttons light up
+      // correctly whether an image or a paragraph is selected.
+      alignment: activeAlignment(editor),
       headingLevel:
         ([1, 2, 3, 4, 5, 6] as const).find((level) =>
           editor.isActive("heading", { level })
@@ -105,7 +126,7 @@ export function EditorToolbar({ editor }: { editor: Editor }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-1 rounded-t-lg border-b border-input p-1.5">
+    <div className="flex flex-wrap items-center gap-1 border-b border-input p-1.5">
       <ToolbarButton
         label="Undo"
         disabled={!state.canUndo}
@@ -158,22 +179,58 @@ export function EditorToolbar({ editor }: { editor: Editor }) {
 
       <ColorSwatchPopover
         label="Text color"
-        icon={<Palette />}
+        icon={
+          full ? (
+            <span className="flex flex-col items-center leading-none">
+              <span className="text-[11px] font-semibold">A</span>
+              <span
+                className="mt-[2px] block h-[3px] w-[13px] rounded-sm"
+                style={{ backgroundColor: state.textColor ?? lastColor ?? "#1a1a1a" }}
+              />
+            </span>
+          ) : (
+            <Palette />
+          )
+        }
         colors={TEXT_COLORS}
+        columns={6}
         activeColor={state.textColor}
-        onSelect={(color) => editor.chain().focus().setColor(color).run()}
+        onSelect={(color) => {
+          onColorUsed?.(color)
+          editor.chain().focus().setColor(color).run()
+        }}
         onClear={() => editor.chain().focus().unsetColor().run()}
       />
       <ColorSwatchPopover
         label="Highlight"
+        clearLabel="Remove highlight"
         icon={<Highlighter />}
         colors={HIGHLIGHT_COLORS}
+        columns={full ? 8 : 6}
         activeColor={state.highlightColor}
-        onSelect={(color) =>
-          editor.chain().focus().setHighlight({ color }).run()
-        }
+        onSelect={(color) => editor.chain().focus().setHighlight({ color }).run()}
         onClear={() => editor.chain().focus().unsetHighlight().run()}
       />
+
+      {full && (
+        <>
+          <ToolbarSeparator />
+          <ToolbarButton
+            label="Superscript"
+            active={state.isSuperscript}
+            onClick={() => editor.chain().focus().toggleSuperscript().run()}
+          >
+            <SuperscriptIcon />
+          </ToolbarButton>
+          <ToolbarButton
+            label="Subscript"
+            active={state.isSubscript}
+            onClick={() => editor.chain().focus().toggleSubscript().run()}
+          >
+            <SubscriptIcon />
+          </ToolbarButton>
+        </>
+      )}
 
       <ToolbarSeparator />
 
@@ -202,38 +259,36 @@ export function EditorToolbar({ editor }: { editor: Editor }) {
 
       <ToolbarButton
         label="Align left"
-        active={state.alignLeft}
-        onClick={() => editor.chain().focus().setTextAlign("left").run()}
+        active={state.alignment === "left"}
+        onClick={() => applyAlignment(editor, "left")}
       >
         <AlignLeft />
       </ToolbarButton>
       <ToolbarButton
         label="Align center"
-        active={state.alignCenter}
-        onClick={() => editor.chain().focus().setTextAlign("center").run()}
+        active={state.alignment === "center"}
+        onClick={() => applyAlignment(editor, "center")}
       >
         <AlignCenter />
       </ToolbarButton>
       <ToolbarButton
         label="Align right"
-        active={state.alignRight}
-        onClick={() => editor.chain().focus().setTextAlign("right").run()}
+        active={state.alignment === "right"}
+        onClick={() => applyAlignment(editor, "right")}
       >
         <AlignRight />
       </ToolbarButton>
       <ToolbarButton
         label="Justify"
-        active={state.alignJustify}
-        onClick={() => editor.chain().focus().setTextAlign("justify").run()}
+        active={state.alignment === "justify"}
+        onClick={() => applyAlignment(editor, "justify")}
       >
         <AlignJustify />
       </ToolbarButton>
 
       <ToolbarSeparator />
 
-      <LinkPopover editor={editor} isActive={state.isLink} />
-
-      <ToolbarSeparator />
+      <LinkPopover ref={linkRef} editor={editor} isActive={state.isLink} />
 
       <ToolbarButton
         label="Blockquote"
@@ -255,29 +310,41 @@ export function EditorToolbar({ editor }: { editor: Editor }) {
       >
         <Code />
       </ToolbarButton>
-      <ToolbarButton
-        label="Insert table"
-        onClick={() =>
-          editor
-            .chain()
-            .focus()
-            .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
-            .run()
-        }
-      >
-        <TableIcon />
-      </ToolbarButton>
 
       <ToolbarSeparator />
 
-      <ToolbarButton
-        label="Clear formatting"
-        onClick={() =>
-          editor.chain().focus().clearNodes().unsetAllMarks().run()
-        }
-      >
-        <RemoveFormatting />
-      </ToolbarButton>
+      {full ? (
+        <TableGridPicker editor={editor} />
+      ) : (
+        <ToolbarButton
+          label="Insert table"
+          onClick={() =>
+            editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+          }
+        >
+          <TableIcon />
+        </ToolbarButton>
+      )}
+
+      {full && onToggleFullscreen ? (
+        <ToolbarButton
+          label={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+          active={fullscreen}
+          onClick={onToggleFullscreen}
+        >
+          {fullscreen ? <Minimize2 /> : <Maximize2 />}
+        </ToolbarButton>
+      ) : (
+        <>
+          <ToolbarSeparator />
+          <ToolbarButton
+            label="Clear formatting"
+            onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}
+          >
+            <RemoveFormatting />
+          </ToolbarButton>
+        </>
+      )}
     </div>
   )
 }

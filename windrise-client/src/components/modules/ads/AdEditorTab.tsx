@@ -5,6 +5,7 @@ import { ImageIcon, Loader2Icon } from "lucide-react";
 
 import { Toast } from "@/components/shared/Toast/Toast";
 import { ToggleSwitch } from "@/components/ui/toggle-switch";
+import { FieldSelect } from "@/components/ui/field-select";
 import {
   createAd,
   getAd,
@@ -449,18 +450,19 @@ export function AdEditorTab({
           <div className="mt-4 space-y-4">
             <div>
               <Label>Placement</Label>
-              <select
+              <FieldSelect
+                label="Placement"
                 value={placementId}
-                onChange={(event) => setPlacementId(event.target.value)}
-                className={`mt-1.5 ${inputClass}`}
-              >
-                <option value="">Unassigned</option>
-                {placements.map((entry) => (
-                  <option key={entry.id} value={entry.id}>
-                    {entry.name}
-                  </option>
-                ))}
-              </select>
+                onValueChange={setPlacementId}
+                options={[
+                  { value: "", label: "Unassigned" },
+                  ...placements.map((entry) => ({
+                    value: entry.id,
+                    label: entry.name,
+                  })),
+                ]}
+                className="mt-1.5"
+              />
             </div>
 
             <div>
@@ -507,15 +509,17 @@ export function AdEditorTab({
 
             <div>
               <Label>Status</Label>
-              <select
+              <FieldSelect
+                label="Status"
                 value={status}
-                onChange={(event) => setStatus(event.target.value as AdStatus)}
-                className={`mt-1.5 ${inputClass}`}
-              >
-                <option value="ACTIVE">Active</option>
-                <option value="PAUSED">Paused</option>
-                <option value="DRAFT">Draft</option>
-              </select>
+                onValueChange={(next) => setStatus(next as AdStatus)}
+                options={[
+                  { value: "ACTIVE", label: "Active" },
+                  { value: "PAUSED", label: "Paused" },
+                  { value: "DRAFT", label: "Draft" },
+                ]}
+                className="mt-1.5"
+              />
               <p className="mt-1 text-[11px] text-slate-400">
                 Scheduled and Expired are derived from the dates above.
               </p>

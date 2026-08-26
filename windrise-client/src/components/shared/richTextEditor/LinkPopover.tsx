@@ -12,26 +12,38 @@ import {
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
-export function LinkPopover({
-  editor,
-  isActive,
-}: {
-  editor: Editor
-  /** Reactive from the toolbar's `useEditorState` subscription. */
-  isActive: boolean
-}) {
+/** Lets ⌘K (and the cheatsheet row) pop this open from outside. */
+export interface LinkPopoverHandle {
+  open: () => void
+}
+
+export const LinkPopover = React.forwardRef<
+  LinkPopoverHandle,
+  {
+    editor: Editor
+    /** Reactive from the toolbar's `useEditorState` subscription. */
+    isActive: boolean
+  }
+>(function LinkPopover({ editor, isActive }, ref) {
   const [open, setOpen] = React.useState(false)
   const [url, setUrl] = React.useState("")
   const [newTab, setNewTab] = React.useState(true)
 
-  const handleOpenChange = (next: boolean) => {
-    if (next) {
-      const attrs = editor.getAttributes("link")
-      setUrl(attrs.href ?? "")
-      setNewTab(attrs.target ? attrs.target === "_blank" : true)
-    }
-    setOpen(next)
-  }
+  const handleOpenChange = React.useCallback(
+    (next: boolean) => {
+      if (next) {
+        const attrs = editor.getAttributes("link")
+        setUrl(attrs.href ?? "")
+        setNewTab(attrs.target ? attrs.target === "_blank" : true)
+      }
+      setOpen(next)
+    },
+    [editor]
+  )
+
+  React.useImperativeHandle(ref, () => ({ open: () => handleOpenChange(true) }), [
+    handleOpenChange,
+  ])
 
   const applyLink = () => {
     const trimmed = url.trim()
@@ -113,4 +125,4 @@ export function LinkPopover({
       </PopoverContent>
     </Popover>
   )
-}
+})

@@ -21,6 +21,7 @@ model Product {
 
   //============ Relations =============//
   orderItems            OrderItem[]
+  investments           Investment[]
   categories            ProductCategory[]
   subCategories         ProductSubCategory[]
   variants              Variant[]

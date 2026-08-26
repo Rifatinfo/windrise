@@ -5,6 +5,9 @@ model BlogPost {
   slug    String @unique
   /// Short summary for the blog index; also the fallback meta description.
   excerpt String?
+  /// Optional pull-quote shown above the post body. Empty means the reader
+  /// never sees a highlight block at all, so leaving it blank is the default.
+  highlight String?
   /// Sanitized HTML from the rich text editor.
   content String?
 
