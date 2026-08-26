@@ -168,7 +168,8 @@ export function Header() {
 
         <div className="lg:hidden">
           <MobileHeader
-            onMenuOpen={() => setIsDrawerOpen(true)}
+            isMenuOpen={isDrawerOpen}
+            onMenuToggle={() => setIsDrawerOpen((open) => !open)}
             logoVariant={isHome || isDark ? 'white' : 'black'}
           />
         </div>
