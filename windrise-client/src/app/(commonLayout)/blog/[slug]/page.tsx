@@ -46,6 +46,7 @@ export default async function StoryPage({ params }: PageProps) {
     getActiveAds("mobile-sticky"),
   ]);
 
+  
   return (
     <main className="bg-white pt-20">
       <div className="mx-auto w-full max-w-[1188px] px-5 pt-6 md:px-8 md:pt-10">
