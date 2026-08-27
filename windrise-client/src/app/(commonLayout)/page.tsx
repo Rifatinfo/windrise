@@ -2,6 +2,7 @@
 
 
 
+import { Reveal } from "@/components/shared/motion/Reveal";
 import { StoriesSection } from "@/components/modules/home/blog/StoriesSection";
 import { Hero } from "@/components/modules/home/hero/Hero";
 import { MiniquinHero } from "@/components/modules/home/miniquinSlide/MiniquinHero";
@@ -23,12 +24,14 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main>
+        {/* The hero is above the fold, so it is left alone — revealing what is
+            already on screen at load just reads as a flash. */}
         <Hero/>
-        <MiniquinHero />
-        <CollectionShowcase/>
-        <RhythmSection/>
-        <WindriseHero/>
-        <StoriesSection/>
+        <Reveal><MiniquinHero /></Reveal>
+        <Reveal><CollectionShowcase/></Reveal>
+        <Reveal><RhythmSection/></Reveal>
+        <Reveal><WindriseHero/></Reveal>
+        <Reveal><StoriesSection/></Reveal>
       </main>
     </>
   );

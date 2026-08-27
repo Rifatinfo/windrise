@@ -550,6 +550,21 @@ body {
   }
 }
 
+/* ── Scroll reveal ────────────────────────────────────────────────────────
+   Anyone who has asked for less motion gets the content with none of the
+   movement. This must be CSS rather than a JS branch: the media query is
+   unknown during SSR and the first client render, so a component that decides
+   in JS renders the animated element first and leaves framer-motion's inline
+   `opacity: 0` behind when it swaps — hiding the content permanently. The
+   `!important` is what lets a stylesheet win over those inline styles. */
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
 /* ── Blog highlight ──────────────────────────────────────────────────────
    The optional pull-quote above a post body. Only ever rendered when the
    author actually wrote one, so there is no empty state to style. */

@@ -2,15 +2,9 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import {
-  HeartIcon,
-  SearchIcon,
-  ShoppingBagIcon,
-  UserRoundIcon,
-} from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
 import { DesktopNav } from '@/components/modules/home/navbar/DesktopNav'
-import { IconButton } from '@/components/modules/home/navbar/IconButton'
+import { HeaderIconButton } from '@/components/modules/home/navbar/HeaderIconButton'
 import { MobileHeader } from '@/components/modules/home/navbar/MobileHeader'
 import { useCart } from '@/contexts/CartContext'
 import { MegaMenu } from '@/components/modules/home/navbar/MegaMenu'
@@ -131,6 +125,9 @@ export function Header() {
     : 'bg-transparent'
   const headerText = isDark || isHome ? 'text-white' : 'text-black'
   const Logo = isHome || isDark ? WhiteLogo : BlackLogo
+  // Same condition as the logo, so wordmark and icons never disagree: light
+  // artwork on the home page and over the dark scrolled header, dark elsewhere.
+  const iconTone = isHome || isDark ? 'white' : 'black'
 
   
   return (
@@ -138,7 +135,18 @@ export function Header() {
       <header
         onMouseLeave={scheduleCategoryClose}
         onMouseEnter={clearCloseTimer}
-        className={`fixed inset-x-0 top-0 z-[9999] font-dm-sans transition-[background-color,backdrop-filter,transform] duration-300 ease-out ${headerBg} ${headerText} ${isHidden ? '-translate-y-full' : 'translate-y-0'}`}
+        // `-translate-y-full` compiles to the `translate` property in Tailwind
+        // v4, not `transform`. The transition used to list only `transform`,
+        // so the header was snapping in and out with nothing animating.
+        //
+        // It leaves and returns on different curves: an accelerating ease out
+        // of view so it gets out of the way, and a decelerating one on the way
+        // back so it settles rather than arriving abruptly.
+        className={`fixed inset-x-0 top-0 z-[9999] font-dm-sans transition-[background-color,backdrop-filter,translate,opacity] ${headerBg} ${headerText} ${
+          isHidden
+            ? '-translate-y-full opacity-0 duration-[420ms] ease-[cubic-bezier(0.55,0,1,0.45)]'
+            : 'translate-y-0 opacity-100 duration-[520ms] ease-[cubic-bezier(0.22,1,0.36,1)]'
+        }`}
       >
         <div className="mx-auto hidden h-20 w-full grid-cols-[200px_1fr_auto] items-center px-6 lg:px-20 md:px-20 lg:grid">
           <Logo />
@@ -152,17 +160,26 @@ export function Header() {
           </div>
 
           <div className="flex justify-end gap-0.5 md:-mr-4 lg:-mr-4">
-            <IconButton icon={SearchIcon} label="Search" />
-            <IconButton icon={HeartIcon} label="Wishlist" />
+            <HeaderIconButton name="search" tone={iconTone} />
+            <HeaderIconButton name="wishlist" tone={iconTone} />
             <Link href="/shoppingBag" className="relative inline-flex">
-              <IconButton icon={ShoppingBagIcon} label="Shopping bag" />
+              <HeaderIconButton name="cart" tone={iconTone} />
               {itemCount > 0 && (
-                <span className="absolute right-0 top-0 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-white px-1 text-[9px] font-semibold text-black">
+                <span
+                  // Inverted against the icons, or the badge disappears: it was
+                  // always white, which vanished on the pages that render a
+                  // light header.
+                  className={`absolute right-0 top-0 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-semibold transition-colors duration-300 ${
+                    iconTone === 'white'
+                      ? 'bg-white text-black'
+                      : 'bg-black text-white'
+                  }`}
+                >
                   {itemCount > 99 ? "99+" : itemCount}
                 </span>
               )}
             </Link>
-            <IconButton icon={UserRoundIcon} label="Account" />
+            <HeaderIconButton name="account" tone={iconTone} />
           </div>
         </div>
 

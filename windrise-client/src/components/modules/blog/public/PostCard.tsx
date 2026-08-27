@@ -61,7 +61,9 @@ export function PostCard({ post }: { post: PublicPost }) {
   const image = mediaUrl(post.featuredImage);
 
   return (
-    <article className="group flex flex-col">
+    // `h-full` so the footer's `mt-auto` still aligns across a row now that
+    // the reveal wrapper, not the article, is the grid item.
+    <article className="group flex h-full flex-col">
       <Link href={`/blog/${post.slug}`} className="block overflow-hidden bg-[#E7E5E0]">
         {/* The ad slot in the grid mirrors this ratio so rows stay level. */}
         <div className="relative w-full" style={{ aspectRatio: "4 / 3" }}>
