@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronsRightIcon } from "lucide-react";
 
 import { PostContentRenderer } from "@/components/shared/PostContentRenderer";
+import { Reveal } from "@/components/shared/motion/Reveal";
 import type { ActiveAd } from "@/services/ads/public";
 import { mediaUrl } from "@/services/blog/blog";
 import type { PublicPostDetail } from "@/services/blog/public";
@@ -100,15 +101,17 @@ export function PostArticle({
 
       {/* ---- Cover, full content width ---- */}
       {cover && (
-        <figure className="mt-9">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={cover}
-            alt={post.title}
-            className="w-full object-cover"
-            style={{ aspectRatio: "16 / 9" }}
-          />
-        </figure>
+        <Reveal>
+          <figure className="mt-9">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={cover}
+              alt={post.title}
+              className="w-full object-cover"
+              style={{ aspectRatio: "16 / 9" }}
+            />
+          </figure>
+        </Reveal>
       )}
 
       {/* ---- Body beside the right rail ---- */}
@@ -116,13 +119,17 @@ export function PostArticle({
         <div className="min-w-0">
           {middle && <PostContentRenderer html={middle} className={bodyClass} />}
 
-          {/* The Blog Highlight field. Absent when the author left it blank. */}
+          {/* The Blog Highlight field. Absent when the author left it blank.
+              Revealed here in the left column only — the sticky right rail is
+              a sibling, so its positioning context is untouched. */}
           {post.highlight && (
-            <div className="my-9 border-y border-[#E3E0D9] py-8">
-              <p className="text-center font-serif text-[clamp(15px,1.5vw,19px)] leading-[1.55] text-[#1C1B1A]">
-                {post.highlight}
-              </p>
-            </div>
+            <Reveal>
+              <div className="my-9 border-y border-[#E3E0D9] py-8">
+                <p className="text-center font-serif text-[clamp(15px,1.5vw,19px)] leading-[1.55] text-[#1C1B1A]">
+                  {post.highlight}
+                </p>
+              </div>
+            </Reveal>
           )}
 
           {rest && <PostContentRenderer html={rest} className={bodyClass} />}

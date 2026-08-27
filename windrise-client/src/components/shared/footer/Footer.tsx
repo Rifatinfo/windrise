@@ -254,13 +254,13 @@ function BrandPanel({
               value={email}
               onChange={(event) => onEmailChange(event.target.value)}
               placeholder="Email address"
-              className="min-w-0 flex-1 bg-transparent text-[10px] text-zinc-100 placeholder:text-zinc-500 focus:outline-none"
+              className="min-w-0 flex-1 bg-transparent text-[10px] text-zinc-100 placeholder:text-zinc-500 focus:outline-none font-dm-sans"
             />
             <button
               type="submit"
-              className="text-[10px] text-zinc-100 transition-colors hover:text-zinc-400"
+              className="text-[10px] text-zinc-100 transition-colors hover:text-zinc-400 font-dm-sans"
             >
-              Send
+              Subscribe
             </button>
           </div>
           <p

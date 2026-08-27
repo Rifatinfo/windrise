@@ -5,6 +5,7 @@ import { ChevronsRightIcon, Loader2Icon } from "lucide-react";
 
 import type { ActiveAd } from "@/services/ads/public";
 import { getPublicPosts, type PublicPost } from "@/services/blog/public";
+import { RevealGroup, RevealItem } from "@/components/shared/motion/Reveal";
 import { AdSlot } from "./AdSlot";
 import { PostCard } from "./PostCard";
 
@@ -63,20 +64,28 @@ export function StoriesGrid({
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-x-6 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
+      {/* The group *is* the grid, so each RevealItem stays a direct grid item
+          and the columns are unaffected by the animation wrapper. */}
+      <RevealGroup className="grid grid-cols-1 gap-x-6 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
         {before.map((post) => (
-          <PostCard key={post.id} post={post} />
+          <RevealItem key={post.id} className="h-full">
+            <PostCard post={post} />
+          </RevealItem>
         ))}
 
         {/* Matches a card's image, not the whole cell, so the row stays even.
             `self-start` stops the grid stretching it to the row height, which
             would override its aspect ratio. */}
-        <AdSlot ad={ad} width={486} height={267} aspect="4 / 3" className="self-start" />
+        <RevealItem className="self-start">
+          <AdSlot ad={ad} width={486} height={267} aspect="4 / 3" />
+        </RevealItem>
 
         {after.map((post) => (
-          <PostCard key={post.id} post={post} />
+          <RevealItem key={post.id} className="h-full">
+            <PostCard post={post} />
+          </RevealItem>
         ))}
-      </div>
+      </RevealGroup>
 
       {hasMore && (
         <div className="mt-12 flex justify-center">

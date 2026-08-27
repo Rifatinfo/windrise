@@ -7,6 +7,7 @@ import LoadMoreButton, {
 } from "@/components/shared/pagination/LoadMoreButton";
 import { ComingSoon } from "@/components/shared/product-notFound/ComingSoon";
 import ProductCard from "@/components/shared/ProductCard/ProductCard";
+import { RevealGroup, RevealItem } from "@/components/shared/motion/Reveal";
 import {
   getCategories,
   getSubCategories,
@@ -93,16 +94,17 @@ const SubCategoryPage = async ({ params, searchParams }: PageProps) => {
         )}
 
         {products.length > 0 && (
-          <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-7 sm:mt-5 sm:gap-x-4 sm:gap-y-8 lg:grid-cols-4 lg:gap-4 lg:gap-y-10">
+          <RevealGroup className="mt-4 grid grid-cols-2 gap-x-3 gap-y-7 sm:mt-5 sm:gap-x-4 sm:gap-y-8 lg:grid-cols-4 lg:gap-4 lg:gap-y-10">
             {products.map((product: any) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                category={categoryName}
-                subCategory={subCategoryName}
-              />
+              <RevealItem key={product.id} className="h-full">
+                <ProductCard
+                  product={product}
+                  category={categoryName}
+                  subCategory={subCategoryName}
+                />
+              </RevealItem>
             ))}
-          </div>
+          </RevealGroup>
         )}
       </div>
 
