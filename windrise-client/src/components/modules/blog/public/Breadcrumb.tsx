@@ -19,7 +19,7 @@ export function Breadcrumb({
   trail: { label: string; href?: string }[];
 }) {
   return (
-    <nav aria-label="Breadcrumb" className="text-sm text-[#9E9E9E] md:text-lg">
+    <nav aria-label="Breadcrumb" className="text-sm text-[#9E9E9E] md:text-lg ">
       <ol className="flex items-center gap-x-1.5">
         {trail.map((crumb, index) => {
           const isLast = index === trail.length - 1;

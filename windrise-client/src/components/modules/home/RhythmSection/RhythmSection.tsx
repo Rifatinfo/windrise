@@ -22,9 +22,9 @@ export function RhythmSection() {
             <img
               src="/assets/young-boy-2.png"
               alt="Model seated in an olive lounge chair wearing a relaxed sage tee, light denim and tan loafers"
-              className="h-full w-full object-cover"
+              className="h-full w-full object-cover -ml-6 md:-ml-0 rounded-sm"
             />
-            <div className="absolute inset-x-0 bottom-0 md:bottom-10 flex flex-col items-end  gap-3 p-5 text-left md:gap-7 md:p-14 md:mr-20">
+            <div className="absolute inset-x-0 bottom-0 md:bottom-10 flex flex-col items-end  gap-3 p-5 text-left md:gap-7 md:p-14 md:mr-20 mr-10">
               <h2
                 id="rhythm-heading"
                 className="text-[18px]  font-normal leading-[1.2] text-white md:text-[50px]"

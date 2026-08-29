@@ -45,23 +45,23 @@ export function StoriesHero() {
 
         {/* Centred at ~60% across — the clear half the figure leaves. */}
         <div className="absolute inset-y-0 left-[34%] right-[14%] flex flex-col items-center justify-center text-center">
-          <h1 className="font-display leading-[1.08] text-[#1C1B1A]">
+          <h1 className="font-dm-sans leading-[0.9] text-[#1C1B1A]">
             <span
-              className="block font-normal tracking-[0.01em] text-[#5C5A54]"
-              style={{ fontSize: "clamp(24px, 4.1cqw, 76px)" }}
+              className="block font-normal tracking-[0.01em] text-[#827C5A] font-dm-sans"
+              style={{ fontSize: "clamp(24px, 4.1cqw, 63px)" }}
             >
               The Windrise
             </span>
             <span
-              className="block font-semibold tracking-[0.01em]"
-              style={{ fontSize: "clamp(34px, 5.7cqw, 105px)" }}
+              className="block font-normal tracking-[0.01em]"
+              style={{ fontSize: "clamp(34px, 5.7cqw, 63px)" }}
             >
               Stories
             </span>
           </h1>
 
           <p
-            className="mt-[1.8cqw] max-w-[30em] font-serif leading-[1.6] text-[#5C5A54]"
+            className="mt-[1.8cqw] max-w-[30em]  leading-[1.6] "
             style={{ fontSize: "clamp(11px, 1.35cqw, 22px)" }}
           >
             Discover stories, perspectives, and inspiration from the world of
@@ -71,7 +71,7 @@ export function StoriesHero() {
       </div>
 
       {/* ----------------------------- Mobile ---------------------------- */}
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#F6F9F1] px-6 pb-10 pt-20 text-center md:hidden">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#F8F9F4] px-6 pb-10 pt-20 text-center md:hidden">
         <Image
           src="/assets/blogs-cover-mobile.png"
           alt=""

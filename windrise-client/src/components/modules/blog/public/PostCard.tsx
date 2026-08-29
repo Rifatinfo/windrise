@@ -32,7 +32,7 @@ function Taxonomy({ post }: { post: PublicPost }) {
       {labels.map((label) => (
         <span
           key={label}
-          className="inline-flex items-center rounded-xl border border-[#E0DED8] px-2.5 py-[6px] font-semibold text-[10px] md:text-[14px] leading-[12px] text-[#969696]"
+          className="inline-flex items-center rounded-xl border border-[#E0DED8] px-2.5 py-[6px] font-semibold text-[10px] md:text-[14px] leading-[12px] text-[#969696] "
         >
           {label}
         </span>
@@ -73,7 +73,7 @@ export function PostCard({ post }: { post: PublicPost }) {
               src={image}
               alt={post.title}
               loading="lazy"
-              className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+              className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04] rounded-sm"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-[10px] uppercase tracking-[0.12em] text-[#A8A59D]">

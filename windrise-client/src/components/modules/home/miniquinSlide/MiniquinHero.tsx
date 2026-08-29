@@ -7,7 +7,7 @@ import { MobileLookbook } from './MobileLookbook'
 import { SliderControls } from './SliderControls'
 import { MODELS } from './data/model';
 import { ringOffset, wrapIndex } from './data/slide';
-import { CollectionShowcase } from '../showCase/CollectionShowcase';
+
 
 
 

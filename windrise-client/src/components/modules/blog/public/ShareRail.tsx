@@ -73,7 +73,7 @@ export function ShareRail({ title }: { title: string }) {
 
   return (
     <div>
-      <p className="text-[9px] uppercase tracking-[0.12em] text-[#8A8880]">Share:</p>
+      <p className="text-[9px] uppercase tracking-[0.12em]">Share:</p>
       <div className="mt-2 flex items-center gap-1.5">
         {links.map(({ key, label, href, Icon }) => (
           <a

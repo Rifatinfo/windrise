@@ -24,7 +24,7 @@ export default async function StoriesPage() {
     // No top padding: the hero is full-bleed and runs under the fixed header,
     // which is transparent until the page is scrolled. It carries the
     // breadcrumb itself.
-    <main className="bg-white">
+    <main className="bg-[#F8F9F4]">
       <StoriesHero />
 
       <section className="mx-auto w-full max-w-[1188px] px-5 py-12 md:px-8 md:py-16">
