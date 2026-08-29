@@ -7,7 +7,6 @@ import { StoriesSection } from "@/components/modules/home/blog/StoriesSection";
 import { Hero } from "@/components/modules/home/hero/Hero";
 import { MiniquinHero } from "@/components/modules/home/miniquinSlide/MiniquinHero";
 import { RhythmSection } from "@/components/modules/home/RhythmSection/RhythmSection";
-import { CollectionShowcase } from "@/components/modules/home/showCase/CollectionShowcase";
 import WindriseHero from "@/components/modules/home/showCase/WindriseHero";
 import Head from "next/head";
 

@@ -27,14 +27,14 @@ function Byline({ post }: { post: PublicPostDetail }) {
 
   return (
     <div>
-      <p className="text-[9px] uppercase tracking-[0.12em] text-[#1C1B1A]">
+      <p className="text-[9px] font-semibold md:text-[16px] font-dm-sans uppercase tracking-[0.12em] text-[#1C1B1A]">
         {post.author.name}
       </p>
 
       {avatar && (
         <div className="mt-3 h-[88px] w-[88px] overflow-hidden bg-[#EDEBE6]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={avatar} alt={post.author.name} className="h-full w-full object-cover" />
+          <img src={avatar} alt={post.author.name} className="h-full w-full object-cover rounded-sm" />
         </div>
       )}
 
@@ -72,7 +72,7 @@ export function PostArticle({
         <div aria-hidden="true" />
         <header>
           {post.publishedAt && (
-            <p className="text-[9px] uppercase tracking-[0.14em] text-[#8A8880]">
+            <p className="text-[9px] md:text-[12px] font-medium uppercase tracking-[0.14em]">
               {longDate(post.publishedAt)}
             </p>
           )}
@@ -90,7 +90,7 @@ export function PostArticle({
 
         <div className="mt-6 min-w-0 lg:mt-0">
           {post.excerpt && (
-            <p className="font-serif text-[clamp(15px,1.4vw,18px)] leading-[1.5] text-[#1C1B1A]">
+            <p className="font-serif text-[clamp(18px,1.4vw,24px)] leading-[1.5] text-[#1C1B1A]">
               {post.excerpt}
             </p>
           )}

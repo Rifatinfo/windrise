@@ -49,7 +49,12 @@ export function SliderControls({ onPrev, onNext }: SliderControlsProps) {
             aria-hidden="true"
             width={33}
             height={33}
-            className="pointer-events-none h-full w-full select-none"
+            // className="pointer-events-none h-full w-full select-none"
+            className="pointer-events-none select-none
+             h-6 w-6
+             sm:h-7 sm:w-7
+             md:h-8 md:w-8
+             lg:h-[33px] lg:w-[33px]"
           />
         </button>
       ))}

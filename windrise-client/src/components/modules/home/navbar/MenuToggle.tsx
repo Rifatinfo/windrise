@@ -31,7 +31,7 @@ export function MenuToggle({
 }) {
   const transition = { duration: MENU_DURATION, ease: MENU_EASE }
   const bar =
-    'absolute h-[1.5px] w-[22px] rounded-full bg-current will-change-transform'
+    'absolute h-[1.5px] w-[22px] rounded-full bg-current will-change-transform  '
 
   return (
     <button
@@ -39,7 +39,7 @@ export function MenuToggle({
       onClick={onClick}
       aria-label={isOpen ? 'Close menu' : 'Open menu'}
       aria-expanded={isOpen}
-      className={`relative inline-flex h-9 w-9 items-center justify-center transition-opacity duration-200 hover:opacity-60 ${className}`}
+      className={`relative inline-flex h-9 w-9 items-center justify-center transition-opacity duration-200 hover:opacity-60 ${className} mt-2`}
     >
       <motion.span
         aria-hidden="true"

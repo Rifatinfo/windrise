@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { Breadcrumb } from "@/components/modules/blog/public/Breadcrumb";
+
 import { PostArticle } from "@/components/modules/blog/public/PostArticle";
 import { PostSidebar } from "@/components/modules/blog/public/PostSidebar";
 import { getActiveAds } from "@/services/ads/public";
@@ -48,15 +48,16 @@ export default async function StoryPage({ params }: PageProps) {
 
   
   return (
-    <main className="bg-white pt-20">
+    <main className="bg-[#F8F9F4] pt-20">
+       
       <div className="mx-auto w-full max-w-[1188px] px-5 pt-6 md:px-8 md:pt-10">
-        <Breadcrumb
+       {/* <Breadcrumb
           trail={[
             { label: "Home", href: "/" },
             { label: "Stories", href: "/blog" },
-            { label: post.title },
+            // { label: post.title },
           ]}
-        />
+        /> */}
       </div>
 
       <div className="mx-auto w-full max-w-[1188px] px-5 py-10 md:px-8 md:py-10">
