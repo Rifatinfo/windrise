@@ -28,7 +28,6 @@ export default function Home() {
             already on screen at load just reads as a flash. */}
         <Hero/>
         <Reveal><MiniquinHero /></Reveal>
-        <Reveal><CollectionShowcase/></Reveal>
         <Reveal><RhythmSection/></Reveal>
         <Reveal><WindriseHero/></Reveal>
         <Reveal><StoriesSection/></Reveal>

@@ -43,7 +43,7 @@ export function LoopingShort({ src, title, className = '' }: LoopingShortProps) 
         ref={videoRef}
         src={src}
         aria-label={title}
-        className="h-full w-full object-contain rounded-sm"
+        className="h-full w-full object-contain rounded-lg"
         autoPlay
         loop
         muted

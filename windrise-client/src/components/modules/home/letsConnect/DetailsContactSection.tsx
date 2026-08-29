@@ -20,11 +20,11 @@ const DetailsContactSection = () => {
 
             <h1
               className="
-              absolute right-[7%] bottom-[280px] lg:bottom-0 lg:top-[27%] z-10 
+              absolute right-[7%] bottom-[270px] lg:bottom-0 lg:top-[27%]  
               max-w-[43%]
               text-right
-
-              text-[24px]
+              z-50
+              text-[28px]
               lg:text-[55px]
               font-medium
               leading-[115%]
@@ -50,19 +50,19 @@ const DetailsContactSection = () => {
               <h2
                 id="details-heading"
                 className="mt-6  md:mt-0 text-xl font-medium  leading-[115%] font-dm-sans
-                 tracking-[-0.02em] md:text-[45px] "
+                 tracking-[-0.02em] md:text-[35px] "
               >
                 The beauty lies in
                 <br />
                 the details.
               </h2>
-              <p className="mt-[20px] max-w-[320px] text-[11px] leading-[140%] text-[#616161] md:mt-[15px] md:max-w-[462px] md:text-[25px] lg:text-[25px]">
+              <p className="mt-[20px] max-w-[320px] text-[11px] leading-[140%] text-[#616161] md:mt-[15px] md:max-w-[462px] md:text-lg lg:text-lg">
                 Premium fabrics, refined construction and thoughtful details
                 define every Windrise essential.
               </p>
               <a
                 href="#details"
-                className="group mt-[18px] inline-flex items-center gap-1 font-light text-[11px] leading-none transition-opacity hover:opacity-65 focus-visible:outline-offset-4 md:mt-[38px] md:gap-2 md:text-xl"
+                className="group mt-[18px] inline-flex items-center gap-1 font-light text-[13px] leading-none transition-opacity hover:opacity-65 focus-visible:outline-offset-4 md:mt-[38px] md:gap-2 md:text-lg"
               >
                 <span>Explore</span>
 
@@ -108,7 +108,7 @@ const DetailsContactSection = () => {
               </p>
             </div>
             <div className="mx-auto max-w-[430px]  sm:mx-0  lg:ml-40 ">
-              <p className="text-[11px]  text-[#868686] md:text-[15px] lg:text-xl lg:w-[450px]">
+              <p className="text-[11px]  text-[#868686] md:text-[15px] lg:text-[15px] lg:w-[450px]">
                 We believe in thoughtful connections. Reach out to our team for
                 styling advice, order inquiries or to learn more about the world
                 of Windrise.
@@ -116,7 +116,7 @@ const DetailsContactSection = () => {
 
               <a
                 href="#contact"
-                className="mt-[22px] inline-flex items-center gap-1 text-[12px] font-medium text-black transition-opacity hover:opacity-55 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black md:mt-[10px] md:text-[15px]"
+                className="mt-[22px] inline-flex items-center gap-1 text-[12px]  text-black transition-opacity hover:opacity-55 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black md:mt-[10px] md:text-[15px]"
               >
                 Get in Touch
                 <ArrowUpRight className="h-3 w-3 md:h-4 md:w-4" />
@@ -125,7 +125,7 @@ const DetailsContactSection = () => {
           </div>
 
           <img
-            src="/assets/connect.png"
+            src="/assets/footer-windrise-2.png"
             alt=""
             aria-hidden="true"
             draggable={false}
