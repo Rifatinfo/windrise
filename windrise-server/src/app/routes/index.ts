@@ -17,6 +17,7 @@ import { BlogRoutes } from "../modules/blog/blog.routes";
 import { AdsRoutes } from "../modules/ads/ads.routes";
 import { PricingRoutes } from "../modules/pricing/pricing.routes";
 import { FinanceRoutes } from "../modules/finance/finance.routes";
+import { ChatbotRoutes } from "../modules/chatbot/chatbot.routes";
 
 
 const router = express.Router();
@@ -45,6 +46,10 @@ const moduleRoutes = [
   {
     path: "/finance",
     route: FinanceRoutes,
+  },
+  {
+    path: "/ai-conversation-chatbot",
+    route: ChatbotRoutes,
   },
   {
     path: "/auth",

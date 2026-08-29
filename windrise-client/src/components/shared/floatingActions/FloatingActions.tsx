@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 
+import { WindeeWidget } from "@/components/modules/chatbot/WindeeWidget";
+
 /** How long after the last scroll event the page counts as settled. */
 const SETTLE_MS = 550;
 
@@ -53,13 +55,13 @@ function useIsScrolling() {
  * Layered below the site header (z-9999) and the mobile drawer (z-9995), so an
  * open menu covers them rather than the other way round.
  */
-export function FloatingActions({
-  /** Wire this up when the chat backend exists; the control is inert without it. */
-  onChatClick,
-}: {
-  onChatClick?: () => void;
-}) {
+export function FloatingActions() {
   const isScrolling = useIsScrolling();
+
+  // The panel lives here rather than in the layout so it can animate out of
+  // the button it belongs to, and so minimising is just this flag going false
+  // — the widget keeps its session and picks the conversation back up.
+  const [chatOpen, setChatOpen] = useState(false);
 
   const jumpToTop = useCallback(() => {
     // `smooth` is ignored for anyone who prefers reduced motion — the browser
@@ -77,6 +79,9 @@ export function FloatingActions({
   const tuck = `${isScrolling ? "translate-x-1/2" : "translate-x-0"} sm:translate-x-0`;
 
   return (
+    <>
+      <WindeeWidget open={chatOpen} onClose={() => setChatOpen(false)} />
+
     <div
       className="pointer-events-none fixed bottom-6 right-0 z-[9000] flex flex-col items-center gap-1.5 sm:right-5 md:bottom-8"
       role="group"
@@ -84,8 +89,9 @@ export function FloatingActions({
     >
       <button
         type="button"
-        onClick={onChatClick}
+        onClick={() => setChatOpen((open) => !open)}
         aria-label="Chat with Windee"
+        aria-expanded={chatOpen}
         title="Chat with Windee"
         className={`${base} ${tuck} h-[56px] w-[56px]`}
       >
@@ -117,5 +123,6 @@ export function FloatingActions({
         />
       </button>
     </div>
+    </>
   );
 }

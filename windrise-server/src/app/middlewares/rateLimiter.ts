@@ -84,3 +84,20 @@ export const otpResendRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+/**
+ * Windee's message endpoint. Every call reaches a paid model, so unlike the
+ * tracking limiter this one counts successes too — the cost is incurred
+ * whether or not the answer was useful.
+ */
+export const chatbotRateLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 30,
+  message: {
+    success: false,
+    statusCode: 429,
+    message: "You're sending messages a bit fast. Give Windee a moment and try again.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});

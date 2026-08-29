@@ -91,6 +91,6 @@ router.delete("/sub-category/:id", ProductController.deleteSubCategory);
 //====================== New arival =============================// 
 router.get("/new-arrivals", ProductController.getNewArrivalProducts);
 router.get("/related-products/:productId",ProductController.getRelatedProducts);
-router.post("/ai-suggestion", ProductController.getAISuggestion);
+router.post("/ai-conversation-chatbot", ProductController.getAISuggestion);
 
 export const ProductRoutes = router;
