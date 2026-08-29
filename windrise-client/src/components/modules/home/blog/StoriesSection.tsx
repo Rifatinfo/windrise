@@ -97,20 +97,20 @@ export function StoriesSection() {
         <div className="w-full shrink-0 md:w-[36%] lg:w-[550px] lg:pr-[70px]">
           <h2
             id="stories-heading"
-            className="w-full text-xl font-medium leading-[1.18]  md:text-[45px] lg:text-[45px] font-dm-sans"
+            className="w-full text-xl font-medium leading-[1.18] space-x-1.5 md:text-[35px] lg:text-[35px] font-dm-sans"
           >
             Stories behind
-            <br />
-            every stitch.
+            
+            every <br/> stitch.
           </h2>
 
-          <p className="mt-6 md:mt-8 lg:mt-10 text-[14px]   text-[#616161] md:text-[25px] lg:text-[25px] font-dm-sans">
+          <p className="mt-6 md:mt-4 lg:mt-4 text-[14px]   text-[#616161] md:text-lg lg:text-lg font-dm-sans">
             Discover thoughtful articles on craftsmanship, styling, fabrics and
             the ideas that shape the world of Windrise.
           </p>
           <a
             href="#"
-            className="group inline-flex items-center gap-2  border-transparent pb-0.5 text-[13.5px] font-light text-[#1C1B1A] transition-[gap] duration-200 hover:gap-3 hover:border-[#1C1B1A] lg:text-xl mt-10"
+            className="group inline-flex items-center gap-2  border-transparent pb-0.5 text-[13px] font-light text-[#1C1B1A] transition-[gap] duration-200 hover:gap-3 hover:border-[#1C1B1A] lg:text-lg mt-6 mb-4"
           >
             Explore Stories
             <svg

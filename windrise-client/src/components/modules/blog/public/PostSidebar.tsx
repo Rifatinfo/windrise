@@ -20,24 +20,24 @@ function PopularPosts({ posts }: { posts: PublicPost[] }) {
           return (
             <li key={post.id}>
               <Link href={`/blog/${post.slug}`} className="group flex gap-3">
-                <div className="h-[46px] w-[62px] shrink-0 overflow-hidden bg-[#E7E5E0]">
+                <div className="h-[108px] w-[108px] shrink-0 overflow-hidden bg-[#E7E5E0]">
                   {image && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={image}
                       alt=""
                       loading="lazy"
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      className="h-full w-full object-cover rounded-sm  transition-transform duration-500 group-hover:scale-105"
                     />
                   )}
                 </div>
 
                 <div className="min-w-0">
-                  <p className="font-serif text-[11px] leading-[1.35] text-[#1C1B1A] transition-opacity group-hover:opacity-70">
+                  <p className="font-dm-sans text-[12px]  leading-[1.35] text-[#1C1B1A] transition-opacity group-hover:opacity-70">
                     {post.title}
                   </p>
                   {post.publishedAt && (
-                    <p className="mt-1 text-[9px] text-[#9A978F]">{longDate(post.publishedAt)}</p>
+                    <p className="mt-1 text-[9px] text-[#9A978F] ">{longDate(post.publishedAt)}</p>
                   )}
                 </div>
               </Link>
