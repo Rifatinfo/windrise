@@ -43,7 +43,7 @@ export const QUICK_ACTIONS = [
 ] as const;
 
 const PRIMARY =
-  "w-full rounded-full bg-[#6B4EE6] py-2.5 mx-auto text-[13px] md:text-[16px] font-medium text-white transition-colors hover:bg-[#5B3FD6] disabled:opacity-60 ";
+  "w-full rounded-full bg-[#6B4EE6] py-2.5 mx-auto text-[13px] md:text-[16px] font-medium text-white transition-colors hover:bg-[#5B3FD6] disabled:opacity-60 cursor-pointer";
 
 /**
  * Windee 01 — the cover.
@@ -121,11 +121,20 @@ export function WelcomeScreen({ onStart }: { onStart: () => void }) {
         </div>
 
        
-          <button type="button" onClick={onStart} className={PRIMARY}>
+        <button type="button" onClick={onStart} className={PRIMARY}>
           Start Conversation
         </button>
-        <p className=" mt-16 text-center text-[11px] text-[#6E6A82]">
+        <p className="mt-6 text-center font-medium text-[15px] text-[#6E6A82]">
           Let&apos;s make things easier together.
+        </p>
+        <p className="mt-8 text-center ">
+         <Image
+            src="/assets/Powered-by.png"
+            alt=""
+            width={123}
+            height={15}
+            className="h-[15px] w-[123px] mx-auto select-none"
+          />
         </p>
         
         </div>
@@ -148,10 +157,10 @@ export function DetailsScreen({
   const ready = name.trim().length > 1 && phone.replace(/\D/g, "").length >= 9;
 
   const field =
-    "mt-1.5 h-11 w-full rounded-lg border border-[#E4E1F0] bg-white px-3 text-[13px] text-[#1B1830] outline-none transition-colors placeholder:text-[#B4B1C4] focus:border-[#6B4EE6]";
+    "mt-1.5 h-10 w-full rounded-lg  px-3 text-[13px] bg-white text-[#1B1830] outline-none transition-colors placeholder:text-[#B4B1C4] focus:border-[#6B4EE6]";
 
   return (
-    <div className="flex h-full flex-col bg-[#FBFAFF] px-6 pb-6 pt-2">
+    <div className="flex h-full flex-col bg-[linear-gradient(180deg,#FCFBFE_0%,#F0E9FC_100%)] px-6 pb-6 pt-2">
       <div className="mt-6 text-center">
         <Image
           src="/assets/Windee-Chatbot.png"
@@ -160,8 +169,8 @@ export function DetailsScreen({
           height={66}
           className="mx-auto h-[66px] w-[66px] select-none"
         />
-        <h2 className="mt-3 text-[16px] font-semibold text-[#141024]">Welcome to Windee</h2>
-        <p className="mt-1 text-[11px] text-[#6E6A82]">Let&apos;s get you started!</p>
+        <h2 className="mt-3 text-[18px] font-semibold text-[#141024]">Welcome to Windee</h2>
+        <p className="mt-1 text-[14px] font-medium text-[#6E6A82]">Let&apos;s get you started!</p>
       </div>
 
       <form
@@ -184,20 +193,20 @@ export function DetailsScreen({
 
         <label className="mt-4 block">
           <span className="text-[11px] text-[#4A4660]">Phone Number</span>
-          <div className="mt-1.5 flex h-11 items-center gap-2 rounded-lg border border-[#E4E1F0] bg-white px-3 focus-within:border-[#6B4EE6]">
-            <span className="shrink-0 text-[13px] text-[#4A4660]">🇧🇩 +880</span>
+          <div className="mt-1.5 flex h-10 items-center gap-2 rounded-lg bg-white px-3 focus-within:border-[#6B4EE6]">
+            <span className="shrink-0 text-[13px] text-[#4A4660]">BD +880</span>
             <input
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
               placeholder="XXXX-XXXXXX"
               inputMode="tel"
               maxLength={24}
-              className="h-full w-full bg-transparent text-[13px] text-[#1B1830] outline-none placeholder:text-[#B4B1C4]"
+              className="h-full w-full bg-transparent text-[13px] text-[#1B1830] outline-none placeholder:text-[#B4B1C4] "
             />
           </div>
         </label>
 
-        <div className="mt-auto pt-8">
+        <div className="mt-auto pt-8 mb-[94px]">
           <button type="submit" disabled={!ready || busy} className={PRIMARY}>
             {busy ? "Just a moment…" : "Continue"}
           </button>

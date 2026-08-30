@@ -192,7 +192,7 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
   };
 
   const header = (
-    <div className="flex items-center justify-between  px-4 py-3">
+    <div className="flex items-center justify-between bg-[#FCFBFE] px-4 py-3">
       <div className="flex items-center gap-2">
         {screen === "details" && (
           <button
@@ -201,10 +201,10 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
             aria-label="Back"
             className="transition-colors "
           >
-            <ChevronLeftIcon className="h-7 w-7" />
+            <ChevronLeftIcon className="h-7 w-7 stroke-[1.5]" />
           </button>
         )}
-        {/* <Image
+        <Image
           src="/assets/Windee-Chatbot.png"
           alt=""
           width={30}
@@ -214,7 +214,7 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
         <div className="leading-tight">
           <p className="text-[13px] font-semibold text-[#6B4EE6]">Windee</p>
           <p className="text-[9px] text-[#9B98AC]">AI Assistant</p>
-        </div> */}
+        </div>
       </div>
 
       <div className="flex items-center gap-1">
@@ -225,9 +225,9 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
           title="Minimise — your conversation is kept"
           className="grid h-7 w-7 place-items-center rounded-full  transition-colors "
         >
-          <ChevronDownIcon className="h-7 w-7" />
+          <ChevronDownIcon  className="h-7 w-7 stroke-[1.5]" />
         </button>
-        {/* <button
+        <button
           type="button"
           onClick={endChat}
           aria-label="End chat and delete this conversation"
@@ -235,7 +235,7 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
           className="grid h-7 w-7 place-items-center rounded-full  transition-colors  hover:text-[#B4413F]"
         >
           <XIcon className="h-4 w-4" />
-        </button> */}
+        </button>
       </div>
     </div>
   );
@@ -274,7 +274,7 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
                   aria-label="Minimise chat"
                   className="grid h-7 w-7 place-items-center rounded-full  backdrop-blur transition-colors cursor-pointer"
                 >
-                  <ChevronDownIcon className="h-7 w-7" />
+                  <ChevronDownIcon className="h-7 w-7 stroke-[1.5]" />
                 </button>
               </div>
               <WelcomeScreen onStart={() => setScreen("details")} />
