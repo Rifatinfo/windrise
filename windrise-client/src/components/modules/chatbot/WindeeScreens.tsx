@@ -275,7 +275,7 @@ export function MenuScreen({
               // `translate` and `shadow` are named in the transition because in
               // Tailwind v4 `-translate-y-*` writes the `translate` property,
               // not `transform`, and would otherwise snap instead of easing.
-              className="group flex w-full items-center gap-3 rounded-xl border border-white/70 bg-white/45 px-3 py-2.5 text-left shadow-sm backdrop-blur-[6px] transition-[translate,background-color,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:border-white/90 hover:bg-white/75 hover:shadow-lg hover:shadow-[#5D38D2]/20 cursor-pointer"
+              className="group flex w-full items-center gap-3 rounded-xl border border-white/70 bg-white/45 px-3 py-2.5 text-left  backdrop-blur-[6px] transition-[translate,background-color,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:border-white/90 hover:bg-white/75 hover:shadow-lg hover:shadow-[#5D38D2]/20 cursor-pointer"
             >
               <Image
                 src={action.icon}
