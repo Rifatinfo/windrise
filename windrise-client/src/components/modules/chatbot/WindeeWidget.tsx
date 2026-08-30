@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ChevronDownIcon, ChevronLeftIcon, MinusIcon, XIcon } from "lucide-react";
 
 import {
@@ -60,6 +60,21 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [screen, setScreen] = useState<Screen>("welcome");
 
+  /**
+   * Set as soon as the visitor moves themselves.
+   *
+   * Opening the panel kicks off a session fetch that decides which screen to
+   * land on. If the visitor taps "Start Conversation" before that resolves,
+   * the reply would put them straight back on the cover — so once they have
+   * navigated, the bootstrap stops choosing for them.
+   */
+  const hasNavigated = useRef(false);
+
+  const goTo = useCallback((next: Screen) => {
+    hasNavigated.current = true;
+    setScreen(next);
+  }, []);
+
   const [name, setName] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [handedOff, setHandedOff] = useState(false);
@@ -86,8 +101,11 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
         setName(session.name);
         setMessages(session.messages);
         setHandedOff(session.status === "HANDED_OFF");
-        // A returning visitor skips the cover; a new one starts at it.
-        setScreen(session.messages.length > 0 ? "chat" : session.name ? "menu" : "welcome");
+        // A returning visitor skips the cover; a new one starts at it — but
+        // never yank someone off a screen they have already tapped through to.
+        if (!hasNavigated.current) {
+          setScreen(session.messages.length > 0 ? "chat" : session.name ? "menu" : "welcome");
+        }
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : "Couldn't start the chat.");
@@ -147,7 +165,7 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
   );
 
   const startFromMenu = async (prompt: string) => {
-    setScreen("chat");
+    goTo("chat");
     const id = sessionId ?? (await ensureSession());
     void send(prompt, null, id);
   };
@@ -187,6 +205,9 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
     setMessages([]);
     setName(null);
     setHandedOff(false);
+    // Back to a clean slate, bootstrap included: the next open should be free
+    // to choose the starting screen again.
+    hasNavigated.current = false;
     setScreen("welcome");
     onClose();
   };
@@ -197,7 +218,7 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
         {screen === "details" && (
           <button
             type="button"
-            onClick={() => setScreen("welcome")}
+            onClick={() => goTo("welcome")}
             aria-label="Back"
             className="transition-colors "
           >
@@ -277,7 +298,7 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
                   <ChevronDownIcon className="h-7 w-7 stroke-[1.5]" />
                 </button>
               </div>
-              <WelcomeScreen onStart={() => setScreen("details")} />
+              <WelcomeScreen onStart={() => goTo("details")} />
             </>
           ) : (
             <>
@@ -293,7 +314,7 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
                       try {
                         await ensureSession(details);
                         setName(details.name);
-                        setScreen("menu");
+                        goTo("menu");
                       } catch (err) {
                         setError(
                           err instanceof Error ? err.message : "Couldn't start the chat.",
@@ -309,7 +330,7 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
                   <MenuScreen
                     name={name}
                     onPick={startFromMenu}
-                    onFreeChat={() => setScreen("chat")}
+                    onFreeChat={() => goTo("chat")}
                   />
                 )}
 
