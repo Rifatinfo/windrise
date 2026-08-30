@@ -234,7 +234,7 @@ export function HelpCard({
   onContinue: () => void;
 }) {
   return (
-    <div className="rounded-xl border border-[#E6E2F6] bg-[#F7F5FF] p-3.5">
+    <div className="rounded-xl border border-[#E6E2F6] bg-[#F7F5FF] p-3">
       <div className="flex gap-2.5">
         <Image
           src="/assets/help-support-Icon.png"
@@ -249,15 +249,21 @@ export function HelpCard({
             You can continue chatting with Windee or talk to our support team for
             personalised assistance.
           </p>
+          {/* The reference sets a fixed "5-15 min" here. There is no agent
+              queue behind this yet, so promising a number would be a claim the
+              system cannot keep — this says what is actually true instead. */}
+          <p className="mt-1.5 text-[10.5px] font-medium text-[#1F9254]">
+            Our team replies as soon as they&apos;re online
+          </p>
         </div>
       </div>
 
-      <div className="mt-3 flex gap-2">
+      <div className="mt-3 flex gap-1.5">
         <button
           type="button"
           onClick={onTalkToHuman}
           disabled={busy}
-          className="flex-1 rounded-full border border-[#DCD8F0] bg-white py-2 text-[11px] font-medium text-[#6B4EE6] transition-colors hover:bg-[#F2EEFF] disabled:opacity-50"
+          className="flex-1 rounded-full border border-[#DCD8F0] bg-white py-2 text-[10px] font-medium text-[#6B4EE6] transition-colors hover:bg-[#F2EEFF] disabled:opacity-50"
         >
           Talk to a human
         </button>
@@ -265,7 +271,7 @@ export function HelpCard({
           type="button"
           onClick={onContinue}
           disabled={busy}
-          className="flex-1 rounded-full bg-[#6B4EE6] py-2 text-[11px] font-medium text-white transition-colors hover:bg-[#5B3FD6] disabled:opacity-50"
+          className="flex-1 rounded-full bg-[#6B4EE6] py-2 text-[10px] font-medium text-white transition-colors hover:bg-[#5B3FD6] disabled:opacity-50"
         >
           Continue with Windee
         </button>
@@ -280,7 +286,7 @@ export function QueueCard() {
     <div className="space-y-2.5">
       <div className="rounded-xl bg-[#F5F4FA] p-4 text-center">
         <Image
-          src="/assets/loding-clock-icon.png"
+          src="/assets/loading-clock-icon-2.png"
           alt=""
           width={30}
           height={30}
@@ -295,11 +301,11 @@ export function QueueCard() {
 
       <div className="flex items-start gap-2 rounded-xl bg-[#FFF8EC] p-3">
         <Image
-          src="/assets/connect-support-icon.png"
+          src="/assets/connect-support-logo.png"
           alt=""
-          width={22}
-          height={22}
-          className="mt-px h-[22px] w-[22px] shrink-0 select-none"
+          width={40}
+          height={40}
+          className="mt-px h-[40px] w-[40px] shrink-0 select-none"
         />
         <p className="text-[10.5px] leading-relaxed text-[#8A6A25]">
           Windee won&apos;t reply while you&apos;re waiting for our support team.

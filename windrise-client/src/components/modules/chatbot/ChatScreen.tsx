@@ -2,7 +2,13 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { Loader2Icon, PaperclipIcon, SendHorizonalIcon, XIcon } from "lucide-react";
+import {
+  CheckCheckIcon,
+  Loader2Icon,
+  PaperclipIcon,
+  SendHorizonalIcon,
+  XIcon,
+} from "lucide-react";
 
 import type { ChatCard, ChatMessage } from "@/services/chatbot/chatbot";
 import { chatMediaUrl } from "@/services/chatbot/chatbot";
@@ -42,26 +48,65 @@ const clockTime = (value: string) =>
     minute: "2-digit",
   });
 
+/**
+ * What Windee looks like it is doing, guessed from what was just asked.
+ *
+ * The tool it will actually reach for is only known once the reply comes back,
+ * so this reads the request rather than claiming to know. Anything that does
+ * not match falls back to the neutral wording instead of inventing a task.
+ */
+function pendingLabel(lastUserMessage: string): string {
+  const text = lastUserMessage.toLowerCase();
+
+  if (/\border|track|delivery status|where is/.test(text)) {
+    return "Fetching your order details…";
+  }
+  if (/return|exchange|refund/.test(text)) return "Checking the returns policy…";
+  if (/ship|deliver|charge|cost of delivery/.test(text)) {
+    return "Checking delivery details…";
+  }
+  if (/product|price|size|colou?r|stock|available|buy|pant|shirt|jogger/.test(text)) {
+    return "Looking through the catalogue…";
+  }
+  if (/cancel/.test(text)) return "Pulling up that order…";
+
+  return "Windee is thinking…";
+}
+
 /** Windee 04 — the pending state while a tool runs. */
-function Thinking() {
+function Thinking({ label }: { label: string }) {
   return (
-    <div className="flex justify-center py-1">
-      <div className="rounded-xl bg-[#F5F4FA] px-4 py-3 text-center">
-        <Loader2Icon className="mx-auto h-4 w-4 animate-spin text-[#6B4EE6]" />
-        <p className="mt-1.5 text-[11px] font-medium text-[#4A4660]">Windee is thinking…</p>
-        <p className="text-[9.5px] text-[#9B98AC]">This may take a few seconds.</p>
-      </div>
+    // Full width of the transcript rather than a centred pill, matching the
+    // card the order lookup shows.
+    <div className="w-full rounded-xl bg-[#F7F6FC] px-4 py-5 text-center">
+      {/* A plain <img>: next/image would run a 450KB animated GIF through the
+          optimizer, and an animated source has to pass through untouched to
+          keep playing. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/assets/Loading.gif"
+        alt=""
+        aria-hidden="true"
+        width={34}
+        height={34}
+        className="mx-auto h-[44px] w-[44px] select-none object-contain"
+      />
+      <p className="mt-2 text-[12.5px] font-semibold text-[#1B1830]">{label}</p>
+      <p className="mt-0.5 text-[10.5px] text-[#8B88A0]">This may take a few seconds.</p>
     </div>
   );
 }
 
 function Bubble({
   message,
+  seen,
   busy,
   onConfirm,
   onDecline,
 }: {
   message: ChatMessage;
+  /** Windee has answered this one; the ticks go blue. */
+  seen: boolean;
   busy: boolean;
   onConfirm: () => void;
   onDecline: () => void;
@@ -109,7 +154,16 @@ function Bubble({
       )}
 
       {mine && (
-        <span className="mt-1 text-[9px] text-[#B4B1C4]">{clockTime(message.createdAt)}</span>
+        <span className="mt-1 flex items-center gap-1 text-[9px] text-[#B4B1C4]">
+          {clockTime(message.createdAt)}
+          {/* Delivered while Windee is still working, blue once it has replied. */}
+          <CheckCheckIcon
+            aria-label={seen ? "Seen by Windee" : "Sent"}
+            className={`h-3 w-3 transition-colors duration-300 ${
+              seen ? "text-[#4B6BFB]" : "text-[#C6C3D4]"
+            }`}
+          />
+        </span>
       )}
 
       {card && (
@@ -154,6 +208,16 @@ export function ChatScreen({
   const [text, setText] = useState("");
   const [attachment, setAttachment] = useState<{ url: string; name: string } | null>(null);
   const [uploading, setUploading] = useState(false);
+
+  /**
+   * Transcript length when "Continue with Windee" was last tapped.
+   *
+   * Without this the button had nothing to do — it only cleared a handed-off
+   * flag that was already false, so the card stayed put and the tap looked
+   * broken. Dismissing is now the whole point of it; the offer comes back on
+   * its own after another exchange or two.
+   */
+  const [helpDismissedAt, setHelpDismissedAt] = useState<number | null>(null);
 
   const fileInput = useRef<HTMLInputElement>(null);
   const bottom = useRef<HTMLDivElement>(null);
@@ -207,13 +271,22 @@ export function ChatScreen({
                 ? { ...message, card: null }
                 : message
             }
+            // Windee has seen it once anything of its own follows, so the
+            // ticks stay correct after a reload as well as live.
+            seen={messages.slice(index + 1).some((m) => m.role === "ASSISTANT")}
             busy={busy}
             onConfirm={onConfirm}
             onDecline={onDecline}
           />
         ))}
 
-        {thinking && <Thinking />}
+        {thinking && (
+          <Thinking
+            label={pendingLabel(
+              [...messages].reverse().find((m) => m.role === "USER")?.content ?? "",
+            )}
+          />
+        )}
 
         {handedOff ? (
           <QueueCard />
@@ -223,11 +296,16 @@ export function ChatScreen({
           // a choice between them.
           messages.length >= 4 &&
           !thinking &&
-          lastConfirmIndex === -1 && (
+          lastConfirmIndex === -1 &&
+          // Stays hidden until the conversation has moved on a further turn.
+          (helpDismissedAt === null || messages.length >= helpDismissedAt + 2) && (
             <HelpCard
               busy={busy}
               onTalkToHuman={onTalkToHuman}
-              onContinue={onContinueWithAi}
+              onContinue={() => {
+                setHelpDismissedAt(messages.length);
+                onContinueWithAi();
+              }}
             />
           )
         )}
@@ -268,7 +346,7 @@ export function ChatScreen({
           </div>
         )}
 
-        <div className="flex items-center gap-2 rounded-full border border-[#EAE8F2] bg-white px-3 py-1.5">
+        <div className="flex items-center gap-2 rounded-[15px] border border-[#EAE8F2] bg-white px-3 py-1.5">
           <input
             ref={fileInput}
             type="file"
