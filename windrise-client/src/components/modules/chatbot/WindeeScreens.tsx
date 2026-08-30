@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useState } from "react";
 
+import { CountryPhoneSelect, DEFAULT_COUNTRY } from "./CountryPhoneField";
+
 /** The five shortcuts on the menu screen, each mapped to an opening message. */
 export const QUICK_ACTIONS = [
   {
@@ -153,6 +155,7 @@ export function DetailsScreen({
 }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [country, setCountry] = useState(DEFAULT_COUNTRY);
 
   const ready = name.trim().length > 1 && phone.replace(/\D/g, "").length >= 9;
 
@@ -177,7 +180,14 @@ export function DetailsScreen({
         className="mt-9 flex min-h-0 flex-1 flex-col"
         onSubmit={(event) => {
           event.preventDefault();
-          if (ready && !busy) onSubmit({ name: name.trim(), phone: phone.trim() });
+          if (!ready || busy) return;
+
+          // Sent in international form, with the national trunk "0" dropped —
+          // "01711223344" under +880 becomes "+8801711223344". The server
+          // matches orders on the last ten digits, so this still lines up with
+          // numbers stored the local way at checkout.
+          const local = phone.replace(/\D/g, "").replace(/^0+/, "");
+          onSubmit({ name: name.trim(), phone: `${country.dial}${local}` });
         }}
       >
         <label className="block">
@@ -194,7 +204,7 @@ export function DetailsScreen({
         <label className="mt-4 block">
           <span className="text-[11px] text-[#4A4660]">Phone Number</span>
           <div className="mt-1.5 flex h-10 items-center gap-2 rounded-lg bg-white px-3 focus-within:border-[#6B4EE6]">
-            <span className="shrink-0 text-[13px] text-[#4A4660]">BD +880</span>
+            <CountryPhoneSelect value={country} onChange={setCountry} />
             <input
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
