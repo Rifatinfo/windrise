@@ -13,6 +13,17 @@ import {
 import type { ChatCard, ChatMessage } from "@/services/chatbot/chatbot";
 import { chatMediaUrl } from "@/services/chatbot/chatbot";
 import { ChatCardView, HelpCard, QueueCard } from "./ChatCards";
+import { QUICK_ACTIONS } from "./WindeeScreens";
+
+/**
+ * The menu shortcut a message came from, if it came from one.
+ *
+ * Matched on the text the shortcut sends rather than a flag on the message,
+ * so a reloaded transcript still renders the chip — the server stores the
+ * prompt, not how it was triggered.
+ */
+const quickActionFor = (content: string) =>
+  QUICK_ACTIONS.find((action) => action.prompt === content.trim());
 
 /**
  * Renders the model's `**emphasis**` as bold.
@@ -113,6 +124,30 @@ function Bubble({
 }) {
   const mine = message.role === "USER";
   const card = message.card as ChatCard | null;
+  const shortcut = mine ? quickActionFor(message.content) : undefined;
+
+  /**
+   * A tap on a menu shortcut reads as the action itself rather than as
+   * something the customer typed, so it gets the icon and the shortcut's own
+   * wording — not the sentence sent to the model behind it.
+   */
+  if (shortcut) {
+    return (
+      <div className="flex justify-end">
+        <span className="inline-flex items-center  gap-2 rounded-xl bg-[#F5F2FE] px-4 py-2.5">
+          <Image
+            src={shortcut.icon}
+            alt=""
+            width={31}
+            height={31}
+            aria-hidden="true"
+            className="h-[31px] w-[31px]  shrink-0 select-none"
+          />
+          <span className="text-[12px] w-[160px] text-left font-medium text-[#6B4EE6]">{shortcut.label}</span>
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
