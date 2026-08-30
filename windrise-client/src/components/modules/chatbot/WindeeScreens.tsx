@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { CountryPhoneSelect, DEFAULT_COUNTRY } from "./CountryPhoneField";
 
+
 /** The five shortcuts on the menu screen, each mapped to an opening message. */
 export const QUICK_ACTIONS = [
   {
@@ -138,7 +139,6 @@ export function WelcomeScreen({ onStart }: { onStart: () => void }) {
             className="h-[15px] w-[123px] mx-auto select-none"
           />
         </p>
-        
         </div>
       </div>
     
