@@ -213,7 +213,14 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
   };
 
   const header = (
-    <div className="flex items-center justify-between bg-[#FCFBFE] px-4 py-3">
+    // The menu screen's artwork fills the panel, header included, so the bar
+    // goes transparent there and lets the gradient through. Every other screen
+    // keeps the solid background it had.
+    <div
+      className={`flex items-center justify-between px-4 py-3 ${
+        screen === "menu" ? "bg-transparent" : "bg-[#FCFBFE]"
+      }`}
+    >
       <div className="flex items-center gap-2">
         {screen === "details" && (
           <button
@@ -302,7 +309,17 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
             </>
           ) : (
             <>
-              {header}
+              {/* On the menu screen the header floats over the artwork instead
+                  of sitting above it in the flow — a transparent bar in the
+                  flow would only reveal the panel's own white background. The
+                  screen leaves room for it. */}
+              <div
+                className={
+                  screen === "menu" ? "absolute inset-x-0 top-0 z-10" : "shrink-0"
+                }
+              >
+                {header}
+              </div>
 
               <div className="min-h-0 flex-1">
                 {screen === "details" && (

@@ -237,68 +237,84 @@ export function MenuScreen({
   onFreeChat: () => void;
 }) {
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-white">
-      <div className="relative bg-gradient-to-b from-[#F2EFFE] to-white px-5 pb-4 pt-5">
-        <div className="max-w-[62%]">
-          <p className="text-[17px] font-semibold text-[#6B4EE6]">
-            Hi {name?.split(" ")[0] || "there"}! 👋
+    // The artwork carries the gradient *and* the robot, so nothing is layered
+    // on top of it and no separate bot image is rendered. It runs the full
+    // height of the panel, behind the header too — the widget makes the header
+    // transparent while this screen is showing.
+    <div className="relative flex h-full flex-col overflow-hidden">
+      <Image
+        src="/assets/windee-window-3.png"
+        alt=""
+        fill
+        priority
+        aria-hidden="true"
+        className="pointer-events-none select-none object-cover"
+      />
+
+      {/* `pt-14` clears the header, which floats over this screen. */}
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto px-5 pb-5 pt-14">
+        {/* Sits clear of the waving robot baked into the top right. */}
+        <div className="max-w-[58%] pt-1">
+          <p className="bg-gradient-to-r from-[#5D38D2] to-[#2C6BDB] bg-clip-text font-dm-sans text-[22px] md:text-[24px] font-medium text-transparent">
+            Hi {name?.split(" ")[0] || "there"}! <span className="text-[initial]">👋</span>
           </p>
-          <p className="mt-1 text-[12px] leading-snug text-[#4A4660]">
+          <p className="mt-1 font-dm-sans text-[16px] leading-snug text-[#1B1830]">
             How can I help you today?
           </p>
         </div>
 
-        <Image
-          src="/assets/windee-bot.png"
-          alt=""
-          width={297}
-          height={533}
-          aria-hidden="true"
-          className="pointer-events-none absolute -bottom-1 right-2 h-[104px] w-auto select-none object-contain"
-        />
-      </div>
-
-      <div className="space-y-2 px-5 pt-2">
-        {QUICK_ACTIONS.map((action) => (
-          <button
-            key={action.id}
-            type="button"
-            onClick={() => onPick(action.prompt)}
-            className="flex w-full items-center gap-3 rounded-xl border border-[#ECEAF4] bg-white px-3 py-2.5 text-left transition-colors hover:border-[#DCD8F0] hover:bg-[#FAF9FF]"
-          >
-            <Image
-              src={action.icon}
-              alt=""
-              width={30}
-              height={30}
-              className="h-[30px] w-[30px] shrink-0 select-none"
-            />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-[12px] font-medium text-[#1B1830]">
-                {action.label}
+        {/* Enough clearance that the cards start below the robot's feet rather
+            than letting it show through the frosted panels. */}
+        <div className="mt-[104px] space-y-2.5">
+          {QUICK_ACTIONS.map((action) => (
+            <button
+              key={action.id}
+              type="button"
+              onClick={() => onPick(action.prompt)}
+              // Frosted rather than solid: the gradient reads through the card.
+              // `translate` and `shadow` are named in the transition because in
+              // Tailwind v4 `-translate-y-*` writes the `translate` property,
+              // not `transform`, and would otherwise snap instead of easing.
+              className="group flex w-full items-center gap-3 rounded-xl border border-white/70 bg-white/45 px-3 py-2.5 text-left shadow-sm backdrop-blur-[6px] transition-[translate,background-color,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:border-white/90 hover:bg-white/75 hover:shadow-lg hover:shadow-[#5D38D2]/20 cursor-pointer"
+            >
+              <Image
+                src={action.icon}
+                alt=""
+                width={30}
+                height={30}
+                className="h-[30px] w-[30px] shrink-0 select-none"
+              />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[12px] font-medium text-[#1B1830]">
+                  {action.label}
+                </span>
+                <span className="block truncate text-[10px] text-[#8B88A0]">{action.hint}</span>
               </span>
-              <span className="block truncate text-[10px] text-[#9B98AC]">{action.hint}</span>
-            </span>
-            <span aria-hidden="true" className="shrink-0 text-[#C6C3D4]">
-              ›
-            </span>
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-4 px-5 pb-6">
-        <div className="flex items-center gap-2 text-[10px] text-[#B4B1C4]">
-          <span className="h-px flex-1 bg-[#EEECF6]" />
-          or
-          <span className="h-px flex-1 bg-[#EEECF6]" />
+              <span
+                aria-hidden="true"
+                className="shrink-0 text-[#B7B3C8] transition-[translate,color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-x-0.5 group-hover:text-[#6B4EE6]"
+              >
+                ›
+              </span>
+            </button>
+          ))}
         </div>
 
-        <button type="button" onClick={onFreeChat} className={`${PRIMARY} mt-3`}>
-          Start a conversation
-        </button>
-        <p className="mt-2.5 text-center text-[10px] text-[#9B98AC]">
-          We&apos;re here to help you 24/7
-        </p>
+        {/* Pinned to the bottom of the panel however tall the card list runs. */}
+        <div className="mt-auto pt-5">
+          <div className="flex items-center  gap-2 text-[10px] text-[#A9A5BC] px-30">
+            <span className="h-px flex-1 bg-[#D9D4EC] font-semibold" />
+            or
+            <span className="h-px flex-1 bg-[#D9D4EC] font-semibold" />
+          </div>
+
+          <button type="button" onClick={onFreeChat} className={`${PRIMARY} mt-3.5`}>
+            Start a conversation
+          </button>
+          <p className="mt-2.5 text-center text-[10px] text-[#8B88A0]">
+            We&apos;re here to help you 24/7.
+          </p>
+        </div>
       </div>
     </div>
   );
