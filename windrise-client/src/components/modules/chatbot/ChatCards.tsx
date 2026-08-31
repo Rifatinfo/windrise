@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import type { ChatCard } from "@/services/chatbot/chatbot";
-import { chatMediaUrl } from "@/services/chatbot/chatbot";
+import { chatMediaUrl, productHref } from "@/services/chatbot/chatbot";
 
 const tk = (value: number) => `৳ ${Math.round(value).toLocaleString("en-US")}`;
 
@@ -74,30 +74,42 @@ function ProductsCard({ card }: { card: Extract<ChatCard, { kind: "products" }> 
 
       {/* Scrolls sideways inside the bubble rather than widening it. */}
       <div className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-1">
-        {card.products.map((product) => (
-          <Link
-            key={product.productId}
-            href={`/${product.slug}`}
-            className="w-[86px] shrink-0"
-          >
-            <div className="aspect-[3/4] w-full overflow-hidden rounded-lg bg-[#F2F1F7]">
-              {chatMediaUrl(product.image) && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={chatMediaUrl(product.image) ?? ""}
-                  alt={product.name}
-                  className="h-full w-full object-cover"
-                />
-              )}
+        {card.products.map((product) => {
+          const tile = (
+            <>
+              <div className="aspect-[3/4] w-full overflow-hidden rounded-lg bg-[#F2F1F7]">
+                {chatMediaUrl(product.image) && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={chatMediaUrl(product.image) ?? ""}
+                    alt={product.name}
+                    className="h-full w-full object-cover"
+                  />
+                )}
+              </div>
+              <p className="mt-1.5 line-clamp-2 text-[10px] leading-snug text-[#4A4660]">
+                {product.name}
+              </p>
+              <p className="mt-0.5 text-[10px] font-semibold text-[#1B1830]">
+                {tk(product.price)}
+              </p>
+            </>
+          );
+
+          const href = productHref(product);
+
+          // Without a category there is no product page to open, so the tile
+          // stays a plain block rather than a link that lands somewhere wrong.
+          return href ? (
+            <Link key={product.productId} href={href} className="w-[86px] shrink-0">
+              {tile}
+            </Link>
+          ) : (
+            <div key={product.productId} className="w-[86px] shrink-0">
+              {tile}
             </div>
-            <p className="mt-1.5 line-clamp-2 text-[10px] leading-snug text-[#4A4660]">
-              {product.name}
-            </p>
-            <p className="mt-0.5 text-[10px] font-semibold text-[#1B1830]">
-              {tk(product.price)}
-            </p>
-          </Link>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

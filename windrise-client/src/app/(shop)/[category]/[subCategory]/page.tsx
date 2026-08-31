@@ -77,7 +77,7 @@ const SubCategoryPage = async ({ params, searchParams }: PageProps) => {
   return (
     <div>
        <div>
-      <div className="space-y-6 px-4 sm:px-6 lg:px-8">
+      <div className="space-y-6 px-6 lg:px-20 md:px-20 mt-26">
         {products.length > 0 && (
           <ProductFiltercategorySubCategory
             breadcrumbs={[
