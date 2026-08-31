@@ -107,7 +107,7 @@ const ProductFiltercategorySubCategory = ({
           />
         </div>
 
-        <p className="hidden text-[12px] font-light lg:text-lg lg:block lg:justify-self-end ">
+        <p className="hidden text-[12px] font-light lg:text-lg lg:block lg:justify-self-end">
           Showing <span className="font-normal ">{shown}</span> Items
         </p>
       </div>

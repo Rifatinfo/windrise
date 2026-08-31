@@ -39,9 +39,37 @@ export type ProductHit = {
   sku: string;
   price: number;
   slug: string;
+  /** Both needed to build the storefront path; either may be missing. */
+  category: string | null;
+  subCategory: string | null;
   image: string | null;
   inStock: boolean;
 };
+
+/**
+ * The storefront product route, matching how ProductCard builds it:
+ * `/{category}/{subCategory}/{slug}`, falling back to the `/product` segment
+ * when a product has no subcategory.
+ *
+ * Returns null when there is no category at all — a link to `/{slug}` would
+ * fall through to the category route and render "Coming Soon" rather than the
+ * product.
+ */
+export function productHref(product: {
+  slug: string;
+  category: string | null;
+  subCategory: string | null;
+}): string | null {
+  if (!product.category) return null;
+
+  const middle = product.subCategory
+    ? encodeURIComponent(product.subCategory)
+    : "product";
+
+  return `/${encodeURIComponent(product.category)}/${middle}/${encodeURIComponent(
+    product.slug,
+  )}`;
+}
 
 export type DraftLine = {
   name: string;

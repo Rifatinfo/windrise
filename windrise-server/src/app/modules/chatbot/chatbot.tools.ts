@@ -241,7 +241,15 @@ const searchProducts = async (args: Record<string, unknown>): Promise<ToolOutput
   });
 
   const base = { isDeleted: false, isActive: true };
-  const include = { images: { take: 1 }, variants: true };
+  const include = {
+    images: { take: 1 },
+    variants: true,
+    // Needed to build a product link: the storefront route is
+    // /{category}/{subCategory}/{slug}, so a card carrying only the slug
+    // cannot link anywhere valid.
+    categories: { take: 1, include: { category: { select: { name: true } } } },
+    subCategories: { take: 1, include: { subCategory: { select: { name: true } } } },
+  };
 
   // Every word first, so "olive joggers" cannot match a shirt that merely
   // mentions olive. A conversational query often carries a word the catalogue
@@ -267,6 +275,8 @@ const searchProducts = async (args: Record<string, unknown>): Promise<ToolOutput
     sku: p.sku,
     price: effectivePrice(p),
     slug: p.slug,
+    category: p.categories[0]?.category?.name ?? null,
+    subCategory: p.subCategories[0]?.subCategory?.name ?? null,
     image: p.thumbnailImage ?? p.images[0]?.url ?? null,
     inStock: p.variants.length
       ? p.variants.some((v) => v.quantity > 0)
