@@ -101,8 +101,8 @@ export function SlideBar({
             className="flex h-2.5 flex-1 items-center"
           >
             <span
-              className={`block lg:h-[4px] h-[2px] w-full cursor-pointer rounded-full transition-colors duration-200 ${
-                isActive ? 'bg-black/40 backdrop-blur-md' : 'bg-white group-hover/bar:bg-white'
+              className={`block lg:h-[3px] h-[2px] w-full cursor-pointer rounded-full transition-colors duration-200 ${
+                isActive ? 'bg-black/30 backdrop-blur-md' : 'bg-white group-hover/bar:bg-white'
               }`}
               style={{ transform: isActive ? 'scaleY(1.5)' : undefined }}
             />

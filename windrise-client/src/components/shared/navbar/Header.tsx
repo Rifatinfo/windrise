@@ -148,7 +148,7 @@ export function Header() {
             : 'translate-y-0 opacity-100 duration-[520ms] ease-[cubic-bezier(0.22,1,0.36,1)]'
         }`}
       >
-        <div className="mx-auto hidden h-20 w-full grid-cols-[200px_1fr_auto] items-center px-6 lg:px-20 md:px-20 lg:grid">
+        <div className="mx-auto  hidden h-20 w-full grid-cols-[200px_1fr_auto] items-center px-6 lg:px-20 md:px-20 lg:grid">
           <Logo />
 
           <div>
@@ -159,7 +159,7 @@ export function Header() {
             />
           </div>
 
-          <div className="flex justify-end gap-0.5 md:-mr-4 lg:-mr-4">
+          <div className="flex justify-end gap-0.5 md:-mr-2.5 lg:-mr-2.5">
             <HeaderIconButton name="search" tone={iconTone} />
             <HeaderIconButton name="wishlist" tone={iconTone} />
             <Link href="/shoppingBag" className="relative inline-flex">

@@ -26,6 +26,7 @@
   --shadow-pop: 0 16px 40px -12px rgb(16 24 40 / 0.22), 0 4px 12px -4px rgb(16 24 40 / 0.1);
 }
 
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

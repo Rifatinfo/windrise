@@ -234,10 +234,10 @@ export function Checkout() {
 
   return (
     <div className="w-full min-h-full bg-white">
-      <div className="mx-auto w-full max-w-[1440px] px-5 pt-8 pb-16 sm:px-10 lg:px-14 lg:pt-10 lg:pb-24">
-        <Breadcrumb current="Shopping Bag" />
+      <div className=" w-full  px-6 pt-16 pb-16 sm:px-6 lg:px-20 lg:pt-26 lg:pb-24">
+        <Breadcrumb current="Checkout" />
 
-        <main className="mx-auto mt-8 w-full max-w-[890px] lg:mt-20">
+        <main className="mx-auto mt-8 w-full  max-w-[890px] lg:mt-6">
           <Stepper current={2} />
 
           <h1 className="mt-8 text-[19px] tracking-[0.02em] text-[#1a1a1a] lg:mt-14 lg:text-[17px]">
@@ -673,7 +673,7 @@ export function Checkout() {
               <div className="mt-8 hidden justify-end lg:flex">
                 <button
                   type="button"
-                  onClick={() => router.push('/')}
+                  onClick={() => router.push('/shoppingBag')}
                   className="h-[30px] w-[92px] border border-[#d6d6d6] text-[10px] tracking-[0.08em] text-[#1a1a1a] transition-colors hover:bg-[#f5f5f5]"
                 >
                   BACK
@@ -711,7 +711,7 @@ export function Checkout() {
                       type="button"
                       onClick={applyCoupon}
                       disabled={couponLoading || !couponCode.trim()}
-                      className="h-[30px] shrink-0 border border-[#1a1a1a] px-3 text-[10px] tracking-[0.06em] text-[#1a1a1a] transition-opacity hover:opacity-80 disabled:opacity-50"
+                      className="h-[30px] shrink-0 border border-[#1a1a1a] px-3 text-[10px] tracking-[0.06em] text-[#1a1a1a] transition-opacity hover:opacity-80 mt-2 disabled:opacity-50"
                     >
                       {couponLoading ? 'Checking…' : 'Apply'}
                     </button>

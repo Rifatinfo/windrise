@@ -17,10 +17,10 @@ export function ShoppingBag() {
 
   return (
     <div className="w-full min-h-full bg-white">
-      <div className="mx-auto w-full max-w-[1440px] px-5 pt-8 pb-16 sm:px-10 lg:px-14 lg:pt-10 lg:pb-24">
-        <Breadcrumb current="Shopping Bag" />
+      <div className="w-full pt-20 pb-16 lg:pt-26 md:px-20 lg:px-20 px-6 lg:pb-24">
+      <Breadcrumb current="Shopping Bag" />
 
-        <main className="mx-auto mt-8 w-full max-w-[890px] lg:mt-20">
+        <main className="mt-8 w-full mx-auto max-w-[890px] lg:mt-6">
           <Stepper current={1} />
 
           <div className="mt-5 border-t border-[#e6e6e6] lg:mt-11" />
@@ -235,18 +235,18 @@ export function ShoppingBag() {
                 </div>
               </dl>
 
-              <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-between">
+              <div className="mt-7 flex flex-row gap-2.5 sm:flex-row sm:justify-between">
                 <button
                   type="button"
                   onClick={() => router.push('/')}
-                  className="h-[38px] w-full border border-[#d6d6d6] text-[11px] tracking-[0.08em] text-[#1a1a1a] transition-colors hover:bg-[#f5f5f5] sm:w-[130px]"
+                  className="h-[38px]  border border-[#404040] text-[9px] tracking-[0.08em] text-[#1a1a1a] transition-colors hover:bg-[#f5f5f5] w-[120px] md:w-[140px] cursor-pointer"
                 >
                   CONITUE SOPPING
                 </button>
                 <button
                   type="button"
                   onClick={() => router.push('/checkout')}
-                  className="h-[38px] w-full bg-[#0b0b0b] text-[11px] tracking-[0.08em] text-white transition-opacity hover:opacity-90 sm:w-[152px]"
+                  className="h-[38px] bg-[#0b0b0b] text-[9px] tracking-[0.08em] text-white transition-opacity hover:opacity-90 w-[150px] md:w-[162px] cursor-pointer"
                 >
                   PROCEED TO CHECKOUT
                 </button>

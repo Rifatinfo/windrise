@@ -158,7 +158,7 @@ const ProductDetails = ({
   return (
     <div className="">
       <div className="min-h-full w-full">
-        <main className="mx-auto w-full max-w-[1460px] px-6 pb-14 pt-4 sm:px-6 sm:pt-5 lg:px-10 lg:pb-20 lg:pt-6">
+        <main className="w-full  px-6 pb-14 pt-20 sm:px-6 sm:pt-5 md:px-20 lg:px-20 lg:pb-20 lg:pt-26">
           <nav aria-label="Breadcrumb">
             <ol className="flex flex-wrap items-center gap-1 text-[12px] font-light lg:text-lg text-[#9E9E9E]">
               {breadcrumb.map((crumb) => (
@@ -177,7 +177,7 @@ const ProductDetails = ({
             </ol>
           </nav>
 
-          <div className="mt-4 grid gap-7 sm:mt-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.9fr)]  md:mr-20 ld:gap-4">
+          <div className="mx-auto max-w-7xl mt-4 grid gap-7 sm:mt-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.9fr)]  ">
             <ProductGallery images={images} name={product.name} />
             <div className="w-full lg:pt-1">
               <h1 className="text-[20px] font-light leading-tight text-ink sm:text-[22px] md:text-[29px] font-dm-sans">
@@ -264,7 +264,7 @@ const ProductDetails = ({
                   type="button"
                   onClick={addToCart}
                   disabled={product.stockStatus === "OUT_OF_STOCK"}
-                  className="h-10 w-[130px] bg-ink text-[13px] font-medium text-white transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40 lg:h-12 lg:w-[190px] lg:text-[15px]"
+                  className="h-10 w-[130px] bg-ink text-[12px] font-medium text-white transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40 lg:h-12 lg:w-[190px] lg:text-[15px]"
                 >
                   {product.stockStatus === "OUT_OF_STOCK"
                     ? "Out of Stock"
@@ -274,7 +274,7 @@ const ProductDetails = ({
                   type="button"
                   onClick={toggleWishlist}
                   aria-pressed={wishlisted}
-                  className="flex h-10 w-[126px] items-center justify-center gap-2 bg-neutral-200 text-[13px] font-medium text-neutral-500 hover:bg-neutral-300 lg:h-12 lg:w-[190px] lg:text-[15px]"
+                  className="flex h-10 w-[126px] items-center justify-center gap-2 bg-neutral-200 text-[12px] font-medium text-neutral-500 hover:bg-neutral-300 lg:h-12 lg:w-[190px] lg:text-[15px]"
                 >
                   <HeartIcon
                     className={

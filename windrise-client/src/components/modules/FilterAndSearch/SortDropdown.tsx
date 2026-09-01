@@ -73,7 +73,9 @@ export function SortDropdown({ value, options, onChange }: SortDropdownProps) {
         <ul
           role="listbox"
           aria-label="Sort products"
-          className="absolute left-1/2 top-full z-20 mt-2 w-[190px] lg:w-[234px] -translate-x-1/2 bg-white py-2 shadow-[0_8px_28px_rgba(0,0,0,0.12)] ring-1 ring-black/5"
+          // className="absolute rounded-md left-1/2 top-full z-20 mt-2 w-[190px] lg:w-[234px] -translate-x-1/2 bg-white py-2 shadow-[0_8px_28px_rgba(0,0,0,0.12)] ring-1 ring-black/5"
+
+          className="absolute left-1/2 top-full z-20 mt-2 w-[190px] -translate-x-1/2 rounded-xl bg-white  py-2 shadow-[0_4px_20px_rgba(0,0,0,0.12)] ring-1 ring-black/5 lg:w-[234px]"
         >
           {options.map((option) => {
             const isActive = option === value;
@@ -85,9 +87,9 @@ export function SortDropdown({ value, options, onChange }: SortDropdownProps) {
                     onChange(option);
                     setOpen(false);
                   }}
-                  className={`block w-[calc(100%-32px)] mx-4 px-4 py-[5px] rounded-sm text-center text-[12px] transition-colors lg:text-[17px] ${
+                  className={`block  w-[calc(100%-32px)] mx-4 px-4 py-[5px] rounded-sm text-center text-[12px] transition-colors lg:text-[17px] ${
                     isActive
-                      ? "bg-ink font-normal text-white"
+                      ? "bg-ink font-normal text-white mt-2"
                       : "font-light text-ink hover:bg-neutral-100"
                   }`}
                 >
