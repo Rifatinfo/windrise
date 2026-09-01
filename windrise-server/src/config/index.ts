@@ -40,6 +40,17 @@ interface EnvConfig {
   GOOGLE_CLIENT_ID :  string;
   GOOGLE_CALLBACK_URL : string;
 
+  // ---- Meta / Messenger --------------------------------------------------
+  // Deliberately optional: the support inbox has to boot and serve the Windee
+  // channel on a machine that has no Page credentials. Messenger endpoints
+  // check for what they need and fail with a clear message instead.
+  META_APP_ID?: string;
+  META_APP_SECRET?: string;
+  META_PAGE_ID?: string;
+  META_PAGE_ACCESS_TOKEN?: string;
+  META_WEBHOOK_VERIFY_TOKEN?: string;
+  META_WEBHOOK_URL?: string;
+  META_GRAPH_API_VERSION?: string;
 }
 
 const loadEnvVariable = (): EnvConfig => {
@@ -123,6 +134,14 @@ const loadEnvVariable = (): EnvConfig => {
     GOOGLE_CLIENT_SECRET  : process.env.GOOGLE_CLIENT_SECRET as  string,
     GOOGLE_CLIENT_ID : process.env.GOOGLE_CLIENT_ID as string,
     GOOGLE_CALLBACK_URL : process.env.GOOGLE_CALLBACK_URL as string,
+
+    META_APP_ID: process.env.META_APP_ID,
+    META_APP_SECRET: process.env.META_APP_SECRET,
+    META_PAGE_ID: process.env.META_PAGE_ID,
+    META_PAGE_ACCESS_TOKEN: process.env.META_PAGE_ACCESS_TOKEN,
+    META_WEBHOOK_VERIFY_TOKEN: process.env.META_WEBHOOK_VERIFY_TOKEN,
+    META_WEBHOOK_URL: process.env.META_WEBHOOK_URL,
+    META_GRAPH_API_VERSION: process.env.META_GRAPH_API_VERSION ?? "v21.0",
   };
 };
 

@@ -15,6 +15,8 @@ model User {
   pricingTemplates   PricingTemplate[]
   investments        Investment[]
   chatSessions       ChatSession[]
+  supportAgent       SupportAgent?
+  supportContacts    SupportContact[]
 
   customer        Customer?
   shopManager     ShopManager?

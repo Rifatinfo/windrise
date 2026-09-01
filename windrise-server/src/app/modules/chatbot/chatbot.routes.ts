@@ -58,6 +58,7 @@ router.post(
 );
 
 router.get("/session/:sessionId", ChatbotController.getSession);
+router.get("/stream", ChatbotController.stream);
 
 router.post(
   "/message",

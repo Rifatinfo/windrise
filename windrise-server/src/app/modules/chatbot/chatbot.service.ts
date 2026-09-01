@@ -13,6 +13,11 @@ import {
 import { attachmentAsDataUrl } from "./chatbot.image";
 import { HUMAN_HANDOFF_MESSAGE, buildSystemPrompt } from "./chatbot.prompt";
 import { TOOLS, commitPending, runTool, type PendingAction } from "./chatbot.tools";
+import {
+  handoffWindeeSession,
+  ingestWindeeCustomerMessage,
+  endSupportForVisitor,
+} from "../support/support.ingest";
 
 /**
  * How much of the transcript is replayed to the model each turn. Long threads
@@ -22,6 +27,38 @@ import { TOOLS, commitPending, runTool, type PendingAction } from "./chatbot.too
 const HISTORY_LIMIT = 24;
 
 type SessionOwner = { visitorId: string; userId?: string; userEmail?: string };
+
+/**
+ * What the widget needs to know about the human side of a handed-off chat.
+ *
+ * `HANDED_OFF` on its own is too coarse for the UI: waiting in a queue and
+ * actually talking to someone look completely different to the customer — one
+ * disables the composer, the other names the person answering.
+ */
+const supportState = async (chatSessionId: string) => {
+  const conversation = await prisma.supportConversation.findUnique({
+    where: { chatSessionId },
+    include: { assignedAgent: { include: { user: { select: { name: true, avatar: true } } } } },
+  });
+
+  if (!conversation || conversation.status === "CLOSED") return null;
+
+  const connected = conversation.status === "WITH_AGENT" && Boolean(conversation.assignedAgent);
+
+  // Only claim the team is "assisting other customers" when somebody really is
+  // at their desk. Otherwise the honest line is that nobody is online, and the
+  // widget says so instead.
+  const agentsAvailable =
+    (await prisma.supportAgent.count({ where: { presence: "AVAILABLE" } })) > 0;
+
+  return {
+    state: connected ? ("CONNECTED" as const) : ("QUEUED" as const),
+    agentName: conversation.assignedAgent?.user.name ?? null,
+    agentAvatar: conversation.assignedAgent?.user.avatar ?? null,
+    agentsAvailable,
+    ticketNo: conversation.ticketNo,
+  };
+};
 
 const shapeMessage = (row: {
   id: string;
@@ -99,6 +136,7 @@ const startSession = async (
       name: session.name,
       phone: session.phone,
       status: session.status,
+      support: await supportState(session.id),
       resumed: true,
       messages: existing.messages.filter(isVisible).map(shapeMessage),
     };
@@ -118,6 +156,7 @@ const startSession = async (
     name: session.name,
     phone: session.phone,
     status: session.status,
+    support: null,
     resumed: false,
     messages: [],
   };
@@ -135,6 +174,7 @@ const getSession = async (sessionId: string, visitorId: string) => {
     name: session.name,
     phone: session.phone,
     status: session.status,
+    support: await supportState(session.id),
     messages: messages.filter(isVisible).map(shapeMessage),
   };
 };
@@ -223,6 +263,23 @@ const sendMessage = async (
   owner: SessionOwner,
 ) => {
   const session = await requireSession(payload.sessionId, owner.visitorId);
+
+  // Handed off to a person: the visitor is talking to an agent, so the message
+  // goes to the support inbox and Windee stays quiet. Answering over the top of
+  // a human would be confusing at best and contradict them at worst.
+  if (session.status === ChatSessionStatus.HANDED_OFF) {
+    const mine = await prisma.chatMessage.create({
+      data: {
+        sessionId: session.id,
+        role: ChatRole.USER,
+        content: payload.text,
+        imageUrl: payload.imageUrl ?? null,
+      },
+    });
+
+    await ingestWindeeCustomerMessage(session.id, payload.text, payload.imageUrl);
+    return shapeMessage(mine);
+  }
 
   if (!isConfigured()) {
     throw new ApiError(
@@ -370,8 +427,11 @@ const declinePending = async (sessionId: string, visitorId: string) => {
 /**
  * Asks for a person.
  *
- * The human side is not built yet, so this records the intent and replies with
- * the standing message rather than pretending someone is joining.
+ * Raises a support ticket and copies the bot transcript across, so the agent
+ * opens a thread already knowing what was asked — being made to repeat yourself
+ * to a second responder is the whole reason handoffs feel bad. The reply the
+ * visitor sees stays honest about the wait: it promises someone will pick it
+ * up, not that someone already has.
  */
 const requestHuman = async (sessionId: string, visitorId: string) => {
   const session = await requireSession(sessionId, visitorId);
@@ -380,6 +440,8 @@ const requestHuman = async (sessionId: string, visitorId: string) => {
     where: { id: session.id },
     data: { status: ChatSessionStatus.HANDED_OFF },
   });
+
+  await handoffWindeeSession(session.id);
 
   const message = await prisma.chatMessage.create({
     data: {
@@ -393,13 +455,23 @@ const requestHuman = async (sessionId: string, visitorId: string) => {
   return shapeMessage(message);
 };
 
-/** Back to Windee after asking for a person. */
+/**
+ * Back to Windee — the widget's "End chat".
+ *
+ * Closes the support ticket as well as flipping the session back. Leaving it
+ * open would strand the conversation in an agent's inbox with a customer who
+ * has already walked away, and would count against the queue for everyone else.
+ */
 const resumeAi = async (sessionId: string, visitorId: string) => {
   const session = await requireSession(sessionId, visitorId);
+
+  await endSupportForVisitor(session.id);
+
   await prisma.chatSession.update({
     where: { id: session.id },
     data: { status: ChatSessionStatus.ACTIVE },
   });
+
   return { sessionId: session.id, status: ChatSessionStatus.ACTIVE };
 };
 

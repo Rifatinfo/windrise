@@ -18,6 +18,7 @@ import { AdsRoutes } from "../modules/ads/ads.routes";
 import { PricingRoutes } from "../modules/pricing/pricing.routes";
 import { FinanceRoutes } from "../modules/finance/finance.routes";
 import { ChatbotRoutes } from "../modules/chatbot/chatbot.routes";
+import { SupportRoutes } from "../modules/support/support.routes";
 
 
 const router = express.Router();
@@ -50,6 +51,10 @@ const moduleRoutes = [
   {
     path: "/ai-conversation-chatbot",
     route: ChatbotRoutes,
+  },
+  {
+    path: "/support",
+    route: SupportRoutes,
   },
   {
     path: "/auth",

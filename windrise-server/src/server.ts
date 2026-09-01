@@ -3,6 +3,7 @@ import { envVars } from "./config";
 import { startRestoreStockCron } from "./cron/restoreStock.cron";
 import { startOtpCleanup } from "./app/utils/otpCleanup";
 import { AdsService } from "./app/modules/ads/ads.service";
+import { seedQueues } from "./app/modules/support/support.core";
 import { Server } from "http";
 
 const PORT = envVars.PORT;
@@ -27,6 +28,9 @@ async function bootstrap() {
       // Ensures the five built-in ad slots exist before the Placements board
       // is ever opened.
       void AdsService.seedSystemPlacements();
+      // Same idea for support: a conversation arriving before an admin has
+      // opened the dashboard still needs a queue to sit in.
+      void seedQueues();
     });
 
     // Function to gracefully shut down the server

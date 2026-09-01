@@ -3,13 +3,15 @@
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { ChevronDownIcon, ChevronLeftIcon, MinusIcon, XIcon } from "lucide-react";
+import { ChevronDownIcon, ChevronLeftIcon, MinusIcon, PowerIcon, XIcon } from "lucide-react";
 
 import {
   closeChat,
   confirmPending,
   declinePending,
   forgetVisitor,
+  chatStreamUrl,
+  getSession,
   getVisitorId,
   requestHuman,
   resumeAi,
@@ -17,6 +19,7 @@ import {
   startChat,
   uploadChatImage,
   type ChatMessage,
+  type SupportState,
 } from "@/services/chatbot/chatbot";
 import { ChatScreen } from "./ChatScreen";
 import { DetailsScreen, MenuScreen, WelcomeScreen } from "./WindeeScreens";
@@ -78,6 +81,7 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
   const [name, setName] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [handedOff, setHandedOff] = useState(false);
+  const [support, setSupport] = useState<SupportState | null>(null);
 
   const [busy, setBusy] = useState(false);
   const [thinking, setThinking] = useState(false);
@@ -101,6 +105,7 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
         setName(session.name);
         setMessages(session.messages);
         setHandedOff(session.status === "HANDED_OFF");
+        setSupport(session.support);
         // A returning visitor skips the cover; a new one starts at it — but
         // never yank someone off a screen they have already tapped through to.
         if (!hasNavigated.current) {
@@ -123,10 +128,34 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
       setName(session.name);
       setMessages(session.messages);
       setHandedOff(session.status === "HANDED_OFF");
+        setSupport(session.support);
       return session.sessionId;
     },
     [visitorId],
   );
+
+  /**
+   * Adds a message unless the transcript already has it.
+   *
+   * With a person on the thread two paths write to this list: the reply to a
+   * POST, and the live stream's refetch. Whichever lands second was appending a
+   * row the other had already inserted, which React sees as two children with
+   * the same key. Identity is the message id, so checking it is enough.
+   */
+  const appendMessage = useCallback((incoming: ChatMessage) => {
+    setMessages((current) => {
+      // A handed-off send echoes the customer's own message back, so the
+      // optimistic bubble it replaces has to go with it.
+      const withoutPending =
+        incoming.role === "USER"
+          ? current.filter((m) => !m.id.startsWith("local-"))
+          : current;
+
+      return withoutPending.some((m) => m.id === incoming.id)
+        ? withoutPending
+        : [...withoutPending, incoming];
+    });
+  }, []);
 
   /** Optimistically shows what was typed, then swaps in Windee's reply. */
   const send = useCallback(
@@ -136,7 +165,11 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
 
       setError(null);
       setBusy(true);
-      setThinking(true);
+      // Only while Windee is the one answering. Once the chat is with a person
+      // the message goes to the support inbox and the bot deliberately stays
+      // quiet, so its thinking card would be promising a reply that is never
+      // coming — and an agent may take minutes, not seconds.
+      setThinking(!handedOff);
 
       const pending: ChatMessage = {
         id: `local-${Date.now()}`,
@@ -150,7 +183,7 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
 
       try {
         const reply = await sendChatMessage(visitorId, id, text, imageUrl);
-        setMessages((current) => [...current, reply]);
+        appendMessage(reply);
       } catch (err) {
         // The optimistic bubble is rolled back so the customer can retype
         // rather than being left with a message that was never answered.
@@ -161,7 +194,7 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
         setThinking(false);
       }
     },
-    [sessionId, visitorId],
+    [sessionId, visitorId, handedOff, appendMessage],
   );
 
   const startFromMenu = async (prompt: string) => {
@@ -175,7 +208,7 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
     setError(null);
     try {
       const message = await run();
-      setMessages((current) => [...current, message]);
+      appendMessage(message);
     } catch (err) {
       setError(err instanceof Error ? err.message : "That didn't work.");
     } finally {
@@ -212,6 +245,90 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
     onClose();
   };
 
+  /**
+   * True from the moment the chat is handed over until the customer ends it.
+   *
+   * Covers the queue as well as an assigned agent: Windee has already stopped
+   * answering by then, so a header still saying "AI Assistant" would be telling
+   * the customer the wrong thing about who they are waiting for.
+   */
+  const withSupport = handedOff && support !== null;
+
+  /**
+   * The header's "End chat": leaves the agent and goes back to Windee.
+   *
+   * Distinct from `endChat` above, which deletes the whole conversation. The
+   * transcript is kept here — the customer is returning to the bot, not
+   * throwing away what they have already explained.
+   */
+  const leaveSupport = async () => {
+    if (!sessionId) return;
+
+    setBusy(true);
+    setError(null);
+    try {
+      await resumeAi(visitorId, sessionId);
+      setHandedOff(false);
+      setSupport(null);
+      const refreshed = await getSession(visitorId, sessionId);
+      setMessages(refreshed.messages);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't return to Windee.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /**
+   * Live updates while a person is involved.
+   *
+   * Without this an agent's reply would sit unseen until the customer typed
+   * something — and while queued the composer is disabled, so they cannot. The
+   * stream is only opened when it can carry something: the bot path already
+   * answers in the same request.
+   */
+  useEffect(() => {
+    if (!open || !sessionId || !visitorId || !handedOff) return;
+
+    const source = new EventSource(chatStreamUrl(visitorId, sessionId));
+
+    // Every event here means the human side moved — an agent claimed it, replied
+    // or closed it. Refetching keeps one shape in one place rather than mapping
+    // the inbox's payloads onto the widget's.
+    const refresh = () => {
+      void getSession(visitorId, sessionId)
+        .then((session) => {
+          // Anything still in flight locally is kept on top of the server copy,
+          // so a refresh landing mid-send does not blank what was just typed —
+          // but only while the server has not caught up. Once the persisted
+          // copy is in the transcript the optimistic one is a second bubble
+          // with the same words, which reads as the message having been sent
+          // twice.
+          setMessages((current) => [
+            ...session.messages,
+            ...current.filter(
+              (m) =>
+                m.id.startsWith("local-") &&
+                !session.messages.some(
+                  (saved) => saved.role === "USER" && saved.content === m.content,
+                ),
+            ),
+          ]);
+          setSupport(session.support);
+          setHandedOff(session.status === "HANDED_OFF");
+        })
+        .catch(() => {
+          /* transient: the next event or send will catch up */
+        });
+    };
+
+    source.addEventListener("message.created", refresh);
+    source.addEventListener("conversation.updated", refresh);
+    source.addEventListener("conversation.closed", refresh);
+
+    return () => source.close();
+  }, [open, sessionId, visitorId, handedOff]);
+
   const header = (
     // The menu screen's artwork fills the panel, header included, so the bar
     // goes transparent there and lets the gradient through. Every other screen
@@ -221,7 +338,7 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
         screen === "menu" ? "bg-transparent" : "bg-[#FCFBFE]"
       }`}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 items-center gap-2">
         {screen === "details" && (
           <button
             type="button"
@@ -239,13 +356,42 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
           height={30}
           className="h-[30px] w-[30px] select-none"
         />
-        <div className="leading-tight">
-          <p className="text-[13px] font-semibold text-[#6B4EE6]">Windee</p>
-          <p className="text-[9px] text-[#9B98AC]">AI Assistant</p>
+        <div className="min-w-0 leading-tight">
+          {withSupport ? (
+            <>
+              {/* The person, not the bot: while a human is on the thread the
+                  header has to say so, or the customer keeps reading replies as
+                  Windee's. */}
+              <p className="truncate text-[13px] font-semibold text-[#1B1830]">Support Agent</p>
+              <p className="flex items-center gap-1 text-[9px] text-[#1F9254]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#1F9254]" />
+                Online
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-[13px] font-semibold text-[#6B4EE6]">Windee</p>
+              <p className="text-[9px] text-[#9B98AC]">AI Assistant</p>
+            </>
+          )}
         </div>
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex shrink-0 items-center gap-1">
+        {withSupport ? (
+          // Leaves the agent and returns to Windee. Deliberately not the same
+          // as the × below, which deletes the conversation outright.
+          <button
+            type="button"
+            onClick={leaveSupport}
+            disabled={busy}
+            className="flex items-center gap-1 rounded-full border border-[#F3C9CB] bg-[#FDF3F3] px-2.5 py-1 text-[10.5px] font-medium text-[#D0342C] transition-colors hover:bg-[#FBE9E9] disabled:opacity-50"
+          >
+            <PowerIcon className="h-3 w-3" />
+            End chat
+          </button>
+        ) : null}
+
         <button
           type="button"
           onClick={onClose}
@@ -255,15 +401,17 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
         >
           <ChevronDownIcon  className="h-7 w-7 stroke-[1.5]" />
         </button>
-        <button
-          type="button"
-          onClick={endChat}
-          aria-label="End chat and delete this conversation"
-          title="End chat — this conversation is deleted"
-          className="grid h-7 w-7 place-items-center rounded-full  transition-colors  hover:text-[#B4413F]"
-        >
-          <XIcon className="h-4 w-4" />
-        </button>
+        {/* {!withSupport && (
+          <button
+            type="button"
+            onClick={endChat}
+            aria-label="End chat and delete this conversation"
+            title="End chat — this conversation is deleted"
+            className="grid h-7 w-7 place-items-center rounded-full  transition-colors  hover:text-[#B4413F]"
+          >
+            <XIcon className="h-4 w-4" />
+          </button>
+        )} */}
       </div>
     </div>
   );
@@ -357,6 +505,7 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
                     thinking={thinking}
                     busy={busy}
                     handedOff={handedOff}
+                    support={support}
                     error={error}
                     onSend={(text, imageUrl) => void send(text, imageUrl)}
                     onConfirm={() =>

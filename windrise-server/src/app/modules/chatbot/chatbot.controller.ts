@@ -4,6 +4,8 @@ import { StatusCodes } from "http-status-codes";
 import catchAsync from "../../../shared/catchAsync";
 import sendResponse from "../../../shared/sendResponse";
 import ApiError from "../../errors/ApiError";
+import prisma from "../../../shared/prisma";
+import { openStream } from "../support/support.realtime";
 import { ChatbotService } from "./chatbot.service";
 
 const ok = (res: Response, message: string, data: unknown) =>
@@ -90,6 +92,27 @@ const closeSession = catchAsync(async (req: Request, res: Response) => {
   ok(res, "Chat closed", await ChatbotService.closeSession(sessionId, visitorId));
 });
 
+/**
+ * The widget's live feed.
+ *
+ * Only fires for one chat session, and the visitor id has to match it — the
+ * same pair that guards every other endpoint here. Not wrapped in `catchAsync`
+ * or `sendResponse`: the response is hijacked and stays open.
+ */
+const stream = async (req: Request, res: Response) => {
+  const sessionId = String(req.query.sessionId ?? "");
+  const visitorId = String(req.query.visitorId ?? "");
+
+  const session = await prisma.chatSession.findUnique({ where: { id: sessionId } });
+
+  if (!session || session.visitorId !== visitorId) {
+    res.status(StatusCodes.NOT_FOUND).json({ success: false, message: "Chat session not found" });
+    return;
+  }
+
+  openStream(res, { accept: (event) => event.chatSessionId === sessionId });
+};
+
 const uploadImage = catchAsync(async (req: Request, res: Response) => {
   if (!req.file) throw new ApiError(StatusCodes.BAD_REQUEST, "No image uploaded");
   ok(res, "Image uploaded", await ChatbotService.uploadImage(req.file));
@@ -104,5 +127,6 @@ export const ChatbotController = {
   requestHuman,
   resumeAi,
   closeSession,
+  stream,
   uploadImage,
 };
