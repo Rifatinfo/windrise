@@ -10,9 +10,9 @@ import {
   XIcon,
 } from "lucide-react";
 
-import type { ChatCard, ChatMessage } from "@/services/chatbot/chatbot";
+import type { ChatCard, ChatMessage, SupportState } from "@/services/chatbot/chatbot";
 import { chatMediaUrl } from "@/services/chatbot/chatbot";
-import { ChatCardView, HelpCard, QueueCard } from "./ChatCards";
+import { ChatCardView, ConnectedCard, HelpCard, QueueCard, SupportNotice } from "./ChatCards";
 import { QUICK_ACTIONS } from "./WindeeScreens";
 
 /**
@@ -149,6 +149,14 @@ function Bubble({
     );
   }
 
+  // The handoff announcement is a state change, not something anyone said, so
+  // it reads as the connected card rather than a bubble from Windee.
+  if (card?.kind === "agent-joined") {
+    return <ConnectedCard agentName={null} />;
+  }
+
+  const fromAgent = card?.kind === "agent";
+
   return (
     <div className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
       {!mine && (
@@ -160,7 +168,16 @@ function Bubble({
             height={18}
             className="h-[18px] w-[18px] select-none"
           />
-          <span className="text-[10px] font-medium text-[#6B4EE6]">Windee</span>
+          {/* The role, not the individual: a customer has no use for which
+              member of staff replied, and the blue marks it apart from Windee's
+              purple so they can still tell bot from person at a glance. */}
+          <span
+            className={`text-[10px] font-medium ${
+              fromAgent ? "text-[#4B6BFB]" : "text-[#6B4EE6]"
+            }`}
+          >
+            {fromAgent ? "Support Agent" : "Windee"}
+          </span>
           <span className="text-[9px] text-[#B4B1C4]">{clockTime(message.createdAt)}</span>
         </div>
       )}
@@ -220,6 +237,7 @@ export function ChatScreen({
   thinking,
   busy,
   handedOff,
+  support,
   error,
   onSend,
   onConfirm,
@@ -232,6 +250,7 @@ export function ChatScreen({
   thinking: boolean;
   busy: boolean;
   handedOff: boolean;
+  support: SupportState | null;
   error: string | null;
   onSend: (text: string, imageUrl?: string | null) => void;
   onConfirm: () => void;
@@ -262,7 +281,15 @@ export function ChatScreen({
     bottom.current?.scrollIntoView({ block: "end" });
   }, [messages.length, thinking]);
 
-  const canSend = (text.trim().length > 0 || attachment) && !busy && !handedOff;
+  /**
+   * Queued means nobody is reading yet, so the composer stays shut. Once an
+   * agent has joined they are a real correspondent and the customer has to be
+   * able to answer them — the only stretch where typing is genuinely pointless
+   * is the wait.
+   */
+  const waiting = handedOff && support?.state !== "CONNECTED";
+
+  const canSend = (text.trim().length > 0 || attachment) && !busy && !waiting;
 
   const submit = () => {
     if (!canSend) return;
@@ -323,9 +350,16 @@ export function ChatScreen({
           />
         )}
 
-        {handedOff ? (
-          <QueueCard />
-        ) : (
+        {/*
+          Only the queue card is pinned here, because it is a live status — it
+          stops being true the moment somebody picks the chat up. The "connected"
+          announcement is not: it happened once, at a point in the conversation,
+          and is rendered in place from its own message so the replies that
+          followed it stay below it instead of it jumping to the end.
+        */}
+        {handedOff && support?.state !== "CONNECTED" ? (
+          <QueueCard agentsAvailable={support?.agentsAvailable ?? false} />
+        ) : handedOff ? null : (
           // Offered once the conversation has actually developed, and never
           // while a proposal is waiting — two sets of buttons at once reads as
           // a choice between them.
@@ -354,7 +388,9 @@ export function ChatScreen({
         <div ref={bottom} />
       </div>
 
-      {handedOff && (
+      {/* Only while waiting. Once an agent has joined, the header's End chat is
+          the way back — offering both would read as two different exits. */}
+      {handedOff && support?.state !== "CONNECTED" && (
         <button
           type="button"
           onClick={onContinueWithAi}
@@ -364,7 +400,20 @@ export function ChatScreen({
         </button>
       )}
 
-      <div className="border-t border-[#F0EFF6] bg-white px-3 pb-2 pt-2.5">
+      {/*
+        The divider is dropped while the notice is up. Two horizontal rules
+        stacked a few pixels apart — the border and the notice's own top edge —
+        read as a seam rather than as one calm block above the input.
+      */}
+      <div
+        className={`bg-white px-3 pb-2 ${
+          handedOff ? "pt-3.5" : "border-t border-[#F0EFF6] pt-2.5"
+        }`}
+      >
+        {/* Pinned here, not left to scroll away in the transcript: it has to
+            stay true for as long as the handoff lasts. */}
+        {handedOff && <SupportNotice connected={support?.state === "CONNECTED"} />}
+
         {attachment && (
           <div className="mb-2 flex items-center gap-2 rounded-lg bg-[#F5F4FA] px-2.5 py-1.5">
             <span className="min-w-0 flex-1 truncate text-[10px] text-[#4A4660]">
@@ -395,7 +444,7 @@ export function ChatScreen({
           <button
             type="button"
             onClick={() => fileInput.current?.click()}
-            disabled={uploading || handedOff}
+            disabled={uploading || waiting}
             aria-label="Attach an image"
             className="shrink-0 text-[#9B98AC] transition-colors hover:text-[#6B4EE6] disabled:opacity-40"
           >
@@ -415,8 +464,8 @@ export function ChatScreen({
                 submit();
               }
             }}
-            placeholder={handedOff ? "Waiting for our team…" : "Type your message..."}
-            disabled={handedOff}
+            placeholder={waiting ? "Waiting for our team…" : "Type your message..."}
+            disabled={waiting}
             maxLength={2000}
             className="h-8 w-full bg-transparent text-[12px] text-[#1B1830] outline-none placeholder:text-[#B4B1C4] disabled:cursor-not-allowed"
           />

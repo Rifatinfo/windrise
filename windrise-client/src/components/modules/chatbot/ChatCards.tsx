@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { HeadsetIcon } from "lucide-react";
 
 import type { ChatCard } from "@/services/chatbot/chatbot";
 import { chatMediaUrl, productHref } from "@/services/chatbot/chatbot";
@@ -292,35 +293,84 @@ export function HelpCard({
   );
 }
 
-/** Windee 08 — waiting on a person. */
-export function QueueCard() {
+/**
+ * Windee 08 — waiting on a person.
+ *
+ * The wording follows the real presence of the team rather than a fixed line:
+ * telling someone agents are "assisting other customers" when nobody is signed
+ * in would be a promise the system cannot keep, and the opposite understates a
+ * queue that really is being worked.
+ */
+export function QueueCard({ agentsAvailable }: { agentsAvailable: boolean }) {
   return (
-    <div className="space-y-2.5">
-      <div className="rounded-xl bg-[#F5F4FA] p-4 text-center">
-        <Image
-          src="/assets/loading-clock-icon-2.png"
-          alt=""
-          width={30}
-          height={30}
-          className="mx-auto h-[30px] w-[30px] select-none"
-        />
-        <p className="mt-2 text-[12px] font-semibold text-[#1B1830]">You&apos;re in the queue</p>
-        <p className="mt-1 text-[10.5px] leading-relaxed text-[#6E6A82]">
-          Our team isn&apos;t online right now. Stay on this chat — someone will pick it up
-          as soon as they&apos;re available.
-        </p>
-      </div>
+    <div className="rounded-xl bg-[#F5F4FA] p-4 text-center">
+      <Image
+        src="/assets/loading-clock-icon-2.png"
+        alt=""
+        width={30}
+        height={30}
+        className="mx-auto h-[30px] w-[30px] select-none"
+      />
+      <p className="mt-2 text-[12px] font-semibold text-[#1B1830]">You&apos;re in the queue</p>
+      <p className="mt-1 text-[10.5px] leading-relaxed text-[#6E6A82]">
+        {agentsAvailable ? (
+          <>
+            Our agents are currently assisting other customers.
+            <br />
+            Please stay on this chat.
+            <br />
+            You&apos;ll be connected soon.
+          </>
+        ) : (
+          <>
+            Our team isn&apos;t online right now. Stay on this chat — someone will pick it
+            up as soon as they&apos;re available.
+          </>
+        )}
+      </p>
+    </div>
+  );
+}
 
-      <div className="flex items-start gap-2 rounded-xl bg-[#FFF8EC] p-3">
-        <Image
-          src="/assets/connect-support-logo.png"
-          alt=""
-          width={40}
-          height={40}
-          className="mt-px h-[40px] w-[40px] shrink-0 select-none"
-        />
-        <p className="text-[10.5px] leading-relaxed text-[#8A6A25]">
-          Windee won&apos;t reply while you&apos;re waiting for our support team.
+/**
+ * Pinned above the composer for as long as a person is involved.
+ *
+ * Windee genuinely stops answering during a handoff, so this is not decoration:
+ * without it a customer sending a message into the queue would reasonably
+ * expect the bot to pick it up.
+ */
+export function SupportNotice({ connected }: { connected: boolean }) {
+  return (
+    <div className="mb-2 flex items-start gap-2 rounded-xl bg-[#FFF8EC] p-3">
+      <Image
+        src="/assets/connect-support-logo.png"
+        alt=""
+        width={36}
+        height={36}
+        className="mt-px h-[36px] w-[36px] shrink-0 select-none"
+      />
+      <p className="text-[10.5px] leading-relaxed text-[#8A6A25]">
+        Windee won&apos;t reply while you&apos;re{" "}
+        {connected ? "chatting with" : "waiting for"} our support team.
+      </p>
+    </div>
+  );
+}
+
+/** Windee 09 — a person has joined the thread. */
+export function ConnectedCard({ agentName }: { agentName: string | null }) {
+  return (
+    <div className="flex items-start gap-2.5 rounded-xl border border-[#CFEBDA] bg-[#F3FBF6] p-3">
+      <span className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-full bg-[#DCF1E5]">
+        <HeadsetIcon className="h-4 w-4 text-[#1F9254]" />
+      </span>
+      <div>
+        <p className="text-[12px] font-semibold text-[#1F9254]">
+          You&apos;re connected to a support agent
+        </p>
+        <p className="mt-1 text-[10.5px] leading-relaxed text-[#4A6B57]">
+          {agentName ? `${agentName} has` : "A member of our support team has"} joined the
+          chat and is ready to assist you.
         </p>
       </div>
     </div>

@@ -27,6 +27,7 @@ import {
   CircleDollarSign,
   BadgeDollarSign,
   Receipt,
+  HeadsetIcon,
 } from "lucide-react";
 import { UserRole } from "@/types/role";
 import { PiInvoice } from "react-icons/pi";
@@ -74,6 +75,13 @@ export const NAV_MAIN: NavItem[] = [
     icon: UserIcon,
     roles: ["ADMIN", "SHOP_MANAGER"],
     path: "/admin/customer",
+  },
+  {
+    id: "support",
+    label: "Support",
+    icon: HeadsetIcon,
+    roles: ["ADMIN", "CUSTOMER_SUPPORT"],
+    path: "/admin/support",
   },
   {
     id: "orders",

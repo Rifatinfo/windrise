@@ -43,6 +43,11 @@ model ChatSession {
   status   ChatSessionStatus @default(ACTIVE)
   messages ChatMessage[]
 
+  /// The support ticket this thread was handed off to, once the visitor asked
+  /// for a person. Detaches rather than cascades when the widget is closed, so
+  /// the agent's record of the conversation survives.
+  supportConversation SupportConversation?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

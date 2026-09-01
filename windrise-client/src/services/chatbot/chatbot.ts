@@ -19,7 +19,11 @@ export type ChatCard =
   | { kind: "confirm-cancel"; requiresConfirmation: true; orderNo: string; total: number; items: string[] }
   | { kind: "order-placed"; orderNo: string | null; total: number | null; deliverTo: DeliverTo }
   | { kind: "order-cancelled"; orderNo: string | null; total: number | null }
-  | { kind: "handoff" };
+  | { kind: "handoff" }
+  /** A reply typed by a person, not by Windee. */
+  | { kind: "agent"; agentName: string }
+  /** The moment an agent picked the conversation up. */
+  | { kind: "agent-joined" };
 
 export type OrderLine = {
   id: string;
@@ -91,11 +95,28 @@ export type ChatMessage = {
   createdAt: string;
 };
 
+/**
+ * The human side of a handed-off chat.
+ *
+ * `HANDED_OFF` alone cannot drive the UI: waiting in a queue and talking to a
+ * person look completely different — one disables the composer and shows the
+ * queue card, the other names who joined and lets the customer type.
+ */
+export type SupportState = {
+  state: "QUEUED" | "CONNECTED";
+  agentName: string | null;
+  agentAvatar: string | null;
+  /** Whether anyone is actually at their desk, so the queue card can be honest. */
+  agentsAvailable: boolean;
+  ticketNo: string;
+};
+
 export type ChatSession = {
   sessionId: string;
   name: string | null;
   phone: string | null;
   status: SessionStatus;
+  support: SupportState | null;
   resumed?: boolean;
   messages: ChatMessage[];
 };
@@ -171,8 +192,30 @@ export const declinePending = (visitorId: string, sessionId: string) =>
 export const requestHuman = (visitorId: string, sessionId: string) =>
   post<ChatMessage>("/human", { visitorId, sessionId });
 
+/**
+ * "End chat" while with an agent: closes the support ticket and hands the
+ * visitor back to Windee. The transcript is kept — only `closeChat` deletes it.
+ */
 export const resumeAi = (visitorId: string, sessionId: string) =>
   post<{ sessionId: string; status: SessionStatus }>("/resume-ai", { visitorId, sessionId });
+
+export const getSession = async (visitorId: string, sessionId: string) => {
+  const res = await fetch(
+    `${BASE}/session/${sessionId}?visitorId=${encodeURIComponent(visitorId)}`,
+    { credentials: "include" },
+  );
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.message ?? "Couldn't refresh the chat.");
+  return payload.data as ChatSession;
+};
+
+/**
+ * Live feed for one chat, so an agent joining or replying lands without the
+ * customer having to send something first. Guarded by the same session/visitor
+ * pair as every other endpoint here.
+ */
+export const chatStreamUrl = (visitorId: string, sessionId: string) =>
+  `${BASE}/stream?sessionId=${encodeURIComponent(sessionId)}&visitorId=${encodeURIComponent(visitorId)}`;
 
 /** Ends the chat and erases the transcript server-side. */
 export const closeChat = (visitorId: string, sessionId: string) =>
