@@ -135,7 +135,7 @@ export function ProductCard({
         )}
       </div>
 
-      <h3 className="mt-2.5 text-[12px] font-light leading-snug text-[#5D5D5D] lg:text-[15px]">
+      <h3 className="mt-2.5 text-[12px] font-light leading-snug text-[#5D5D5D] lg:text-[16px]">
         <Link href={href} className="transition-opacity hover:opacity-60 ">
           {product.name}
         </Link>
@@ -143,7 +143,7 @@ export function ProductCard({
       <p className="mt-1 text-[13px] font-normal text-ink lg:text-[22px]">
        ৳ {price.toFixed(2)}
         {hasDiscount && (
-          <span className="ml-2 font-light text-muted line-through">
+          <span className="ml-2 font-light text-[12px] md:text-[16px] text-muted line-through">
          ৳ {product.regularPrice.toFixed(2)}
           </span>
         )}

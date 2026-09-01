@@ -43,7 +43,7 @@ export function AddToCartModal({ open, product, onClose }: AddToCartModalProps) 
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="absolute inset-0 bg-black/60"
+            className="absolute inset-0 bg-black/30"
             onClick={onClose}
             aria-hidden="true"
           />
@@ -54,48 +54,50 @@ export function AddToCartModal({ open, product, onClose }: AddToCartModalProps) 
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.96 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="relative z-10 mx-4 w-full max-w-[348px] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.12)]"
+            className="relative z-10 mx-4 w-full max-w-[500px] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.12)]"
             role="dialog"
             aria-modal="true"
             aria-labelledby="added-title"
           >
-            {/* Close button */}
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close"
-              className="absolute -right-3 -top-3 flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#1a1a1a] shadow-sm transition-opacity hover:opacity-70"
-            >
-              <XIcon className="h-3.5 w-3.5" strokeWidth={1.5} />
-            </button>
+            <div className="p-[18px]">
+              {/* Top title, with the close control sharing its line */}
+              <div className="flex items-start justify-between gap-3">
+                <p
+                  id="added-title"
+                  className="text-[10px] font-semibold leading-[14px] text-[#1a1a1a]"
+                >
+                  Product successfully added to your bag.
+                </p>
 
-            <div className="p-5">
-              {/* Top title */}
-              <p
-                id="added-title"
-                className="text-[11px] font-semibold text-[#1a1a1a]"
-              >
-                Product successfully added to your bag.
-              </p>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label="Close"
+                  className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[3px] bg-[#f2f2f2] text-[#4a4a4a] transition-colors hover:bg-[#e4e4e4]"
+                >
+                  <XIcon className="h-[11px] w-[11px]" strokeWidth={1.5} />
+                </button>
+              </div>
 
-              <div className="my-3 h-px bg-[#e6e6e6]" />
+              <div className="mt-4 h-px bg-[#e6e6e6]" />
 
-              {/* Product info */}
-              <div className="flex gap-4">
-                <div className="relative h-[130px] w-[100px] shrink-0 bg-[#f6f6f6] sm:h-[150px] sm:w-[120px]">
+              {/* Product info — stacked with a centred image on phones,
+                  side by side from sm up */}
+              <div className="mt-5 flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-[18px]">
+                <div className="relative h-[220px] w-[172px] shrink-0">
                   <img
                     src={product.image}
                     alt={product.name}
-                    className="h-full w-full object-contain p-1"
+                    className="h-full w-full object-contain"
                   />
                 </div>
 
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <p className="text-[12px] font-medium leading-tight text-[#1a1a1a]">
+                <div className="flex w-full min-w-0 flex-1 flex-col">
+                  <p className="text-[11.5px] font-medium leading-tight text-[#1a1a1a]">
                     {product.name}
                   </p>
 
-                  <dl className="mt-2 space-y-[3px] text-[10px]">
+                  <dl className="mt-5 space-y-[7px] text-[9.5px]">
                     <div className="flex gap-1">
                       <dt className="text-[#9e9e9e]">Product SKU:</dt>
                       <dd className="text-[#1a1a1a]">{product.sku}</dd>
@@ -126,14 +128,15 @@ export function AddToCartModal({ open, product, onClose }: AddToCartModalProps) 
                 </div>
               </div>
 
-              <div className="my-4 h-px bg-[#e6e6e6]" />
+              <div className="mt-[18px] h-px bg-[#e6e6e6]" />
 
-              {/* Buttons */}
-              <div className="flex gap-3">
+              {/* Buttons split the row on phones; from sm up they shrink to
+                  their labels and sit at the outer edges */}
+              <div className="mt-[18px] flex items-center justify-between gap-3">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="h-[32px] flex-1 border border-[#d6d6d6] bg-white text-[9px] font-medium uppercase tracking-[0.06em] text-[#1a1a1a] transition-colors hover:bg-[#f5f5f5]"
+                  className="h-[32px] flex-1 whitespace-nowrap border border-[#d6d6d6] bg-white px-2 text-[8.5px] font-medium uppercase tracking-[0.06em] text-[#1a1a1a] transition-colors hover:bg-[#f5f5f5] sm:h-[26px] sm:flex-none sm:min-w-[112px] sm:px-3"
                 >
                   Continue Shopping
                 </button>
@@ -143,7 +146,7 @@ export function AddToCartModal({ open, product, onClose }: AddToCartModalProps) 
                     onClose();
                     router.push("/shoppingBag");
                   }}
-                  className="h-[32px] flex-1 bg-[#0b0b0b] text-[9px] font-medium uppercase tracking-[0.06em] text-white transition-opacity hover:opacity-90"
+                  className="h-[32px] flex-1 whitespace-nowrap bg-[#0b0b0b] px-2 text-[8.5px] font-medium uppercase tracking-[0.06em] text-white transition-opacity hover:opacity-90 sm:h-[26px] sm:flex-none sm:min-w-[112px] sm:px-3"
                 >
                   Go to Bag
                 </button>
