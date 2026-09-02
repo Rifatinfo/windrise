@@ -181,7 +181,14 @@ const getNewArrivalProducts = catchAsync(
 const getRelatedProducts = catchAsync(async (req: Request, res: Response) => {
   const { productId } = req.params;
 
-  const result = await ProductService.getRelatedProducts(productId as string);
+  // How many cards the caller's layout has room for. Anything unparseable
+  // falls through to the service's own default rather than becoming NaN.
+  const parsedLimit = Number.parseInt(String(req.query.limit ?? ""), 10);
+
+  const result = await ProductService.getRelatedProducts(
+    productId as string,
+    Number.isFinite(parsedLimit) ? parsedLimit : undefined,
+  );
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,

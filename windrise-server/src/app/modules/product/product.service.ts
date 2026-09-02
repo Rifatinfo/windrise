@@ -696,14 +696,45 @@ const getNewArrivalProducts = async () => {
   return products;
 };
 
-const getRelatedProducts = async (productId: string) => {
-  // 1️ Get current product
+/**
+ * Products to show under "You might also like".
+ *
+ * Relevance runs outward in rings, most specific first, and each ring only
+ * runs if the previous one has not already filled the row:
+ *
+ *   1. the same sub-category — men/pant beside men/pant is the closest thing
+ *      the catalogue can say without a recommendation engine
+ *   2. the same category — still men, when the sub-category is thin
+ *   3. the newest arrivals — so a small or freshly seeded catalogue shows a
+ *      useful row rather than an empty one
+ *
+ * Every ring excludes what earlier rings already took, so a product can never
+ * appear twice.
+ */
+const RELATED_LIMIT_DEFAULT = 8;
+const RELATED_LIMIT_MAX = 24;
+
+const relatedProductInclude = {
+  // Names, not just join rows: the storefront builds a product URL as
+  // /{category}/{subCategory}/{slug}, so a payload carrying only ids cannot be
+  // linked anywhere.
+  categories: { include: { category: { select: { id: true, name: true } } } },
+  subCategories: { include: { subCategory: { select: { id: true, name: true } } } },
+  variants: true,
+  images: true,
+  tags: true,
+  additionalInformation: true,
+} satisfies Prisma.ProductInclude;
+
+const getRelatedProducts = async (productId: string, limit?: number) => {
+  const take = Math.min(
+    Math.max(1, limit ?? RELATED_LIMIT_DEFAULT),
+    RELATED_LIMIT_MAX,
+  );
+
   const currentProduct = await prisma.product.findUnique({
     where: { id: productId },
-    include: {
-      categories: true,
-      subCategories: true,
-    },
+    include: { categories: true, subCategories: true },
   });
 
   if (!currentProduct) {
@@ -711,74 +742,47 @@ const getRelatedProducts = async (productId: string) => {
   }
 
   const categoryIds = currentProduct.categories.map((c) => c.categoryId);
+  const subCategoryIds = currentProduct.subCategories.map((s) => s.subCategoryId);
 
-  const subCategoryIds = currentProduct.subCategories.map(
-    (s) => s.subCategoryId,
-  );
+  // A storefront endpoint must never surface something the shop has hidden or
+  // deleted — the previous version returned both.
+  const visible = { isDeleted: false, isActive: true };
 
-  // 2️ PRIMARY: same category products (strong relevance)
-  const categoryRelated = await prisma.product.findMany({
-    where: {
-      id: { not: productId },
-      categories: {
-        some: {
-          categoryId: { in: categoryIds },
-        },
-      },
-    },
-    include: {
-      categories: true,
-      subCategories: true,
-      variants: true,
-      images: true,
-      additionalInformation: true,
-      tags: true,
-    },
-    take: 8,
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+  type RelatedProduct = Prisma.ProductGetPayload<{
+    include: typeof relatedProductInclude;
+  }>;
 
-  let relatedProducts = categoryRelated;
+  const collected: RelatedProduct[] = [];
+  const excluded = new Set<string>([productId]);
 
-  // 3️ Fallback: subcategory if not enough results
-  if (relatedProducts.length < 8) {
-    const subCategoryRelated = await prisma.product.findMany({
-      where: {
-        id: { not: productId },
+  const fill = async (where: Prisma.ProductWhereInput) => {
+    const remaining = take - collected.length;
+    if (remaining <= 0) return;
 
-        // avoid duplicates from category results
-        categories: {
-          none: {
-            categoryId: { in: categoryIds },
-          },
-        },
-
-        subCategories: {
-          some: {
-            subCategoryId: { in: subCategoryIds },
-          },
-        },
-      },
-      include: {
-        categories: true,
-        subCategories: true,
-        variants: true,
-        images: true,
-        additionalInformation: true,
-        tags: true,
-      },
-      take: 8 - relatedProducts.length,
-      orderBy: {
-        createdAt: "desc",
-      },
+    const rows = await prisma.product.findMany({
+      where: { ...visible, ...where, id: { notIn: Array.from(excluded) } },
+      include: relatedProductInclude,
+      orderBy: { createdAt: "desc" },
+      take: remaining,
     });
 
-    relatedProducts = [...relatedProducts, ...subCategoryRelated];
+    for (const row of rows) {
+      collected.push(row);
+      excluded.add(row.id);
+    }
+  };
+
+  if (subCategoryIds.length) {
+    await fill({ subCategories: { some: { subCategoryId: { in: subCategoryIds } } } });
   }
 
-  return relatedProducts;
+  if (categoryIds.length) {
+    await fill({ categories: { some: { categoryId: { in: categoryIds } } } });
+  }
+
+  await fill({});
+
+  return collected;
 };
 
 const getAISuggestion = async (
