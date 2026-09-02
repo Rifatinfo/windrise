@@ -101,3 +101,20 @@ export const chatbotRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+/**
+ * Review submission is open to guests, so it is capped per IP. Generous enough
+ * for someone filling in a form and retrying, tight enough that the endpoint
+ * cannot be used to flood the product page.
+ */
+export const reviewRateLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 20,
+  message: {
+    success: false,
+    statusCode: 429,
+    message: "Too many review attempts. Please try again in a few minutes.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});

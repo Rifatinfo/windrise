@@ -15,6 +15,7 @@ model Product {
 
   isDeleted Boolean @default(false)
   isActive  Boolean @default(true)
+  reviews ProductReview[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

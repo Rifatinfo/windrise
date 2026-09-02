@@ -251,7 +251,7 @@ export function OrderComplete() {
   return (
     <div className="w-full min-h-full bg-white">
       {/* Breadcrumb */}
-      <div className="mx-auto w-full max-w-[1440px] px-5 py-4 sm:px-10 lg:px-14 lg:py-6">
+      <div className=" w-full  px-6 py-4 sm:px-10 md:px-20 lg:px-20 lg:mt-20 mt-16">
         <Breadcrumb current="Order Placed" />
       </div>
 
@@ -261,7 +261,7 @@ export function OrderComplete() {
           {isSuccess && (
             <div className="flex justify-center">
               <img
-                src="/assets/Sucess_Icon.png"
+                src="/assets/Sucess Icon.png"
                 alt=""
                 aria-hidden="true"
                 className="h-[52px] w-[52px] lg:h-[58px] lg:w-[58px]"

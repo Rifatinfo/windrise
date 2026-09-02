@@ -19,6 +19,7 @@ import { PricingRoutes } from "../modules/pricing/pricing.routes";
 import { FinanceRoutes } from "../modules/finance/finance.routes";
 import { ChatbotRoutes } from "../modules/chatbot/chatbot.routes";
 import { SupportRoutes } from "../modules/support/support.routes";
+import { ReviewRoutes } from "../modules/review/review.routes";
 
 
 const router = express.Router();
@@ -55,6 +56,10 @@ const moduleRoutes = [
   {
     path: "/support",
     route: SupportRoutes,
+  },
+  {
+    path: "/product-review",
+    route: ReviewRoutes,
   },
   {
     path: "/auth",
