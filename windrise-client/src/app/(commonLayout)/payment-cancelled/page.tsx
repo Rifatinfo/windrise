@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 const PaymentCancelledPage = () => (
   // Reads the gateway's redirect params, so it renders on the client.
-  <Suspense fallback={<div className="min-h-[60vh] bg-white" />}>
+  <Suspense fallback={<div className="min-h-screen bg-white" />}>
     <PaymentCancelled />
   </Suspense>
 );
