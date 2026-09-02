@@ -349,6 +349,11 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
             <ChevronLeftIcon className="h-7 w-7 stroke-[1.5]" />
           </button>
         )}
+        {/* The details screen already introduces Windee, large, a few lines
+            below — the avatar and name in the bar are the same thing said
+            twice. Every other screen keeps them. */}
+        {screen !== "details" && (
+          <>
         <Image
           src="/assets/Windee-Chatbot.png"
           alt=""
@@ -375,6 +380,8 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
             </>
           )}
         </div>
+          </>
+        )}
       </div>
 
       <div className="flex shrink-0 items-center gap-1">
