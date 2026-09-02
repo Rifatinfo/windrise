@@ -69,9 +69,81 @@ const startOfToday = () => {
  * hired — so both roles get a record rather than only CUSTOMER_SUPPORT.
  */
 export const ensureAgent = async (userId: string) => {
+  // Every support request begins here, and the database is remote — a round
+  // trip costs ~280ms, so the query count *is* the latency. Prisma resolves an
+  // `include` with a second query, which doubled the cost of the single most
+  // called function in the module; this joins in one.
+  //
+  // Deliberately not cached: it is what authorises access to other people's
+  // conversations, and a stale answer would keep a revoked account working.
+  const rows = await prisma.$queryRaw<
+    Array<{
+      id: string;
+      userId: string;
+      presence: SupportAgentPresence;
+      maxConcurrent: number;
+      title: string | null;
+      lastSeenAt: Date | null;
+      createdAt: Date;
+      updatedAt: Date;
+      u_id: string;
+      u_name: string | null;
+      u_email: string | null;
+      u_avatar: string | null;
+      u_role: UserRole;
+      u_isDeleted: boolean;
+    }>
+  >`
+    SELECT a.id, a."userId", a.presence, a."maxConcurrent", a.title,
+           a."lastSeenAt", a."createdAt", a."updatedAt",
+           u.id AS u_id, u.name AS u_name, u.email AS u_email,
+           u.avatar AS u_avatar, u.role AS u_role, u."isDeleted" AS u_isDeleted
+    FROM support_agents a
+    JOIN users u ON u.id = a."userId"
+    WHERE a."userId" = ${userId}
+    LIMIT 1
+  `;
+
+  const row = rows[0];
+
+  const existing = row
+    ? {
+        id: row.id,
+        userId: row.userId,
+        presence: row.presence,
+        maxConcurrent: row.maxConcurrent,
+        title: row.title,
+        lastSeenAt: row.lastSeenAt,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        user: {
+          id: row.u_id,
+          name: row.u_name,
+          email: row.u_email,
+          avatar: row.u_avatar,
+          role: row.u_role,
+          isDeleted: row.u_isDeleted,
+        },
+      }
+    : null;
+
+  if (existing) {
+    if (existing.user.isDeleted) {
+      throw new ApiError(StatusCodes.UNAUTHORIZED, "Your account is no longer active.");
+    }
+    if (
+      existing.user.role !== UserRole.CUSTOMER_SUPPORT &&
+      existing.user.role !== UserRole.ADMIN
+    ) {
+      throw new ApiError(StatusCodes.FORBIDDEN, "You do not have access to the support inbox.");
+    }
+    return existing;
+  }
+
+  // First visit only: verify the account, then create the record.
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, name: true, role: true, isDeleted: true },
+    select: { ...agentUserSelect, isDeleted: true },
   });
 
   if (!user || user.isDeleted) {
@@ -82,10 +154,7 @@ export const ensureAgent = async (userId: string) => {
     throw new ApiError(StatusCodes.FORBIDDEN, "You do not have access to the support inbox.");
   }
 
-  const existing = await prisma.supportAgent.findUnique({ where: { userId } });
-  if (existing) return existing;
-
-  return prisma.supportAgent.create({
+  const created = await prisma.supportAgent.create({
     data: {
       userId,
       title: user.role === UserRole.ADMIN ? "Administrator" : "Support Agent",
@@ -94,6 +163,8 @@ export const ensureAgent = async (userId: string) => {
       lastSeenAt: new Date(),
     },
   });
+
+  return { ...created, user };
 };
 
 const shapeAgent = (
@@ -115,8 +186,16 @@ const shapeAgent = (
   openConversations: openCount,
 });
 
+const agentUserSelect = {
+  id: true,
+  name: true,
+  email: true,
+  avatar: true,
+  role: true,
+} satisfies Prisma.UserSelect;
+
 const agentInclude = {
-  user: { select: { id: true, name: true, email: true, avatar: true, role: true } },
+  user: { select: agentUserSelect },
 } satisfies Prisma.SupportAgentInclude;
 
 export const getMe = async (userId: string) => {
@@ -771,8 +850,27 @@ export type ReplyInput = {
  * agent can see what happened and retry.
  */
 export const sendReply = async (userId: string, id: string, input: ReplyInput) => {
-  const agent = await ensureAgent(userId);
-  const conversation = await requireConversation(id);
+  // The two lookups this path genuinely needs, run together rather than one
+  // after the other. `requireConversation` loads contact, queue, agent and
+  // tags for the inbox list; none of that is used here, so this reads only the
+  // handful of columns the send actually depends on.
+  const [agent, conversation] = await Promise.all([
+    ensureAgent(userId),
+    prisma.supportConversation.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        status: true,
+        channel: true,
+        externalId: true,
+        chatSessionId: true,
+        assignedAgentId: true,
+        firstResponseAt: true,
+      },
+    }),
+  ]);
+
+  if (!conversation) throw new ApiError(StatusCodes.NOT_FOUND, "Conversation not found.");
 
   const body = input.body.trim();
   if (!body && !input.attachments?.length) {
@@ -819,7 +917,9 @@ export const sendReply = async (userId: string, id: string, input: ReplyInput) =
             content: body,
             data: {
               kind: "agent",
-              agentName: (await agentName(agent.id)) ?? "Support",
+              // Already loaded with the agent — looking the name up again here
+              // was a round trip on the critical path of every single reply.
+              agentName: agent.user.name ?? "Support",
             } as Prisma.InputJsonValue,
           },
         });
@@ -837,47 +937,62 @@ export const sendReply = async (userId: string, id: string, input: ReplyInput) =
 
   const now = new Date();
 
-  const message = await prisma.supportMessage.create({
-    data: {
-      conversationId: id,
-      author: SupportMessageAuthor.AGENT,
-      agentId: agent.id,
-      body,
-      attachments: input.attachments?.length
-        ? (input.attachments as unknown as Prisma.InputJsonValue)
-        : undefined,
-      isInternalNote: Boolean(input.isInternalNote),
-      externalId,
-      deliveredAt: input.isInternalNote || deliveryError ? null : now,
-      deliveryError,
-    },
-    include: messageInclude,
+  // Two independent writes, issued together. No relation include on the
+  // message: the author is the agent making this very request, so their name
+  // and avatar are already in hand and joining them back costs another trip.
+  const [message] = await Promise.all([
+    prisma.supportMessage.create({
+      data: {
+        conversationId: id,
+        author: SupportMessageAuthor.AGENT,
+        agentId: agent.id,
+        body,
+        attachments: input.attachments?.length
+          ? (input.attachments as unknown as Prisma.InputJsonValue)
+          : undefined,
+        isInternalNote: Boolean(input.isInternalNote),
+        externalId,
+        deliveredAt: input.isInternalNote || deliveryError ? null : now,
+        deliveryError,
+      },
+    }),
+    prisma.supportConversation.update({
+      where: { id },
+      data: {
+        // An internal note is not something the customer said or saw, so it must
+        // not become the preview or reset the unread badge.
+        ...(input.isInternalNote
+          ? {}
+          : {
+              lastMessageAt: now,
+              lastMessagePreview: preview(body, input.attachments?.length ?? 0),
+              unreadForAgent: 0,
+              ...(conversation.firstResponseAt ? {} : { firstResponseAt: now }),
+            }),
+      },
+    }),
+  ]);
+
+  const shaped = shapeMessage({
+    ...message,
+    agent: { id: agent.id, user: { name: agent.user.name, avatar: agent.user.avatar } },
   });
 
-  await prisma.supportConversation.update({
-    where: { id },
-    data: {
-      // An internal note is not something the customer said or saw, so it must
-      // not become the preview or reset the unread badge.
-      ...(input.isInternalNote
-        ? {}
-        : {
-            lastMessageAt: now,
-            lastMessagePreview: preview(body, input.attachments?.length ?? 0),
-            unreadForAgent: 0,
-            ...(conversation.firstResponseAt ? {} : { firstResponseAt: now }),
-          }),
-    },
-  });
+  broadcastMessage(conversation, shaped);
 
-  broadcastMessage(conversation, shapeMessage(message));
-  await broadcastConversation(id);
+  // Fanned out after the reply is already on its way back. Subscribers need the
+  // conversation re-read with every relation the inbox list renders, and making
+  // the agent who sent the message wait for other people's screens to update is
+  // the wrong trade.
+  void broadcastConversation(id).catch((error) =>
+    console.error("[support] failed to broadcast conversation", id, error),
+  );
 
   if (deliveryError) {
     throw new ApiError(StatusCodes.BAD_GATEWAY, deliveryError);
   }
 
-  return shapeMessage(message);
+  return shaped;
 };
 
 /** Drives the "…" bubble on the customer's side. Cosmetic and best-effort. */

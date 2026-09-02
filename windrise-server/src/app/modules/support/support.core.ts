@@ -223,9 +223,25 @@ export const messageInclude = {
   agent: { include: { user: { select: { id: true, name: true, avatar: true } } } },
 } satisfies Prisma.SupportMessageInclude;
 
-type MessageWithRelations = Prisma.SupportMessageGetPayload<{ include: typeof messageInclude }>;
+/**
+ * Structural rather than tied to a Prisma payload, so a caller that already
+ * knows who the author is can shape a row without paying for a join. Loading
+ * the agent relation back is a whole extra round trip to the database, and on
+ * the reply path that is the very agent making the request.
+ */
+type MessageForShape = {
+  id: string;
+  author: SupportMessageAuthor;
+  body: string;
+  attachments: Prisma.JsonValue;
+  isInternalNote: boolean;
+  deliveredAt: Date | null;
+  deliveryError: string | null;
+  createdAt: Date;
+  agent: { id: string; user: { name: string | null; avatar: string | null } } | null;
+};
 
-export const shapeMessage = (row: MessageWithRelations) => ({
+export const shapeMessage = (row: MessageForShape) => ({
   id: row.id,
   author: row.author,
   body: row.body,
