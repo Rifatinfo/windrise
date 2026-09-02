@@ -42,6 +42,9 @@ model Order {
 
   return OrderReturn?
 
+  /// Reviews written off the back of this order.
+  reviews ProductReview[]
+
   /// Audit trail of every status transition, read by the customer tracking page.
   statusEvents OrderStatusEvent[]
 

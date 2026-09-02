@@ -12,6 +12,10 @@ import { useCart } from "@/contexts/CartContext";
 import { trackEvent } from "@/lib/eventTracking";
 import { ProductDescriptionRenderer } from "@/components/shared/ProductDescriptionRenderer";
 import ProductCard from "@/components/shared/ProductCard/ProductCard";
+import { ReviewSummaryPanel } from "./Reviews/ReviewSummary";
+import { ReviewForm } from "./Reviews/ReviewForm";
+import { ReviewList } from "./Reviews/ReviewList";
+import { useProductReviews } from "./Reviews/useProductReviews";
 import {
   Select,
   SelectContent,
@@ -54,6 +58,7 @@ const ProductDetails = ({
   const [modalOpen, setModalOpen] = useState(false);
   const [addedProduct, setAddedProduct] = useState<AddedProduct | null>(null);
   const { addItem } = useCart();
+  const reviews = useProductReviews(product.id);
 
   const images = useMemo(() => {
     if (product.images?.length) return product.images;
@@ -357,12 +362,7 @@ const ProductDetails = ({
                     {shipping}
                   </p>
                 )}
-                {tab === "Reviews" && (
-                  <p className="text-[12px] font-light leading-relaxed text-ink lg:text-[15px]">
-                    Reviews will appear here once customers share their
-                    experience.
-                  </p>
-                )}
+                {tab === "Reviews" && <ReviewSummaryPanel summary={reviews.summary} />}
                 {tab === "Description" && (
                   <button
                     type="button"
@@ -379,6 +379,44 @@ const ProductDetails = ({
               </div>
             </div>
           </div>
+
+          {/*
+            Form and list side by side once there is room, stacked below that.
+            The form leads on a phone because someone who scrolled this far
+            usually came to write, not to read — and the list is long.
+          */}
+          <section
+            className="mt-10 border-t border-[#efefef] pt-8 lg:mt-14 lg:pt-10"
+            aria-labelledby="reviews-heading"
+          >
+            <h2 id="reviews-heading" className="sr-only">
+              Customer reviews
+            </h2>
+
+            <div className="grid gap-9 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-14 xl:gap-20">
+              <ReviewForm productId={product.id} onPosted={reviews.refresh} />
+
+              {reviews.loading ? (
+                <div className="space-y-4">
+                  <div className="h-4 w-28 animate-pulse rounded bg-[#eee]" />
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="space-y-2">
+                      <div className="h-3 w-1/3 animate-pulse rounded bg-[#f1f1f1]" />
+                      <div className="h-3 w-full animate-pulse rounded bg-[#f5f5f5]" />
+                      <div className="h-3 w-4/5 animate-pulse rounded bg-[#f5f5f5]" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <ReviewList
+                  reviews={reviews.reviews}
+                  total={reviews.total}
+                  loadingMore={reviews.loadingMore}
+                  onLoadMore={reviews.loadMore}
+                />
+              )}
+            </div>
+          </section>
 
           {relatedProducts.length > 0 && (
             <section className="mt-12 lg:mt-16" aria-labelledby="related-heading">
