@@ -67,6 +67,28 @@ export function SupportInbox() {
     setQueues(nextQueues);
   }, []);
 
+  /**
+   * Coalesces sidebar refreshes.
+   *
+   * One reply raises several events — the message, then the conversation — and
+   * each of them wants the counters redrawn. Firing three summary requests per
+   * event turned a busy queue into a stampede for numbers that had not changed
+   * between them. A short trailing window collapses a burst into one refresh.
+   */
+  const sidebarTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const scheduleSidebarRefresh = useCallback(() => {
+    if (sidebarTimer.current) clearTimeout(sidebarTimer.current);
+    sidebarTimer.current = setTimeout(() => {
+      sidebarTimer.current = null;
+      void refreshSidebars().catch(() => null);
+    }, 600);
+  }, [refreshSidebars]);
+
+  useEffect(() => () => {
+    if (sidebarTimer.current) clearTimeout(sidebarTimer.current);
+  }, []);
+
   const refreshList = useCallback(async (current: ListFilters) => {
     setListLoading(true);
     try {
@@ -184,7 +206,7 @@ export function SupportInbox() {
     const onConversation = (event: MessageEvent) => {
       const { conversation } = JSON.parse(event.data) as { conversation: Conversation };
       patchConversation(conversation);
-      void refreshSidebars();
+      scheduleSidebarRefresh();
     };
 
     source.addEventListener("conversation.updated", onConversation);
@@ -201,7 +223,7 @@ export function SupportInbox() {
           ? [conversation, ...current].slice(0, filters.limit ?? 20)
           : current,
       );
-      void refreshSidebars();
+      scheduleSidebarRefresh();
     });
 
     source.addEventListener("message.created", (event) => {
@@ -211,7 +233,7 @@ export function SupportInbox() {
       };
 
       if (conversationId !== activeIdRef.current) {
-        void refreshSidebars();
+        scheduleSidebarRefresh();
         return;
       }
 
@@ -244,7 +266,7 @@ export function SupportInbox() {
       source.close();
       if (typingTimer.current) clearTimeout(typingTimer.current);
     };
-  }, [fatal, refreshSidebars, appendMessage, filters.page, filters.limit]);
+  }, [fatal, scheduleSidebarRefresh, appendMessage, filters.page, filters.limit]);
 
   // Keeps the agent's presence from going stale while the tab is open.
   useEffect(() => {
@@ -416,8 +438,15 @@ export function SupportInbox() {
                 // Shown immediately; if the stream already delivered it, the
                 // helper leaves the transcript alone.
                 appendMessage(activeId, message);
-                setDetail(await api.getConversation(activeId));
-                await refreshSidebars();
+
+                // Nothing else is awaited. The composer stays disabled until
+                // this resolves, and the two calls that used to follow —
+                // re-reading the whole conversation and all three sidebar
+                // summaries — are work the agent should never wait on: the
+                // server broadcasts the same conversation update over the live
+                // stream, and its handler already refreshes the sidebars.
+                // Kept as a background safety net for a dropped stream.
+                scheduleSidebarRefresh();
               }}
             />
           </div>
