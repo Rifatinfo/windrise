@@ -11,6 +11,7 @@ import { AddToCartModal, AddedProduct } from "@/components/modules/addToCart/Add
 import { useCart } from "@/contexts/CartContext";
 import { trackEvent } from "@/lib/eventTracking";
 import { ProductDescriptionRenderer } from "@/components/shared/ProductDescriptionRenderer";
+import ProductCard from "@/components/shared/ProductCard/ProductCard";
 import {
   Select,
   SelectContent,
@@ -23,7 +24,16 @@ type ProductDetailsProps = {
   product: Product;
   category?: string;
   subCategory?: string;
+  /**
+   * Other products from the same sub-category, already filtered of this one.
+   * Fetched on the server so the row arrives with the page rather than
+   * appearing a moment later.
+   */
+  relatedProducts?: Product[];
 };
+
+/** Sits under the page, edge to edge. */
+const BOTTOM_BANNER = "/assets/product-details-page-bootom-cover.png";
 
 const TABS = ["Description", "Fit & Sizing", "Shipping", "Reviews"] as const;
 type Tab = (typeof TABS)[number];
@@ -33,6 +43,7 @@ const ProductDetails = ({
   product,
   category,
   subCategory,
+  relatedProducts = [],
 }: ProductDetailsProps) => {
   const [size, setSize] = useState("");
   const [quantity, setQuantity] = useState(1);
@@ -369,18 +380,50 @@ const ProductDetails = ({
             </div>
           </div>
 
-          <section className="mt-12 lg:mt-16" aria-labelledby="related-heading">
-            <h2
-              id="related-heading"
-              className="text-[13px] font-medium text-ink sm:text-[14px]"
-            >
-              You might also like
-            </h2>
-            <p className="mt-4 text-[12px] font-light text-muted">
-              Explore more products from this collection.
-            </p>
-          </section>
+          {relatedProducts.length > 0 && (
+            <section className="mt-12 lg:mt-16" aria-labelledby="related-heading">
+              <h2
+                id="related-heading"
+                className="text-[13px] font-medium text-ink sm:text-[14px]"
+              >
+                You might also like
+              </h2>
+
+              {/*
+                Two columns on a phone, four on a laptop, five on a wide screen.
+                The three-column step is skipped deliberately: with five items
+                it would leave a single card stranded on its own row, and the
+                fifth is hidden below the five-wide breakpoint for the same
+                reason — every layout ends on a full row.
+              */}
+              <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-7 sm:gap-x-4 sm:gap-y-8 lg:grid-cols-4 lg:gap-4 lg:gap-y-10 xl:grid-cols-5 [&>*:nth-child(5)]:hidden xl:[&>*:nth-child(5)]:block">
+                {/*
+                  No category override: a suggestion can come from a different
+                  part of the catalogue than the product being viewed, so each
+                  card builds its own /{category}/{subCategory}/{slug} from the
+                  names the API returns with it. Passing this page's category
+                  would send those cards to a URL the product does not live at.
+                */}
+                {relatedProducts.map((related) => (
+                  <ProductCard key={related.id} product={related} />
+                ))}
+              </div>
+            </section>
+          )}
         </main>
+
+        {/*
+          Outside <main> so it runs edge to edge — the page's own horizontal
+          padding would otherwise inset it and break the full-bleed look.
+        */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={BOTTOM_BANNER}
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          className="h-[190px] w-full object-cover sm:h-[280px] lg:h-auto"
+        />
         <AnimatePresence>
           {sizeGuideOpen && (
             <SizeGuideModal
