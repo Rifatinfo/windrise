@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 
 import { PostArticle } from "@/components/modules/blog/public/PostArticle";
 import { PostSidebar } from "@/components/modules/blog/public/PostSidebar";
+import { CommentsSection } from "@/components/modules/blog/public/Comments/CommentsSection";
+import { getUserInfo } from "@/components/modules/auth/getUserInfo";
 import { getActiveAds } from "@/services/ads/public";
 import { getPublicPost, getPublicPosts } from "@/services/blog/public";
 
@@ -39,7 +41,9 @@ export default async function StoryPage({ params }: PageProps) {
   // leaking the difference between "not published" and "does not exist".
   if (!post) notFound();
 
-  const [popular, towerAds, squareAds, mobileAds] = await Promise.all([
+  const [viewer, popular, towerAds, squareAds, mobileAds] = await Promise.all([
+    // Null for a signed-out reader; the comment form then asks for a name.
+    getUserInfo().catch(() => null),
     getPublicPosts({ limit: 4, sort: "popular", excludeSlug: slug }),
     getActiveAds("sidebar-tower"),
     getActiveAds("sidebar-square"),
@@ -79,6 +83,25 @@ export default async function StoryPage({ params }: PageProps) {
       <div className="mx-auto w-full max-w-[1188px] px-5 md:px-8">
         <hr className="border-[#E3E0D9]" />
       </div>
+
+      {/*
+        The viewer is resolved here rather than in the browser: this page is
+        already a server component with the session cookie in hand, so a
+        signed-in reader's name and avatar are in the first paint instead of
+        appearing a moment later.
+      */}
+      <CommentsSection
+        slug={slug}
+        viewer={
+          viewer
+            ? {
+                name: viewer.name ?? "Member",
+                email: viewer.email ?? null,
+                avatar: viewer.avatar ?? null,
+              }
+            : null
+        }
+      />
     </main>
   );
 }
