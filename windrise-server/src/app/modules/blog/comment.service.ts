@@ -1,9 +1,9 @@
 /**
  * Blog comments.
  *
- * Open to everyone — a reader should not need an account to join in. A signed-in
- * reader is recognised from their token, so their name and avatar come from the
- * account instead of a form; a guest supplies both.
+ * Reading is open to everyone; writing requires an account. The commenter is
+ * identified from their token, so the name and avatar shown come from the
+ * account rather than anything the browser sent.
  */
 
 import { BlogStatus, BlogVisibility, Prisma } from "@prisma/client";
@@ -44,16 +44,14 @@ type CommentRow = Prisma.BlogCommentGetPayload<{ include: typeof commentInclude 
 /**
  * What a reader is allowed to see about a commenter.
  *
- * The email is collected but never leaves the server — the form promises it
- * will not be published, and that promise is kept here rather than in the UI.
- * A signed-in commenter's name and avatar are read from the account, so a later
- * profile change is reflected on old comments.
+ * The email is stored but never leaves the server. Name and avatar are read
+ * from the account, so a later profile change is reflected on old comments.
  */
 const shapeComment = (row: CommentRow) => ({
   id: row.id,
   name: row.user?.name ?? row.name,
   avatar: row.user?.avatar ?? null,
-  /** Marks comments left by a signed-in reader, for a subtle badge if wanted. */
+  /** Always true now that commenting requires an account; kept for older rows. */
   isMember: Boolean(row.userId),
   body: row.body,
   createdAt: row.createdAt,
@@ -105,8 +103,6 @@ export type CreateCommentInput = {
   slug: string;
   body: string;
   parentId?: string | null;
-  name?: string;
-  email?: string;
 };
 
 export type CommentAuthor = { id: string; email?: string } | undefined;
@@ -123,30 +119,27 @@ export const createComment = async (
     throw new ApiError(StatusCodes.BAD_REQUEST, "That comment is too long.");
   }
 
-  let name: string;
-  let email: string;
-
-  if (author?.id) {
-    // Signed in: identity comes from the account, not the request body, so a
-    // reader cannot post under someone else's name while logged in.
-    const user = await prisma.user.findUnique({
-      where: { id: author.id },
-      select: { name: true, email: true },
-    });
-
-    if (!user) throw new ApiError(StatusCodes.UNAUTHORIZED, "Your session has expired.");
-
-    name = user.name?.trim() || "Member";
-    email = user.email ?? author.email ?? "";
-  } else {
-    name = (input.name ?? "").trim();
-    email = (input.email ?? "").trim();
-
-    if (!name) throw new ApiError(StatusCodes.BAD_REQUEST, "Your name is required.");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, "Enter a valid email address.");
-    }
+  /*
+    Commenting requires an account. The route already enforces that, but the
+    check is repeated here rather than assumed: this function is the thing that
+    writes, and a guest branch left in place would be a second way in the day
+    someone calls it from elsewhere.
+  */
+  if (!author?.id) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, "Please sign in to comment.");
   }
+
+  const user = await prisma.user.findUnique({
+    where: { id: author.id },
+    select: { name: true, email: true },
+  });
+
+  if (!user) throw new ApiError(StatusCodes.UNAUTHORIZED, "Your session has expired.");
+
+  // Identity comes from the account, never the request body, so nobody can
+  // post under another name while signed in.
+  const name = user.name?.trim() || "Member";
+  const email = user.email ?? author.email ?? "";
 
   let parentId: string | null = null;
 
@@ -170,7 +163,7 @@ export const createComment = async (
     data: {
       postId: post.id,
       parentId,
-      userId: author?.id ?? null,
+      userId: author.id,
       name,
       email,
       body,

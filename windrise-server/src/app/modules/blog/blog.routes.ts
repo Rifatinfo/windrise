@@ -1,4 +1,3 @@
-import optionalAuth from "../../middlewares/optionalAuth";
 import { commentRateLimiter } from "../../middlewares/rateLimiter";
 import { CommentController } from "./comment.controller";
 import { NextFunction, Request, Response, Router } from "express";
@@ -32,13 +31,13 @@ const canRead = auth(UserRole.ADMIN, UserRole.MEDIA_MANAGER, UserRole.SHOP_MANAG
 router.get("/public/posts", BlogController.listPublicPosts);
 router.get("/public/posts/:slug", BlogController.getPublicPost);
 
-// Comments are public: reading needs nothing, writing recognises a signed-in
-// reader through optionalAuth but does not require one.
+// Reading is public; writing requires an account. auth() with no roles means
+// "any signed-in user" — a customer comments the same as anyone else.
 router.get("/public/posts/:slug/comments", CommentController.listComments);
 router.post(
   "/public/posts/:slug/comments",
   commentRateLimiter,
-  optionalAuth,
+  auth(),
   CommentController.createComment,
 );
 

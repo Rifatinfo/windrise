@@ -17,10 +17,6 @@ const listQuerySchema = z.object({
 const createSchema = z.object({
   body: z.string().trim().min(1, "Write something first.").max(2000),
   parentId: z.string().min(1).nullable().optional(),
-  // Ignored when the reader is signed in — the service reads identity from the
-  // account in that case.
-  name: z.string().trim().max(80).optional(),
-  email: z.string().trim().max(160).optional(),
 });
 
 const listComments = catchAsync(async (req: Request, res: Response) => {

@@ -68,7 +68,6 @@ export function RhythmSection() {
             title="Essentials in motion — model walking in a white shirt and denim"
             // Fills the copy column's inset width on phones rather than being
             // capped narrower than the text beside it.
-            className="h-[380px] w-full max-w-none md:h-[623px] md:max-w-[438px]"
           />
         </div>
       </div>
