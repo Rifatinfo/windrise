@@ -1,5 +1,5 @@
-'use client';
-import React, { useEffect, useState, Children } from 'react'
+"use client";
+import React, { useEffect, useState, Children } from "react";
 import type { Variants } from "framer-motion";
 import {
   ChevronLeftIcon,
@@ -9,53 +9,54 @@ import {
   ShoppingBagIcon,
   UserRoundIcon,
   LucideIcon,
-} from 'lucide-react'
-import { AnimatePresence, motion } from 'framer-motion'
-import { AccordionMenu } from './AccordionMenu'
-import { MENU_DURATION, MENU_EASE } from './MenuToggle'
+  ArrowRight,
+} from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { AccordionMenu } from "./AccordionMenu";
+import { MENU_DURATION, MENU_EASE } from "./MenuToggle";
 import {
   getNavigationCategory,
   navigationData,
   NavigationCategory,
   NavigationCategoryId,
-} from './Navigationdataset'
+} from "./Navigationdataset";
+import Image from "next/image";
 
 type MobileDrawerProps = {
-  isOpen: boolean
-  onClose: () => void
-}
-type DrawerLevel = 1 | 2
-type TransitionDirection = 1 | -1
+  isOpen: boolean;
+  onClose: () => void;
+};
+type DrawerLevel = 1 | 2;
+type TransitionDirection = 1 | -1;
 type AccountLink = {
-  label: string
-  icon: LucideIcon
-}
+  label: string;
+  icon: LucideIcon;
+};
 const accountLinks: readonly AccountLink[] = [
   {
-    label: 'My Account',
+    label: "My Account",
     icon: UserRoundIcon,
   },
   {
-    label: 'Track Order',
+    label: "Track Order",
     icon: PackageIcon,
   },
   {
-    label: 'Wishlist',
+    label: "Wishlist",
     icon: HeartIcon,
   },
   {
-    label: 'Shopping Cart',
+    label: "Shopping Cart",
     icon: ShoppingBagIcon,
   },
   {
-    label: 'Sign In',
+    label: "Sign In",
     icon: UserRoundIcon,
   },
-]
+];
 
-
-const panelVariants : Variants = {
-  enter: (direction : TransitionDirection) => ({
+const panelVariants: Variants = {
+  enter: (direction: TransitionDirection) => ({
     x: direction === 1 ? "100%" : "-100%",
   }),
 
@@ -67,47 +68,47 @@ const panelVariants : Variants = {
     },
   },
 
-  exit: (direction : TransitionDirection) => ({
+  exit: (direction: TransitionDirection) => ({
     x: direction === 1 ? "-100%" : "100%",
     transition: {
       duration: 0.42,
       ease: [0.22, 1, 0.36, 1],
     },
   }),
-}
+};
 export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
-  const [level, setLevel] = useState<DrawerLevel>(1)
+  const [level, setLevel] = useState<DrawerLevel>(1);
   const [selectedCategoryId, setSelectedCategoryId] =
-    useState<NavigationCategoryId>('men')
-  const [openGroup, setOpenGroup] = useState<string | null>(null)
-  const [direction, setDirection] = useState<TransitionDirection>(1)
+    useState<NavigationCategoryId>("men");
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const [direction, setDirection] = useState<TransitionDirection>(1);
   useEffect(() => {
     if (!isOpen) {
-      setLevel(1)
-      setSelectedCategoryId('men')
-      setOpenGroup(null)
-      setDirection(1)
+      setLevel(1);
+      setSelectedCategoryId("men");
+      setOpenGroup(null);
+      setDirection(1);
     }
-  }, [isOpen])
+  }, [isOpen]);
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', closeOnEscape)
-    return () => window.removeEventListener('keydown', closeOnEscape)
-  }, [onClose])
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [onClose]);
   const selectCategory = (id: NavigationCategoryId) => {
-    setDirection(1)
-    setSelectedCategoryId(id)
-    setOpenGroup(null)
-    setLevel(2)
-  }
+    setDirection(1);
+    setSelectedCategoryId(id);
+    setOpenGroup(null);
+    setLevel(2);
+  };
   const returnToDepartments = () => {
-    setDirection(-1)
-    setOpenGroup(null)
-    setLevel(1)
-  }
-  const selectedCategory = getNavigationCategory(selectedCategoryId)
+    setDirection(-1);
+    setOpenGroup(null);
+    setLevel(1);
+  };
+  const selectedCategory = getNavigationCategory(selectedCategoryId);
   return (
     <AnimatePresence>
       {isOpen && (
@@ -141,13 +142,13 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
             // Drops in from above and retracts upward, sharing the toggle's
             // timing so the bars and the panel read as one movement.
             initial={{
-              y: '-100%',
+              y: "-100%",
             }}
             animate={{
               y: 0,
             }}
             exit={{
-              y: '-100%',
+              y: "-100%",
             }}
             transition={{
               duration: MENU_DURATION,
@@ -160,7 +161,7 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
             <div className="h-16 shrink-0" aria-hidden="true" />
 
             <div className="relative min-h-0 flex-1 overflow-hidden bg-[#080808]">
-              <AnimatePresence initial={false} custom={direction} >
+              <AnimatePresence initial={false} custom={direction}>
                 {level === 1 ? (
                   <DrawerPanel key="departments" direction={direction}>
                     <DrawerLevelOne onSelectCategory={selectCategory} />
@@ -188,14 +189,14 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
         </>
       )}
     </AnimatePresence>
-  )
+  );
 }
 function DrawerPanel({
   children,
   direction,
 }: {
-  children: React.ReactNode
-  direction: TransitionDirection
+  children: React.ReactNode;
+  direction: TransitionDirection;
 }) {
   return (
     <motion.div
@@ -208,12 +209,12 @@ function DrawerPanel({
     >
       {children}
     </motion.div>
-  )
+  );
 }
 function DrawerLevelOne({
   onSelectCategory,
 }: {
-  onSelectCategory: (id: NavigationCategoryId) => void
+  onSelectCategory: (id: NavigationCategoryId) => void;
 }) {
   return (
     <>
@@ -229,7 +230,6 @@ function DrawerLevelOne({
             },
           },
         }}
-        
       >
         {navigationData.map((category, index) => (
           <button
@@ -261,13 +261,13 @@ function DrawerLevelOne({
             href="#account"
             className="flex items-center gap-2.5 text-[15px] text-white transition hover:text-white font-dm-sans"
           >
-            <Icon  size={14} strokeWidth={2} />
+            <Icon size={14} strokeWidth={2} />
             {label}
           </a>
         ))}
       </div>
     </>
-  )
+  );
 }
 function DrawerCategory({
   category,
@@ -275,10 +275,10 @@ function DrawerCategory({
   onBack,
   onGroupToggle,
 }: {
-  category: NavigationCategory
-  openGroup: string | null
-  onBack: () => void
-  onGroupToggle: (groupName: string) => void
+  category: NavigationCategory;
+  openGroup: string | null;
+  onBack: () => void;
+  onGroupToggle: (groupName: string) => void;
 }) {
   return (
     <>
@@ -293,7 +293,7 @@ function DrawerCategory({
       <div className="-mx-6 border-b border-[#272727]/70 mb-2 " />
       <nav
         aria-label={`${category.label} subcategories`}
-        // className="border-t border-[#707070]/40 font-dm-sans"   // top 
+        // className="border-t border-[#707070]/40 font-dm-sans"   // top
       >
         {category.groups.map((group, index) => (
           <AccordionMenu
@@ -302,7 +302,7 @@ function DrawerCategory({
             items={group.items}
             isOpen={openGroup === group.name}
             onToggle={() => onGroupToggle(group.name)}
-             isLast={index === category.groups.length - 1}
+            isLast={index === category.groups.length - 1}
           />
         ))}
       </nav>
@@ -310,7 +310,7 @@ function DrawerCategory({
       <FeaturedCollections items={category.collections} />
       <PromoImage category={category} />
     </>
-  )
+  );
 }
 function FeaturedCollections({ items }: { items: readonly string[] }) {
   return (
@@ -330,28 +330,45 @@ function FeaturedCollections({ items }: { items: readonly string[] }) {
         ))}
       </div>
     </section>
-  )
+  );
 }
 function PromoImage({ category }: { category: NavigationCategory }) {
   return (
     <a
       href="#collection"
       aria-label={category.promo.cta}
-      className="mt-8 block overflow-hidden rounded-md font-dm-sans"
+      className="relative block justify-self-end overflow-hidden  group"
     >
-      <img
+      <Image
+        height={174}
+        width={315}
         src={category.promo.image}
         alt={category.promo.imageAlt}
-        className="aspect-[4/5] w-full object-cover"
+        className="aspect-[4/5] w-[315px] h-[174px] object-cover transition duration-500 group-hover:scale-[1.03]"
       />
-      
+
+      {/* Gradient overlay: transparent at top -> black at bottom */}
+      {/* <div
+                className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-transparent"
+              /> */}
+      <div className="absolute inset-0  group-hover:bg-black/10  bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent transition-colors duration-500" />
+
+      {/* Text content */}
+      <div className="absolute inset-x-0 bottom-0 p-6 text-white font-dm-sans">
+        <span className="text-xs font-medium tracking-widest uppercase text-white/80">
+          {/* {category.promo.label /* "FEATURED" */} FEATURED
+        </span>
+        <h3 className="mt-1 text-2xl font-medium">
+          {/* {category.promo.title /* "Explore the Trend" */} Explore the Trend
+        </h3>
+        <span className="mt-2 inline-flex items-center gap-1 text-sm font-light underline-offset-4">
+          {/* {category.promo.cta /* "Explore" */}
+          Explore{" "}
+          <span>
+            <ArrowRight className="ml-2 w-4 h-4" />
+          </span>
+        </span>
+      </div>
     </a>
-  )
+  );
 }
-
-
-
-             
-
-
-
