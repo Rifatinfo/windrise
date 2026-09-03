@@ -334,24 +334,18 @@ function FeaturedCollections({ items }: { items: readonly string[] }) {
 }
 function PromoImage({ category }: { category: NavigationCategory }) {
   return (
-    <a
+  
+     <a
       href="#collection"
       aria-label={category.promo.cta}
-      className="relative block justify-self-end overflow-hidden  group"
+      className=" group relative mt-8 block w-full overflow-hidden font-dm-sans"
     >
-      <Image
-        height={174}
-        width={315}
+      <img
         src={category.promo.image}
         alt={category.promo.imageAlt}
-        className="aspect-[4/5] w-[315px] h-[174px] object-cover transition duration-500 group-hover:scale-[1.03]"
+        className="aspect-[4/5] w-full object-cover relative block justify-self-end overflow-hidden  group"
       />
-
-      {/* Gradient overlay: transparent at top -> black at bottom */}
-      {/* <div
-                className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-transparent"
-              /> */}
-      <div className="absolute inset-0  group-hover:bg-black/10  bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent transition-colors duration-500" />
+        <div className="absolute inset-0  group-hover:bg-black/10  bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent transition-colors duration-500" />
 
       {/* Text content */}
       <div className="absolute inset-x-0 bottom-0 p-6 text-white font-dm-sans">
@@ -369,6 +363,7 @@ function PromoImage({ category }: { category: NavigationCategory }) {
           </span>
         </span>
       </div>
+      
     </a>
   );
 }
