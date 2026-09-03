@@ -118,3 +118,20 @@ export const reviewRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+/**
+ * Comments are open to guests, so they are capped per IP — generous enough for
+ * a real conversation, tight enough that the endpoint cannot be used to flood a
+ * story.
+ */
+export const commentRateLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 15,
+  message: {
+    success: false,
+    statusCode: 429,
+    message: "You're commenting a bit fast. Please try again in a few minutes.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});

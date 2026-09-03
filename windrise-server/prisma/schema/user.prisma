@@ -17,6 +17,7 @@ model User {
   chatSessions       ChatSession[]
   supportAgent       SupportAgent?
   supportContacts    SupportContact[]
+  blogComments       BlogComment[]
 
   customer        Customer?
   shopManager     ShopManager?

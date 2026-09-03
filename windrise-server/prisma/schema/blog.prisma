@@ -41,6 +41,7 @@ model BlogPost {
   isFeatured    Boolean @default(false)
   allowComments Boolean @default(true)
   showAds       Boolean @default(true)
+  comments BlogComment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
