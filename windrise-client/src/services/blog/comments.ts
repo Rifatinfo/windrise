@@ -1,8 +1,8 @@
 /**
  * Blog comments.
  *
- * Reading is public. Writing sends the session cookie so a signed-in reader is
- * recognised server-side — their name comes from the account, not the form.
+ * Reading is public. Writing requires an account: the session cookie travels
+ * with the request and the commenter's name comes from it, never from the form.
  */
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
@@ -62,9 +62,10 @@ export async function getComments(
   };
 }
 
+/** Requires a signed-in reader; the cookie carries the session. */
 export const postComment = (
   slug: string,
-  payload: { body: string; parentId?: string | null; name?: string; email?: string },
+  payload: { body: string; parentId?: string | null },
 ) =>
   request<BlogComment>(`/${encodeURIComponent(slug)}/comments`, {
     method: "POST",

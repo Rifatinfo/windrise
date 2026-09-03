@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { Loader2Icon, XIcon } from "lucide-react";
 
 import { postComment } from "@/services/blog/comments";
@@ -12,13 +13,18 @@ export type CommentViewer = {
   avatar?: string | null;
 } | null;
 
-const FIELD_BASE =
-  "w-full rounded-[3px] border border-[#DAD7CD] bg-transparent px-3 text-[12px] text-[#1B1B1B] outline-none transition-colors placeholder:text-[#A5A296] focus:border-[#1B1B1B] lg:text-[13px]";
+const TEXTAREA =
+  "w-full rounded-[3px] border border-[#DAD7CD] bg-transparent px-3 py-2.5 text-[12px] leading-relaxed text-[#1B1B1B] outline-none transition-colors placeholder:text-[#A5A296] focus:border-[#1B1B1B] resize-none min-h-[92px] lg:min-h-[104px] lg:text-[13px]";
 
-const INPUT = `${FIELD_BASE} h-[38px] lg:h-[40px]`;
-// A textarea must not inherit the input's fixed height: same specificity means
-// the responsive one wins and the box collapses to a single line.
-const TEXTAREA = `${FIELD_BASE} min-h-[92px] resize-none py-2.5 leading-relaxed lg:min-h-[104px]`;
+/**
+ * Where an unfinished comment waits while the reader signs in.
+ *
+ * Sending someone to a login page throws away whatever they had typed, and they
+ * come back to an empty box with no idea it was ever there. Keyed per story so
+ * two open tabs cannot overwrite each other, and in sessionStorage so it does
+ * not outlive the visit.
+ */
+const draftKey = (slug: string) => `windrise.comment-draft.${slug}`;
 
 export function CommentForm({
   slug,
@@ -28,42 +34,73 @@ export function CommentForm({
   onPosted,
 }: {
   slug: string;
-  /** The signed-in reader, or null for a guest. */
+  /** The signed-in reader, or null. Commenting requires one. */
   viewer: CommentViewer;
   replyingTo: { id: string; name: string } | null;
   onCancelReply: () => void;
   onPosted: () => void;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [body, setBody] = useState("");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState("");
 
+  // Bring back whatever they were writing before they were sent to log in.
+  useEffect(() => {
+    if (!viewer) return;
+    try {
+      const saved = sessionStorage.getItem(draftKey(slug));
+      if (saved) {
+        setBody(saved);
+        sessionStorage.removeItem(draftKey(slug));
+      }
+    } catch {
+      /* private mode: the draft is simply lost, which is no worse than before */
+    }
+  }, [viewer, slug]);
+
+  /** Keeps the draft, then hands over to login with a route back to this story. */
+  const goToLogin = () => {
+    try {
+      if (body.trim()) sessionStorage.setItem(draftKey(slug), body);
+    } catch {
+      /* nothing to keep it in */
+    }
+    router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+  };
+
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (busy) return;
+
+    // A guest gets sent to sign in rather than a rejection they can do nothing
+    // about — the comment they typed travels with them.
+    if (!viewer) {
+      goToLogin();
+      return;
+    }
 
     setBusy(true);
     setError("");
     setDone("");
 
     try {
-      await postComment(slug, {
-        body,
-        parentId: replyingTo?.id ?? null,
-        // Ignored server-side when the reader is signed in — identity comes
-        // from the account there, so nobody can post under another name.
-        ...(viewer ? {} : { name, email }),
-      });
-
+      await postComment(slug, { body, parentId: replyingTo?.id ?? null });
       setBody("");
       setDone(replyingTo ? "Reply posted." : "Comment posted.");
       onCancelReply();
       onPosted();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't post that.");
+      const message = err instanceof Error ? err.message : "Couldn't post that.";
+      // A session can expire between the page loading and the click.
+      if (/sign in|unauthor|session/i.test(message)) {
+        goToLogin();
+        return;
+      }
+      setError(message);
     } finally {
       setBusy(false);
     }
@@ -75,7 +112,9 @@ export function CommentForm({
         Leave a Reply
       </h2>
       <p className="mt-1.5 text-[11px] leading-[17px] text-[#8B897E] lg:text-[11.5px]">
-        Your email address will not be published. Required fields are marked*
+        {viewer
+          ? "Your email address will not be published. Required fields are marked*"
+          : "You'll need to sign in to post — we'll bring you straight back here."}
       </p>
 
       {viewer && (
@@ -101,6 +140,8 @@ export function CommentForm({
         </p>
       )}
 
+      {/* The box stays open to a guest: they write first and sign in second,
+          which is a far better trade than being stopped at the door. */}
       <textarea
         value={body}
         onChange={(event) => setBody(event.target.value)}
@@ -110,30 +151,6 @@ export function CommentForm({
         maxLength={2000}
         className={`${TEXTAREA} mt-3.5`}
       />
-
-      {/* A signed-in reader is already identified, so the name and email fields
-          would only be a chance to contradict the account. */}
-      {!viewer && (
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <input
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Name*"
-            required
-            maxLength={80}
-            className={INPUT}
-          />
-          <input
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="Email*"
-            type="email"
-            required
-            maxLength={160}
-            className={INPUT}
-          />
-        </div>
-      )}
 
       {error && (
         <p role="alert" className="mt-3 text-[11.5px] leading-[17px] text-[#B4413F]">
@@ -152,7 +169,13 @@ export function CommentForm({
         className="mt-4 inline-flex h-[38px] w-full items-center justify-center gap-2 bg-[#101010] px-6 text-[10.5px] font-medium uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[168px] lg:h-[40px] lg:text-[11px]"
       >
         {busy && <Loader2Icon className="h-3.5 w-3.5 animate-spin" />}
-        {busy ? "Posting..." : replyingTo ? "Post Reply" : "Post Comment"}
+        {busy
+          ? "Posting..."
+          : !viewer
+            ? "Sign in to comment"
+            : replyingTo
+              ? "Post Reply"
+              : "Post Comment"}
       </button>
     </form>
   );

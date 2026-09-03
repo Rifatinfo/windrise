@@ -90,18 +90,28 @@ function TiltImage({
 export function StoriesSection() {
   return (
     <section
-      className="w-full bg-[linear-gradient(180deg,#FFFFFF_0%,#F2F4F0_95%,#FFFFFF_100%)]"
+      className="w-full border-2  bg-[linear-gradient(180deg,#FFFFFF_0%,#F2F4F0_95%,#FFFFFF_100%)]"
       aria-labelledby="stories-heading"
     >
-      <div className="mx-auto flex flex-col px-6 py-9 md:mt-16  lg:mt-16  md:flex-row md:items-center md:justify-between md:gap-10 lg:gap-20 md:py-6 lg:py-6 lg:px-19 md:px-19 lg:ml-50 md:ml-50">
-        <div className="w-full shrink-0 md:w-[36%] lg:w-[550px] lg:pr-[70px]">
+      {/*
+        Centred in a 7xl container. The previous `ml-50` cancelled the `mx-auto`
+        beside it — an auto margin cannot centre anything once the other side is
+        pinned — which is what pushed the block right and ran the second image
+        off the edge.
+      */}
+      <div className="mx-auto flex w-full max-w-7xl flex-col px-6 py-9 md:mt-16 md:flex-row md:items-center md:justify-between md:gap-10 md:px-8 md:py-6 lg:mt-16 lg:gap-16 lg:px-8 lg:py-6">
+        {/*
+          Was a fixed 550px. Together with the 424+416 images and the gap that
+          asked for ~1506px, so inside a 1280px container something had to give.
+          A share of the row instead, capped so the measure stays readable on a
+          very wide screen.
+        */}
+        <div className="w-full shrink-0 md:w-[36%] lg:w-[38%] lg:max-w-[430px] lg:pr-0">
           <h2
             id="stories-heading"
             className="w-full text-xl font-medium leading-[1.18] space-x-1.5 md:text-[35px] lg:text-[35px] font-dm-sans"
           >
-            Stories behind
-            
-            every <br/> stitch.
+            Stories behind every <br /> stitch.
           </h2>
 
           <p className="mt-6 md:mt-4 lg:mt-4 text-[14px]   text-[#616161] md:text-lg lg:text-lg font-dm-sans">
@@ -131,22 +141,32 @@ export function StoriesSection() {
           </a>
         </div>
 
-        <div className="mt-5  flex w-full min-w-0 items-start gap-2.5  sm:gap-4 md:mt-0 md:w-[64%] md:gap-4 lg:w-auto lg:flex-shrink-0 lg:gap-[36px]">
-          <TiltImage
-            width={424}
-            height={615}
-            src="/assets/Image-1.png"
-            alt="Two men wearing Windrise looks against a burgundy backdrop"
-            wrapperClassName="w-[48.6%] min-w-0 rounded-sm md:w-[424px] lg:w-[424px]"
-            className="h-auto w-full object-cover rounded-sm"
-          />
+        {/*
+          Takes the rest of the row rather than the old fixed 424px + 416px,
+          which could not fit a bounded container. The two keep their existing
+          proportions and stagger, so the composition is unchanged — it simply
+          scales with the space it is given.
+        */}
+        
+        <div className="mt-5 flex w-full min-w-0 items-start gap-2.5 sm:gap-4 md:mt-0 md:w-[64%] md:min-w-0 md:flex-1 md:gap-4 lg:gap-[36px]">
+          {/* Image 2 — now first */}
           <TiltImage
             width={416}
             height={408}
             src="/assets/Image-2.png"
             alt="Folded olive knitwear and blue denim on a leather chair"
-            wrapperClassName="mt-[28px] aspect-square w-[48%] min-w-0 rounded-sm md:mt-[46px] md:w-[51%] lg:mt-[80px] lg:w-[416px]"
-            className="h-full w-full object-cover rounded-sm"
+            wrapperClassName="mt-[28px] aspect-square w-[48%] min-w-0 rounded-sm md:mt-[46px] md:w-[49%] lg:mt-[80px]"
+            className="h-full w-full rounded-sm object-cover"
+          />
+
+          {/* Image 1 — now second */}
+          <TiltImage
+            width={424}
+            height={615}
+            src="/assets/Image-1.png"
+            alt="Two men wearing Windrise looks against a burgundy backdrop"
+            wrapperClassName="w-[48.6%] min-w-0 rounded-sm md:w-[50%]"
+            className="h-auto w-full rounded-sm object-cover"
           />
         </div>
       </div>
