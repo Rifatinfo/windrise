@@ -19,7 +19,7 @@ function ReviewItem({ review }: { review: Review }) {
         </div>
         <time
           dateTime={review.createdAt}
-          className="shrink-0 text-[10.5px] text-[#9a9a9a] lg:text-[11px]"
+          className="shrink-0 text-[10.5px] text-[#9a9a9a] lg:text-[14px]"
         >
           {reviewDate(review.createdAt)}
         </time>
@@ -67,12 +67,12 @@ export function ReviewList({
 }) {
   return (
     <div className="w-full">
-      <div className="flex items-baseline justify-between gap-3">
+      <div className="flex items-baseline justify-between  md:items-center md:justify-start gap-3 md:gap-10">
         <h3 className="text-[15px] font-medium text-[#1a1a1a] lg:text-[17px]">
           Review List
         </h3>
         {total > 0 && (
-          <p className="shrink-0 text-[10.5px] text-[#9a9a9a] lg:text-[11px]">
+          <p className="shrink-0 text-[10.5px] text-[#9a9a9a] lg:text-[14px]">
             Showing {reviews.length} of {total} result{total === 1 ? "" : "s"}
           </p>
         )}

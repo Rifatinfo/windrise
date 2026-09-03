@@ -109,13 +109,13 @@ export function ReviewForm({
 
   return (
     <form onSubmit={submit} className="w-full">
-      <h3 className="text-[15px] font-medium text-[#1a1a1a] lg:text-[17px]">
+      <h3 className="text-xl font-medium text-[#1a1a1a] lg:text-2xl">
         Write a Review
       </h3>
 
       <div className="mt-4 lg:mt-5">
-        <label className="block text-lg  lg:text-lg">
-          Add your rating<span className="text-[#c0342d]">*</span>
+        <label className="block text-[16px]  lg:text-lg">
+          Add your rating<span className="">*</span>
         </label>
         <Stars value={rating} size={24} onChange={setRating} className="mt-2" />
       </div>
