@@ -11,7 +11,7 @@ const DetailsContactSection = () => {
     >
       <div className="relative z-50">
         <div className="grid grid-cols-1 md:grid-cols-2">
-          <div className="relative h-[248px] mb-20  md:mb-20  bg-[linear-gradient(to_right,#F8F9F6_0%,#D7D5C9_100%)] md:h-[417px] mt-30  md:mt-20 ">
+          <div className="relative h-[248px] mb-20  md:mb-20  bg-[linear-gradient(to_right,#F8F9F6_0%,#D7D5C9_100%)] md:h-[417px] mt-30  md:mt-18">
             <img
               src={OUTFIT_IMAGE_URL}
               alt="Windrise outfit with shirt, denim, loafers, and shopping bag"
@@ -45,7 +45,7 @@ const DetailsContactSection = () => {
             </h1>
           </div>
 
-          <div className="relative h-[349px]   px-[15px] bg-[#FFFFFF] text-center lg:text-start  md:h-[417px]  md:px-0 md:pt-[45px] md:mt-20 ">
+          <div className="relative h-[349px]   px-[15px] bg-[#FFFFFF] text-center lg:text-start  md:h-[417px]  md:px-0 md:pt-[45px] md:mt-18">
             <div className="md:ml-[66px] ">
               <h2
                 id="details-heading"

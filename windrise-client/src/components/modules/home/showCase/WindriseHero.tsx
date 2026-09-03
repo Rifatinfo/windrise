@@ -6,7 +6,7 @@ export default function WindriseHero() {
   return (
     <section
       style={{
-    background: "linear-gradient(to top, #EAE4DF 63%, #FFFFFF 100%)",
+    background: "linear-gradient(to top, #F4F1E9 63%, #FFFFFF 100%)",
   }}
 
     >
@@ -16,15 +16,15 @@ export default function WindriseHero() {
         — so the row ran the full width of the screen with its contents shoved
         right, which squeezed the image to 188px on a tablet.
       */}
-      <div className="mx-auto flex w-full max-w-7xl flex-col px-6 pb-9 md:-mt-14 md:flex-row md:items-center md:justify-between md:gap-10 md:px-8 lg:-mt-14 lg:gap-12 lg:px-8 lg:pb-16">
+      <div className="mx-auto flex w-full max-w-7xl flex-col px-6 pb-9 md:flex-row md:items-center md:justify-between md:gap-12 md:px-8 md:py-14 lg:gap-12 lg:px-8 md:pb-28">
       {/* Image — leads the row from md up, as in the reference */}
       <div
         className="
           order-1 w-full
-          md:order-1 md:w-[58%] md:pt-0
+          md:order-1 md:min-w-0 md:flex-1 md:pt-0 
         "
       >
-        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[3px] md:rounded-[9px] lg:rounded-[9px] bg-[#DAD5CF] sm:aspect-[880/450] ">
+        <div className="relative aspect-[4/3] w-full overflow-hidden  bg-[#DAD5CF] sm:aspect-[880/450] ">
           <Image
             src="/assets/windrise-hero.png"
             alt="Windrise model wearing a striped shirt and jeans"
@@ -41,7 +41,7 @@ export default function WindriseHero() {
       </div>
 
       {/* Text content */}
-      <div className="order-2 max-w-full pt-6 md:order-2 md:w-[38%] md:pt-0 lg:max-w-[470px]">
+      <div className="order-2 max-w-full pt-6 md:order-2 md:w-[220px] md:flex-none md:pt-0 lg:w-[300px] xl:w-[400px]">
         <h1 className="mb-5 text-[22px] font-medium leading-[1.15] tracking-tight text-[#1C1B1A] sm:text-[32px] lg:text-4xl">
           Simple forms
           <br />
