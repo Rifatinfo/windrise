@@ -28,6 +28,7 @@ import {
   BadgeDollarSign,
   Receipt,
   HeadsetIcon,
+  MessageSquareIcon,
 } from "lucide-react";
 import { UserRole } from "@/types/role";
 import { PiInvoice } from "react-icons/pi";
@@ -148,6 +149,13 @@ export const NAV_MAIN: NavItem[] = [
     },
   ],
 },
+{
+    id: "comment",
+    label: "Comment Box",
+    icon: MessageSquareIcon,
+    roles: ["ADMIN"],
+    path: "/admin/comment-box",
+  },
   
 ];
 
