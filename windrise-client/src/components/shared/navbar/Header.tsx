@@ -159,7 +159,7 @@ export function Header() {
             />
           </div>
 
-          <div className="flex justify-end gap-0.5 md:-mr-2.5 lg:-mr-2.5">
+          <div className="flex justify-end  md:-mr-2.5 lg:-mr-2.5">
             <HeaderIconButton name="search" tone={iconTone} />
             <HeaderIconButton name="wishlist" tone={iconTone} />
             <Link href="/shoppingBag" className="relative inline-flex">

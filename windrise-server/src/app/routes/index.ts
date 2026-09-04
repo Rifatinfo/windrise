@@ -20,6 +20,7 @@ import { FinanceRoutes } from "../modules/finance/finance.routes";
 import { ChatbotRoutes } from "../modules/chatbot/chatbot.routes";
 import { SupportRoutes } from "../modules/support/support.routes";
 import { ReviewRoutes } from "../modules/review/review.routes";
+import { ModerationRoutes } from "../modules/moderation/moderation.routes";
 
 
 const router = express.Router();
@@ -60,6 +61,10 @@ const moduleRoutes = [
   {
     path: "/product-review",
     route: ReviewRoutes,
+  },
+  {
+    path: "/moderation",
+    route: ModerationRoutes,
   },
   {
     path: "/auth",

@@ -338,7 +338,7 @@ function PromoImage({ category }: { category: NavigationCategory }) {
      <a
       href="#collection"
       aria-label={category.promo.cta}
-      className=" group relative mt-8 block w-full overflow-hidden font-dm-sans"
+      className="group relative mt-8 block w-full shrink-0 overflow-hidden font-dm-sans"
     >
       <img
         src={category.promo.image}
