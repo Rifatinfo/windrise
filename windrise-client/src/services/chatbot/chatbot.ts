@@ -19,6 +19,11 @@ export type ChatCard =
   | { kind: "confirm-cancel"; requiresConfirmation: true; orderNo: string; total: number; items: string[] }
   | { kind: "order-placed"; orderNo: string | null; total: number | null; deliverTo: DeliverTo }
   | { kind: "order-cancelled"; orderNo: string | null; total: number | null }
+  /** A cancellation the server declined at commit — the order had shipped. */
+  | { kind: "cancel-refused"; orderNo: string | null; reason: string }
+  /** Windee filled the bag: the line is priced and validated by the server. */
+  | { kind: "cart-added"; item: CartLine }
+  | { kind: "wishlist-added"; product: WishlistProduct }
   | { kind: "handoff" }
   /** A reply typed by a person, not by Windee. */
   | { kind: "agent"; agentName: string }
@@ -35,6 +40,32 @@ export type OrderLine = {
   price: number;
   total: number;
   productImage: string | null;
+};
+
+/**
+ * A bag line exactly as `CartContext.addItem` expects it. Priced and
+ * stock-checked on the server; the widget only stores it.
+ */
+export type CartLine = {
+  productId: string;
+  name: string;
+  sku: string;
+  size?: string;
+  color?: string;
+  price: number;
+  image: string;
+  quantity: number;
+};
+
+/** Enough to draw a saved item and link to it; no stock or SKU needed. */
+export type WishlistProduct = {
+  productId: string;
+  name: string;
+  price: number;
+  slug: string;
+  category: string | null;
+  subCategory: string | null;
+  image: string | null;
 };
 
 export type ProductHit = {

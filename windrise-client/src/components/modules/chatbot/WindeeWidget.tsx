@@ -23,6 +23,8 @@ import {
 } from "@/services/chatbot/chatbot";
 import { ChatScreen } from "./ChatScreen";
 import { DetailsScreen, MenuScreen, WelcomeScreen } from "./WindeeScreens";
+import { applyCartCard, applyWishlistCard } from "./windeeActions";
+import { useCart } from "@/contexts/CartContext";
 
 /**
  * Which of the nine states is on screen.
@@ -86,6 +88,30 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
   const [busy, setBusy] = useState(false);
   const [thinking, setThinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { addItem } = useCart();
+
+  /**
+   * Carries out the bag and wishlist cards Windee sent.
+   *
+   * Both stores live in this browser, so the card is the instruction and this
+   * is what performs it. Every path that fills `messages` runs through here —
+   * the reply to a send, the transcript loaded on open, the live stream's
+   * refetch — and each card is applied against its message id exactly once, so
+   * seeing the same card again cannot add the item twice.
+   */
+  useEffect(() => {
+    for (const message of messages) {
+      const card = message.card;
+      if (!card) continue;
+
+      if (card.kind === "cart-added") {
+        applyCartCard(message.id, card.item, addItem);
+      } else if (card.kind === "wishlist-added") {
+        applyWishlistCard(message.id, card.product);
+      }
+    }
+  }, [messages, addItem]);
 
   /**
    * Picks up an existing conversation when the panel opens.
@@ -280,15 +306,19 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
   };
 
   /**
-   * Live updates while a person is involved.
+   * Live updates from the human side.
    *
    * Without this an agent's reply would sit unseen until the customer typed
-   * something — and while queued the composer is disabled, so they cannot. The
-   * stream is only opened when it can carry something: the bot path already
-   * answers in the same request.
+   * something — and while queued the composer is disabled, so they cannot.
+   *
+   * It runs for the whole time the panel is open, not just once handed off.
+   * An agent can now take a bot conversation over without being asked, and a
+   * widget that only listened after a handoff would never hear it happen: the
+   * customer would go on talking to a Windee that had already stopped
+   * answering.
    */
   useEffect(() => {
-    if (!open || !sessionId || !visitorId || !handedOff) return;
+    if (!open || !sessionId || !visitorId) return;
 
     const source = new EventSource(chatStreamUrl(visitorId, sessionId));
 
@@ -327,7 +357,7 @@ export function WindeeWidget({ open, onClose }: { open: boolean; onClose: () => 
     source.addEventListener("conversation.closed", refresh);
 
     return () => source.close();
-  }, [open, sessionId, visitorId, handedOff]);
+  }, [open, sessionId, visitorId]);
 
   const header = (
     // The menu screen's artwork fills the panel, header included, so the bar

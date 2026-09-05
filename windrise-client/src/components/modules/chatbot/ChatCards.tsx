@@ -236,6 +236,127 @@ function OutcomeCard({
   );
 }
 
+/**
+ * A cancellation the server turned down when Confirm was pressed — almost
+ * always because the order shipped in between. Styled as information rather
+ * than an error: nothing went wrong, the order simply moved on.
+ */
+function CancelRefusedCard({
+  card,
+}: {
+  card: Extract<ChatCard, { kind: "cancel-refused" }>;
+}) {
+  return (
+    <div className="rounded-xl border border-[#F5DFB8] bg-[#FFFBF2] p-3.5">
+      <p className="text-[12px] font-semibold text-[#8A5A08]">
+        Couldn&apos;t cancel this order
+      </p>
+      {card.orderNo && (
+        <p className="mt-1 text-[11px] text-[#8A5A08]/80">Order {card.orderNo}</p>
+      )}
+    </div>
+  );
+}
+
+/** What Windee just put in the bag. The line is the server's, not the model's. */
+function CartAddedCard({
+  card,
+}: {
+  card: Extract<ChatCard, { kind: "cart-added" }>;
+}) {
+  const { item } = card;
+  const options = [item.size, item.color].filter(Boolean).join(" · ");
+
+  return (
+    <div className={CARD}>
+      <p className="text-[11px] font-medium text-[#6B4EE6]">Added to your bag</p>
+
+      <div className="mt-2.5 flex gap-2.5">
+        <div className="h-14 w-11 shrink-0 overflow-hidden rounded-lg bg-[#F2F1F7]">
+          {chatMediaUrl(item.image) && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={chatMediaUrl(item.image) ?? ""}
+              alt={item.name}
+              className="h-full w-full object-cover"
+            />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p className="line-clamp-2 text-[11px] leading-snug text-[#1B1830]">
+            {item.name}
+          </p>
+          {options && (
+            <p className="mt-0.5 text-[10px] text-[#8B87A0]">{options}</p>
+          )}
+          <p className="mt-0.5 text-[11px] font-semibold text-[#1B1830]">
+            {tk(item.price)}
+            {item.quantity > 1 && (
+              <span className="ml-1 font-normal text-[#8B87A0]">
+                × {item.quantity}
+              </span>
+            )}
+          </p>
+        </div>
+      </div>
+
+      <Link
+        href="/shoppingBag"
+        className="mt-3 block rounded-lg bg-[#1B1830] py-2 text-center text-[11px] font-medium text-white transition-opacity hover:opacity-90"
+      >
+        View bag
+      </Link>
+    </div>
+  );
+}
+
+/** What Windee just saved for later. */
+function WishlistAddedCard({
+  card,
+}: {
+  card: Extract<ChatCard, { kind: "wishlist-added" }>;
+}) {
+  const { product } = card;
+  const href = productHref(product);
+
+  return (
+    <div className={CARD}>
+      <p className="text-[11px] font-medium text-[#6B4EE6]">Saved to your wishlist</p>
+
+      <div className="mt-2.5 flex gap-2.5">
+        <div className="h-14 w-11 shrink-0 overflow-hidden rounded-lg bg-[#F2F1F7]">
+          {chatMediaUrl(product.image) && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={chatMediaUrl(product.image) ?? ""}
+              alt={product.name}
+              className="h-full w-full object-cover"
+            />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p className="line-clamp-2 text-[11px] leading-snug text-[#1B1830]">
+            {product.name}
+          </p>
+          <p className="mt-0.5 text-[11px] font-semibold text-[#1B1830]">
+            {tk(product.price)}
+          </p>
+          {href && (
+            <Link
+              href={href}
+              className="mt-1 inline-block text-[10px] font-medium text-[#6B4EE6]"
+            >
+              View product
+            </Link>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Windee 04/07 — offer of a person. */
 export function HelpCard({
   busy,
@@ -402,6 +523,12 @@ export function ChatCardView({
     case "order-placed":
     case "order-cancelled":
       return <OutcomeCard card={card} />;
+    case "cancel-refused":
+      return <CancelRefusedCard card={card} />;
+    case "cart-added":
+      return <CartAddedCard card={card} />;
+    case "wishlist-added":
+      return <WishlistAddedCard card={card} />;
     default:
       return null;
   }

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { AnimatePresence } from 'framer-motion'
@@ -10,6 +10,8 @@ import { useCart } from '@/contexts/CartContext'
 import { MegaMenu } from '@/components/modules/home/navbar/MegaMenu'
 import { MobileDrawer } from '@/components/modules/home/navbar/MobileDrawer'
 import { getNavigationCategory, NavigationCategoryId } from '@/components/modules/home/navbar/Navigationdataset'
+import { SearchOverlay } from '@/components/modules/search/SearchOverlay'
+import { SearchTrigger } from '@/components/modules/search/SearchTrigger'
 import WhiteLogo from '../logo/WhiteLogo';
 import BlackLogo from '../logo/BlackLogo';
 
@@ -24,6 +26,7 @@ export function Header() {
   const [activeCategoryId, setActiveCategoryId] =
     useState<NavigationCategoryId | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
   const closeTimer = useRef<number | undefined>(undefined)
   const scrollStopTimer = useRef<number | undefined>(undefined)
   const activeCategoryRef = useRef(activeCategoryId)
@@ -159,8 +162,18 @@ export function Header() {
             />
           </div>
 
-          <div className="flex justify-end  md:-mr-2.5 lg:-mr-2.5">
-            <HeaderIconButton name="search" tone={iconTone} />
+          <div className="flex items-center justify-end  md:-mr-2.5 lg:-mr-2.5">
+            {/* The trigger reads the URL's ?q= to show the active search, so
+                it renders behind its own boundary rather than making the
+                whole header client-only. */}
+            <Suspense
+              fallback={<HeaderIconButton name="search" tone={iconTone} />}
+            >
+              <SearchTrigger
+                tone={iconTone}
+                onOpen={() => setIsSearchOpen(true)}
+              />
+            </Suspense>
             <HeaderIconButton name="wishlist" tone={iconTone} />
             <Link href="/shoppingBag" className="relative inline-flex">
               <HeaderIconButton name="cart" tone={iconTone} />
@@ -187,6 +200,7 @@ export function Header() {
           <MobileHeader
             isMenuOpen={isDrawerOpen}
             onMenuToggle={() => setIsDrawerOpen((open) => !open)}
+            onSearchOpen={() => setIsSearchOpen(true)}
             logoVariant={isHome || isDark ? 'white' : 'black'}
           />
         </div>
@@ -205,6 +219,13 @@ export function Header() {
       <MobileDrawer
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
+      />
+
+      {/* One instance for both headers — the desktop and mobile bars are both
+          in the DOM at every width, and two panels would open at once. */}
+      <SearchOverlay
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
       />
     </>
   )

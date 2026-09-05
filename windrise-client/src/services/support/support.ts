@@ -207,6 +207,69 @@ export const listConversations = async (filters: ListFilters) => {
 export const getConversation = (id: string) =>
   request<ConversationDetail>(`/conversations/${id}`).then((r) => r.data);
 
+// --- Windee chats --------------------------------------------------------
+//
+// Conversations with the bot, browsable but not workable. They carry no queue,
+// no assignment and no unread state, so nothing here can be replied to or
+// closed — a chat becomes work only when the customer asks for a person, and
+// then it appears in the inbox proper.
+
+export type BotChat = {
+  id: string;
+  visitorId: string;
+  name: string | null;
+  phone: string | null;
+  status: "ACTIVE" | "HANDED_OFF" | "CLOSED";
+  messageCount: number;
+  lastMessage: { preview: string; from: "CUSTOMER" | "WINDEE"; at: string } | null;
+  /** Set once the chat has been handed to a person. */
+  ticket: { conversationId: string; ticketNo: string; status: ConversationStatus } | null;
+  startedAt: string;
+  updatedAt: string;
+};
+
+export type BotChatMessage = {
+  id: string;
+  from: "CUSTOMER" | "WINDEE";
+  body: string;
+  imageUrl: string | null;
+  createdAt: string;
+};
+
+export type BotChatFilters = {
+  search?: string;
+  onlyWithoutTicket?: boolean;
+  page?: number;
+  limit?: number;
+};
+
+export const listBotChats = async (filters: BotChatFilters = {}) => {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(filters)) {
+    if (value !== undefined && value !== "" && value !== false) query.set(key, String(value));
+  }
+
+  const res = await request<BotChat[]>(`/windee-chats?${query.toString()}`);
+  return { data: res.data ?? [], meta: res.meta ?? { page: 1, limit: 20, total: 0 } };
+};
+
+export const getBotChat = (id: string) =>
+  request<{ chat: BotChat; messages: BotChatMessage[] }>(`/windee-chats/${id}`).then(
+    (r) => r.data,
+  );
+
+/**
+ * Steps into a bot conversation.
+ *
+ * Windee stops answering, the customer is told a person has joined, and the
+ * chat becomes an ordinary ticket assigned to whoever pressed it — returned
+ * here so the caller can open it straight away.
+ */
+export const takeOverBotChat = (id: string) =>
+  request<ConversationDetail>(`/windee-chats/${id}/take-over`, { method: "POST" }).then(
+    (r) => r.data,
+  );
+
 export const markRead = (id: string) =>
   request<{ ok: boolean }>(`/conversations/${id}/read`, { method: "POST" });
 

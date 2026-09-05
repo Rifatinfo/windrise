@@ -5,6 +5,7 @@ import catchAsync from "../../../shared/catchAsync";
 import ApiError from "../../errors/ApiError";
 import sendResponse from "../../../shared/sendResponse";
 import { SupportService } from "./support.service";
+import { BotChatService } from "./support.botchats";
 import { SupportValidation } from "./support.validation";
 import { openStream, streamCount } from "./support.realtime";
 import { ingestMessengerMessage } from "./support.ingest";
@@ -329,6 +330,46 @@ const receiveWebhook = (req: Request & { rawBody?: Buffer }, res: Response) => {
   })();
 };
 
+
+/**
+ * Windee chats that never reached a person. Read-only by design: there is no
+ * reply, claim or close here, and nothing in this pair touches queue state.
+ */
+const listBotChats = catchAsync(async (req: Authed, res: Response) => {
+  const { data, meta } = await BotChatService.listBotChats({
+    search: typeof req.query.search === "string" ? req.query.search : undefined,
+    onlyWithoutTicket: req.query.onlyWithoutTicket === "true",
+    page: Number(req.query.page) || 1,
+    limit: Number(req.query.limit) || 20,
+  });
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: "Windee chats fetched",
+    meta,
+    data,
+  });
+});
+
+const getBotChat = catchAsync(async (req: Authed, res: Response) => {
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: "Windee chat fetched",
+    data: await BotChatService.getBotChat(String(req.params.id)),
+  });
+});
+
+const takeOverBotChat = catchAsync(async (req: Authed, res: Response) => {
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: "You've taken over this chat",
+    data: await BotChatService.takeOverBotChat(actor(req), String(req.params.id)),
+  });
+});
+
 export const SupportController = {
   me,
   agents,
@@ -341,6 +382,9 @@ export const SupportController = {
   deleteQueue,
   listConversations,
   getConversation,
+  listBotChats,
+  getBotChat,
+  takeOverBotChat,
   markRead,
   claim,
   transfer,

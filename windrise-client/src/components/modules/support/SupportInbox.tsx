@@ -18,6 +18,7 @@ import type {
 
 import { SupportHeader } from "./SupportHeader";
 import { StatCards } from "./StatCards";
+import { WindeeChats } from "./WindeeChats";
 import { ChannelRail, type RailSelection } from "./ChannelRail";
 import { ConversationList } from "./ConversationList";
 import { ConversationView } from "./ConversationView";
@@ -43,6 +44,14 @@ export function SupportInbox() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [detail, setDetail] = useState<ConversationDetail | null>(null);
   const [unread, setUnread] = useState<Conversation[]>([]);
+
+  /**
+   * Which surface is on screen. Windee chats are a separate view rather than a
+   * filter on the inbox: they carry no queue, assignee or unread state, so
+   * mixing them into the working list would put unanswerable rows next to real
+   * queue work.
+   */
+  const [view, setView] = useState<"inbox" | "windee">("inbox");
   const [typing, setTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fatal, setFatal] = useState<string | null>(null);
@@ -216,14 +225,36 @@ export function SupportInbox() {
       const { conversation } = JSON.parse((event as MessageEvent).data) as {
         conversation: Conversation;
       };
-      // Only surface it where it belongs: dropping a new row onto page three of
-      // a filtered list would be worse than leaving the counters to say so.
-      setConversations((current) =>
-        (filters.page ?? 1) === 1 && current.every((row) => row.id !== conversation.id)
+
+      setConversations((current) => {
+        // A customer returning to a ticket they had ended arrives as new work
+        // on a row that is already listed. Patching it is what clears the
+        // stale "Closed" badge and moves it back up the list; ignoring it, as
+        // this once did, left the row looking closed while the person waited.
+        const index = current.findIndex((row) => row.id === conversation.id);
+        if (index !== -1) {
+          const next = [...current];
+          next.splice(index, 1);
+          return [conversation, ...next];
+        }
+
+        // Only surface it where it belongs: dropping a new row onto page three
+        // of a filtered list would be worse than leaving the counters to say so.
+        return (filters.page ?? 1) === 1
           ? [conversation, ...current].slice(0, filters.limit ?? 20)
+          : current;
+      });
+
+      // The open thread needs it too — this is what re-enables the composer
+      // when the customer comes back to the conversation an agent is reading.
+      setDetail((current) =>
+        current?.conversation.id === conversation.id
+          ? { ...current, conversation }
           : current,
       );
+
       scheduleSidebarRefresh();
+      void loadUnread().catch(() => null);
     });
 
     source.addEventListener("message.created", (event) => {
@@ -266,7 +297,7 @@ export function SupportInbox() {
       source.close();
       if (typingTimer.current) clearTimeout(typingTimer.current);
     };
-  }, [fatal, scheduleSidebarRefresh, appendMessage, filters.page, filters.limit]);
+  }, [fatal, scheduleSidebarRefresh, appendMessage, loadUnread, filters.page, filters.limit]);
 
   // Keeps the agent's presence from going stale while the tab is open.
   useEffect(() => {
@@ -338,6 +369,30 @@ export function SupportInbox() {
 
       <StatCards stats={stats} />
 
+      {/* The counters above describe the inbox only, whichever view is open:
+          Windee chats have no queue and no unread state to count. */}
+      <div className="flex gap-1.5">
+        {(
+          [
+            ["inbox", "Inbox"],
+            ["windee", "Windee chats"],
+          ] as const
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setView(value)}
+            className={`rounded-full px-3.5 py-1.5 text-[12px] font-medium transition-colors ${
+              view === value
+                ? "bg-[#1b2033] text-white"
+                : "bg-white text-[#5b6274] ring-1 ring-[#e8eaf0] hover:bg-[#f7f8fb]"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {error && (
         <p className="rounded-lg border border-[#f3d9d9] bg-[#fdf6f6] px-3 py-2 text-[12px] text-[#b21f1f]">
           {error}
@@ -351,6 +406,14 @@ export function SupportInbox() {
         have room for it, and keep it squeezed on the ones that don't.
       */}
       <div className="@container">
+        {view === "windee" ? (
+          <WindeeChats
+            onOpenTicket={(id) => {
+              setView("inbox");
+              void openConversation(id);
+            }}
+          />
+        ) : (
         <div className="grid grid-cols-1 gap-4 @min-[760px]:grid-cols-[216px_minmax(0,1fr)] @min-[1000px]:grid-cols-[216px_290px_minmax(0,1fr)] @min-[1240px]:grid-cols-[216px_282px_minmax(0,1fr)_252px]">
           <ChannelRail
             channels={channels}
@@ -471,7 +534,8 @@ export function SupportInbox() {
               onOpenConversation={(id) => void openConversation(id)}
             />
           </div>
-  </div>
+        </div>
+        )}
       </div>
     </div>
   );

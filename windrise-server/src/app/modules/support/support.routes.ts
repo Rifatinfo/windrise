@@ -49,6 +49,12 @@ router.delete("/queues/:id", adminOnly, SupportController.deleteQueue);
 router.get("/tags", canUse, SupportController.listTags);
 router.post("/upload", canUse, multer(multerConfig).single("file"), SupportController.upload);
 
+// Windee chats that never reached a person: browsing only, no write path.
+router.get("/windee-chats", canUse, SupportController.listBotChats);
+router.get("/windee-chats/:id", canUse, SupportController.getBotChat);
+// The one write here: an agent stepping into a bot conversation.
+router.post("/windee-chats/:id/take-over", canUse, SupportController.takeOverBotChat);
+
 // Conversations
 router.get("/conversations", canUse, SupportController.listConversations);
 router.get("/conversations/:id", canUse, SupportController.getConversation);

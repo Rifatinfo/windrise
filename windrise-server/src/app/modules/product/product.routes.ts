@@ -3,7 +3,7 @@ import { Router } from "express";
 import { ProductController } from "./product.controller";
 import { createProductSchema, updateProductSchema } from "./product.validation";
 import multer from "multer";
-import { multerConfig } from "@/app/utils/fileUploader";
+import { multerConfig } from "../../../app/utils/fileUploader";
 
 const router = Router();
 const productUpload = multer(multerConfig).fields([
@@ -46,6 +46,10 @@ router.post(
 );
 router.get("/", ProductController.getAllProduct);
 router.get("/slug/:slug", ProductController.getProductBySlug);
+
+// Storefront search: the overlay typeahead and the /search results page.
+router.get("/search/suggest", ProductController.suggestProducts);
+router.get("/search", ProductController.searchProducts);
 router.delete("/:productId", ProductController.deleteProduct);
 router.patch("/:slug", 
   (req, res, next) => {

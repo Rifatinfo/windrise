@@ -15,11 +15,11 @@ import ApiError from "../../errors/ApiError";
 import { StatusCodes } from "http-status-codes";
 
 import { ChatCompletionMessageParam } from "openai/resources/chat/completions";
-import { generateUniqueSlug } from "@/app/utils/generateSlug";
-import { optimizeAndSaveImage, ensureDir } from "@/app/utils/imageOptimizer";
-import { IOptions, paginationHelper } from "@/app/helpers/paginationHelper";
-import { openai } from "@/app/helpers/open-router";
-import { AIResponse } from "@/app/types/ai";
+import { generateUniqueSlug } from "../../../app/utils/generateSlug";
+import { optimizeAndSaveImage, ensureDir } from "../../../app/utils/imageOptimizer";
+import { IOptions, paginationHelper } from "../../../app/helpers/paginationHelper";
+import { openai } from "../../../app/helpers/open-router";
+import { AIResponse } from "../../../app/types/ai";
 
 
 const createProduct = async (
@@ -785,6 +785,153 @@ const getRelatedProducts = async (productId: string, limit?: number) => {
   return collected;
 };
 
+
+//============ Storefront search =============//
+
+/**
+ * Search is public, so it only ever sees products a shopper could actually
+ * buy. `getProducts` above does not apply this — it backs the admin listing
+ * too — which is why search does not go through it.
+ */
+const publicOnly = { isDeleted: false, isActive: true } satisfies Prisma.ProductWhereInput;
+
+/**
+ * Every word has to match something, so "baggy denim" narrows the result set
+ * instead of widening it the way a plain OR would. Each word may match the
+ * name, the SKU, or a tag/category the product is filed under, so word order
+ * doesn't matter and "denim baggy" finds the same things.
+ */
+const buildSearchWhere = (query: string): Prisma.ProductWhereInput => {
+  const tokens = query.trim().split(/\s+/).filter(Boolean).slice(0, 6);
+  if (tokens.length === 0) return publicOnly;
+
+  return {
+    ...publicOnly,
+    AND: tokens.map((token) => ({
+      OR: [
+        { name: { contains: token, mode: "insensitive" } },
+        { sku: { contains: token, mode: "insensitive" } },
+        { tags: { some: { name: { contains: token, mode: "insensitive" } } } },
+        {
+          categories: {
+            some: { category: { name: { contains: token, mode: "insensitive" } } },
+          },
+        },
+        {
+          subCategories: {
+            some: { subCategory: { name: { contains: token, mode: "insensitive" } } },
+          },
+        },
+      ],
+    })),
+  };
+};
+
+/** The full result set behind /search, shaped like the category listings. */
+const searchProducts = async (
+  query: string,
+  options: IOptions,
+  filters: { sale?: string } = {},
+) => {
+  const { page, limit, skip, sortBy, sortOrder } =
+    paginationHelper.calculatePagination(options);
+
+  if (!query.trim()) {
+    return { meta: { page, limit, total: 0 }, data: [] };
+  }
+
+  const where = buildSearchWhere(query);
+
+  // "Sale" is an option in the same dropdown as the sorts, so search has to
+  // honour it or picking it would silently do nothing.
+  if (filters.sale === "true") {
+    where.AND = [
+      ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []),
+      { salePrice: { not: null, lt: prisma.product.fields.regularPrice } },
+    ];
+  }
+
+  const safeSortBy = productSortableFields.includes(sortBy) ? sortBy : "createdAt";
+  const safeSortOrder: Prisma.SortOrder = sortOrder === "asc" ? "asc" : "desc";
+  const orderBy:
+    | Prisma.ProductOrderByWithRelationInput
+    | Prisma.ProductOrderByWithRelationInput[] =
+    safeSortBy === "salePrice"
+      ? [
+          { salePrice: { sort: safeSortOrder, nulls: "last" } },
+          { regularPrice: safeSortOrder },
+        ]
+      : { [safeSortBy]: safeSortOrder };
+
+  const [data, total] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      orderBy,
+      skip,
+      take: limit,
+      include: {
+        categories: { include: { category: true } },
+        subCategories: { include: { subCategory: true } },
+        variants: true,
+        images: true,
+        tags: true,
+      },
+    }),
+    prisma.product.count({ where }),
+  ]);
+
+  return { meta: { page, limit, total }, data };
+};
+
+/**
+ * Typeahead. Fires on every pause in typing, so it returns only what the
+ * suggestion row draws — a thumbnail, a name, a price and the two segments
+ * its link needs — rather than the whole product graph.
+ */
+const suggestProducts = async (query: string, limit = 6) => {
+  if (!query.trim()) return { total: 0, data: [] };
+
+  const where = buildSearchWhere(query);
+  const take = Math.min(10, Math.max(1, limit));
+
+  const [rows, total] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        thumbnailImage: true,
+        regularPrice: true,
+        salePrice: true,
+        images: { take: 1, select: { url: true } },
+        categories: { take: 1, select: { category: { select: { name: true } } } },
+        subCategories: {
+          take: 1,
+          select: { subCategory: { select: { name: true } } },
+        },
+      },
+    }),
+    prisma.product.count({ where }),
+  ]);
+
+  return {
+    total,
+    data: rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      slug: row.slug,
+      image: row.thumbnailImage ?? row.images[0]?.url ?? null,
+      regularPrice: row.regularPrice,
+      salePrice: row.salePrice,
+      category: row.categories[0]?.category?.name ?? null,
+      subCategory: row.subCategories[0]?.subCategory?.name ?? null,
+    })),
+  };
+};
+
 const getAISuggestion = async (
     searchIntent: string,
     history: { type: "user" | "ai"; text: string }[] = []
@@ -934,5 +1081,7 @@ export const ProductService = {
   updateProduct,
   getNewArrivalProducts,
   getRelatedProducts,
+  searchProducts,
+  suggestProducts,
   getAISuggestion
 };

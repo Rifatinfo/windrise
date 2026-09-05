@@ -15,7 +15,7 @@ import { HUMAN_HANDOFF_MESSAGE, buildSystemPrompt } from "./chatbot.prompt";
 import { TOOLS, commitPending, runTool, type PendingAction } from "./chatbot.tools";
 import {
   handoffWindeeSession,
-  ingestWindeeCustomerMessage,
+  mirrorWindeeMessage,
   endSupportForVisitor,
 } from "../support/support.ingest";
 
@@ -84,6 +84,28 @@ const shapeMessage = (row: {
  */
 const isVisible = (row: { role: ChatRole; content: string }) =>
   row.role !== ChatRole.TOOL && row.content.trim().length > 0;
+
+/**
+ * Copies a chat line into the support transcript, if this session has a ticket.
+ *
+ * Every line goes across — what the customer types and what Windee answers,
+ * whether a human is on the thread or not — so the inbox holds the whole
+ * conversation rather than only the stretch an agent was present for. It is a
+ * no-op for a session that has never asked for a person.
+ *
+ * Never allowed to break the chat: a failure here costs the agent some
+ * context, and that is not worth failing the customer's message over.
+ */
+const mirror = async (
+  sessionId: string,
+  message: { id: string; role: ChatRole; content: string; imageUrl?: string | null; createdAt?: Date },
+) => {
+  try {
+    await mirrorWindeeMessage(sessionId, message);
+  } catch {
+    // Deliberately swallowed; see above.
+  }
+};
 
 /** Loads a session and proves the caller owns it. */
 const requireSession = async (sessionId: string, visitorId: string) => {
@@ -277,7 +299,7 @@ const sendMessage = async (
       },
     });
 
-    await ingestWindeeCustomerMessage(session.id, payload.text, payload.imageUrl);
+    await mirror(session.id, mine);
     return shapeMessage(mine);
   }
 
@@ -288,7 +310,7 @@ const sendMessage = async (
     );
   }
 
-  await prisma.chatMessage.create({
+  const asked = await prisma.chatMessage.create({
     data: {
       sessionId: session.id,
       role: ChatRole.USER,
@@ -296,6 +318,10 @@ const sendMessage = async (
       imageUrl: payload.imageUrl ?? null,
     },
   });
+
+  // Mirrored before the model runs so the inbox shows the question while
+  // Windee is still working on the answer.
+  await mirror(session.id, asked);
 
   const thread = await buildThread(session.id, session);
 
@@ -347,6 +373,8 @@ const sendMessage = async (
     },
   });
 
+  await mirror(session.id, reply);
+
   await prisma.chatSession.update({
     where: { id: session.id },
     data: { updatedAt: new Date() },
@@ -385,12 +413,18 @@ const confirmPending = async (sessionId: string, owner: SessionOwner) => {
   // service did not return is left out rather than printed as blank or ৳0.
   const reference = outcome.orderNo ? ` ${outcome.orderNo}` : "";
 
+  // A cancellation can be refused at the moment it is committed — most often
+  // because the order shipped between the summary being drawn and Confirm
+  // being pressed. That is an ordinary answer, not an error: the customer sees
+  // why, in the transcript, instead of a failed request.
   const text =
-    outcome.kind === "order-placed"
-      ? outcome.total
-        ? `Done — your order${reference} is placed. You'll pay ৳${Math.round(outcome.total)} on delivery.`
-        : `Done — your order${reference} is placed. You'll pay on delivery.`
-      : `Your order${reference} has been cancelled.`;
+    outcome.kind === "cancel-refused"
+      ? outcome.reason
+      : outcome.kind === "order-placed"
+        ? outcome.total
+          ? `Done — your order${reference} is placed. You'll pay ৳${Math.round(outcome.total)} on delivery.`
+          : `Done — your order${reference} is placed. You'll pay on delivery.`
+        : `Your order${reference} has been cancelled.`;
 
   const message = await prisma.chatMessage.create({
     data: {
@@ -400,6 +434,8 @@ const confirmPending = async (sessionId: string, owner: SessionOwner) => {
       data: outcome as unknown as Prisma.InputJsonValue,
     },
   });
+
+  await mirror(session.id, message);
 
   return shapeMessage(message);
 };
@@ -420,6 +456,8 @@ const declinePending = async (sessionId: string, visitorId: string) => {
       content: "No problem — I've left that as it was. Anything else I can help with?",
     },
   });
+
+  await mirror(session.id, message);
 
   return shapeMessage(message);
 };
@@ -451,6 +489,8 @@ const requestHuman = async (sessionId: string, visitorId: string) => {
       data: { kind: "handoff" } as Prisma.InputJsonValue,
     },
   });
+
+  await mirror(session.id, message);
 
   return shapeMessage(message);
 };
