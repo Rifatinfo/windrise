@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
-import { SortDropdown, SortOption, sortOptions } from "./SortDropdown";
+import {
+  applySort,
+  resolveCurrentSort,
+  SortDropdown,
+  SortOption,
+  sortOptions,
+} from "./SortDropdown";
 
 export type BreadcrumbItem = {
   label: string;
@@ -14,27 +20,6 @@ type ProductFiltercategorySubCategoryProps = {
   breadcrumbs: BreadcrumbItem[];
   title: string;
   shown: number;
-};
-
-const SORT_TO_PARAMS: Record<SortOption, Record<string, string>> = {
-  "New Arrivals": { sortBy: "createdAt", sortOrder: "desc" },
-  Popular: { sortBy: "createdAt", sortOrder: "desc" },
-  "Price (Low to High)": { sortBy: "salePrice", sortOrder: "asc" },
-  "Price (High to Low)": { sortBy: "salePrice", sortOrder: "desc" },
-  "Name (A-Z)": { sortBy: "name", sortOrder: "asc" },
-  "Name (Z-A)": { sortBy: "name", sortOrder: "desc" },
-  Sale: { sale: "true" },
-};
-
-const resolveCurrentSort = (searchParams: URLSearchParams): SortOption => {
-  if (searchParams.get("sale") === "true") return "Sale";
-  const sortBy = searchParams.get("sortBy");
-  const sortOrder = searchParams.get("sortOrder") || "desc";
-  const match = sortOptions.find((option) => {
-    const mapped = SORT_TO_PARAMS[option];
-    return mapped.sortBy === sortBy && (mapped.sortOrder || "desc") === sortOrder;
-  });
-  return match || "New Arrivals";
 };
 
 const ProductFiltercategorySubCategory = ({
@@ -50,16 +35,7 @@ const ProductFiltercategorySubCategory = ({
   const sort = resolveCurrentSort(searchParams);
 
   const handleSortChange = (next: SortOption) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("page");
-    params.delete("limit");
-    params.delete("sortBy");
-    params.delete("sortOrder");
-    params.delete("sale");
-
-    Object.entries(SORT_TO_PARAMS[next]).forEach(([key, value]) => {
-      params.set(key, value);
-    });
+    const params = applySort(new URLSearchParams(searchParams.toString()), next);
 
     startTransition(() => {
       router.push(`${pathname}?${params.toString()}`);

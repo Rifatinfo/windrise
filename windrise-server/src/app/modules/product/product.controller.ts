@@ -197,6 +197,38 @@ const getRelatedProducts = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+
+const searchProducts = catchAsync(async (req: Request, res: Response) => {
+  const query = typeof req.query.q === "string" ? req.query.q : "";
+  const options = pick(req.query, ["page", "limit", "sortBy", "sortOrder"]);
+
+  const filters = pick(req.query, ["sale"]);
+
+  const result = await ProductService.searchProducts(query, options, filters);
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: "Search results retrieved successfully",
+    meta: result.meta,
+    data: result.data,
+  });
+});
+
+const suggestProducts = catchAsync(async (req: Request, res: Response) => {
+  const query = typeof req.query.q === "string" ? req.query.q : "";
+  const limit = Number(req.query.limit) || 6;
+
+  const result = await ProductService.suggestProducts(query, limit);
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: "Suggestions retrieved successfully",
+    meta: { page: 1, limit, total: result.total },
+    data: result.data,
+  });
+});
 const getAISuggestion = catchAsync(async (req: Request, res: Response) => {
     const { searchIntent, history } = req.body;
 
@@ -230,5 +262,7 @@ export const ProductController = {
   deleteSubCategory,
   getNewArrivalProducts,
   getRelatedProducts,
+  searchProducts,
+  suggestProducts,
   getAISuggestion
 };

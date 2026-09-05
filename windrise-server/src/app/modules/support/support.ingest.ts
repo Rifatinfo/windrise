@@ -186,6 +186,131 @@ export const ingestMessengerMessage = async (inbound: InboundMessage) => {
 const REPLAYABLE: ChatRole[] = [ChatRole.USER, ChatRole.ASSISTANT];
 
 /**
+ * The support message that stands for one Windee chat line.
+ *
+ * `externalId` is unique, so stamping the chat message's id on the mirrored
+ * copy makes every path into the transcript idempotent — the live mirror and
+ * the handoff replay can both run over the same line and it still appears
+ * once. It is the same mechanism that keeps Meta's webhook retries from
+ * double-posting.
+ */
+const windeeRef = (chatMessageId: string) => `windee:${chatMessageId}`;
+
+const attachmentsOf = (imageUrl?: string | null) =>
+  imageUrl
+    ? ([{ url: imageUrl, mime: "image/*", name: "attachment" }] as unknown as Prisma.InputJsonValue)
+    : undefined;
+
+type MirrorableLine = {
+  id: string;
+  role: ChatRole;
+  content: string;
+  imageUrl?: string | null;
+  createdAt?: Date;
+};
+
+/**
+ * Copies bot transcript lines into the ticket.
+ *
+ * Used when a ticket first opens, to carry across everything said before it
+ * existed. From then on lines arrive through `mirrorWindeeMessage` as they are
+ * written, and the `externalId` stamp means running this again — on a reopen,
+ * say — cannot duplicate what is already there.
+ *
+ * Replayed lines are history, not new work, so they never raise the unread
+ * badge; that badge should mean "something arrived since you looked".
+ */
+const replayBotTranscript = async (
+  conversationId: string,
+  messages: MirrorableLine[],
+  since?: Date | null,
+) => {
+  const lines = messages.filter(
+    (m) =>
+      REPLAYABLE.includes(m.role) &&
+      m.content.trim() &&
+      (!since || !m.createdAt || m.createdAt > since),
+  );
+
+  const written = [];
+
+  for (const line of lines) {
+    const message = await appendInbound({
+      conversationId,
+      author:
+        line.role === ChatRole.USER ? SupportMessageAuthor.CUSTOMER : SupportMessageAuthor.BOT,
+      body: line.content,
+      attachments: attachmentsOf(line.imageUrl),
+      externalId: windeeRef(line.id),
+      createdAt: line.createdAt,
+      countsAsUnread: false,
+    }).catch(() => null);
+
+    if (message) written.push(message);
+  }
+
+  return written;
+};
+
+/**
+ * The customer asking for a person again on a ticket they had ended.
+ *
+ * `chatSessionId` is unique on the conversation, so a returning visitor cannot
+ * be given a second ticket for the same Windee session — the thread they closed
+ * is the thread they come back to. It is reopened loudly rather than quietly:
+ * the agent gets a line saying they are back, whatever passed with Windee in
+ * between is replayed so the request is not missing its context, the unread
+ * badge is raised, and the inbox is told about it as new work so it surfaces in
+ * the list and on the notification bell.
+ *
+ * Where it lands follows the same rule as an agent pressing Reopen: back to
+ * whoever had it, or into the queue if nobody did.
+ */
+const reopenForVisitor = async (
+  conversation: { id: string; assignedAgentId: string | null; closedAt: Date | null; chatSessionId: string | null },
+  session: { messages: MirrorableLine[] },
+) => {
+  await replayBotTranscript(conversation.id, session.messages, conversation.closedAt);
+
+  const line = await prisma.supportMessage.create({
+    data: {
+      conversationId: conversation.id,
+      author: SupportMessageAuthor.SYSTEM,
+      body: "The customer came back and asked to speak to a person again.",
+    },
+    include: messageInclude,
+  });
+
+  const reopened = await prisma.supportConversation.update({
+    where: { id: conversation.id },
+    data: {
+      status: conversation.assignedAgentId
+        ? SupportConversationStatus.WITH_AGENT
+        : SupportConversationStatus.IN_QUEUE,
+      closedAt: null,
+      closedById: null,
+      // Whatever the replayed history says, the customer is waiting on a
+      // person from this moment.
+      unreadForAgent: 1,
+      lastMessageAt: new Date(),
+      lastMessagePreview: "Asked to speak to a person again",
+    },
+  });
+
+  await recordEvent(conversation.id, SupportEventType.REOPENED, null, { by: "customer" });
+  if (!conversation.assignedAgentId) {
+    await recordEvent(conversation.id, SupportEventType.QUEUED, null, { source: "windee-handoff" });
+  }
+
+  broadcastMessage(conversation, shapeMessage(line));
+  // Announced as created, not updated: it is work arriving, and the inbox
+  // brings a created conversation to the top of the list.
+  await broadcastConversation(conversation.id, "conversation.created");
+
+  return reopened;
+};
+
+/**
  * Promotes a Windee chat to a support ticket.
  *
  * Called when a visitor asks for a person. The bot transcript is copied across
@@ -193,20 +318,28 @@ const REPLAYABLE: ChatRole[] = [ChatRole.USER, ChatRole.ASSISTANT];
  * answered — being made to repeat yourself to a second responder is the whole
  * reason handoffs feel bad.
  *
- * Idempotent: a session that already has a ticket returns the one it has, so a
- * double tap on "Talk to a human" cannot create two.
+ * Idempotent while the ticket is open: a double tap on "Talk to a human"
+ * returns the ticket that already exists rather than creating a second one.
+ *
+ * A *closed* ticket is a different matter. The customer pressed End chat and
+ * has now come back, which is new work — returning the closed row untouched, as
+ * this used to, left the inbox with no notification, no unread badge and a
+ * conversation still refusing replies, while the widget sat in a queue nobody
+ * had been told about.
  */
 export const handoffWindeeSession = async (chatSessionId: string) => {
   const existing = await prisma.supportConversation.findUnique({
     where: { chatSessionId },
   });
-  if (existing) return existing;
+  if (existing && existing.status !== SupportConversationStatus.CLOSED) return existing;
 
   const session = await prisma.chatSession.findUnique({
     where: { id: chatSessionId },
     include: { messages: { orderBy: { createdAt: "asc" } } },
   });
-  if (!session) return null;
+  if (!session) return existing ?? null;
+
+  if (existing) return reopenForVisitor(existing, session);
 
   const contact = await upsertContact({
     channel: SupportChannel.WINDEE,
@@ -222,23 +355,11 @@ export const handoffWindeeSession = async (chatSessionId: string) => {
     chatSessionId: session.id,
   });
 
-  // Replay in order. These are history, not new work, so they do not raise the
-  // unread count — the badge should mean "something arrived since you looked".
-  const replay = session.messages.filter((m) => REPLAYABLE.includes(m.role) && m.content.trim());
+  await replayBotTranscript(conversation.id, session.messages);
 
-  for (const line of replay) {
-    await appendInbound({
-      conversationId: conversation.id,
-      author:
-        line.role === ChatRole.USER ? SupportMessageAuthor.CUSTOMER : SupportMessageAuthor.BOT,
-      body: line.content,
-      attachments: line.imageUrl
-        ? ([{ url: line.imageUrl, mime: "image/*", name: "attachment" }] as unknown as Prisma.InputJsonValue)
-        : undefined,
-      createdAt: line.createdAt,
-      countsAsUnread: false,
-    });
-  }
+  const lastAsked = session.messages
+    .filter((m) => m.role === ChatRole.USER && m.content.trim())
+    .at(-1)?.content;
 
   await prisma.supportConversation.update({
     where: { id: conversation.id },
@@ -247,9 +368,7 @@ export const handoffWindeeSession = async (chatSessionId: string) => {
       // replayed history says.
       unreadForAgent: 1,
       lastMessageAt: new Date(),
-      lastMessagePreview:
-        replay.filter((m) => m.role === ChatRole.USER).at(-1)?.content.slice(0, 140) ??
-        "Asked to speak to a person",
+      lastMessagePreview: lastAsked?.slice(0, 140) ?? "Asked to speak to a person",
     },
   });
 
@@ -300,32 +419,52 @@ export const endSupportForVisitor = async (chatSessionId: string) => {
 };
 
 /**
- * Mirrors a message the visitor typed in the widget while they are waiting for,
- * or talking to, an agent.
+ * Mirrors one Windee chat line into the support transcript.
  *
- * Without this the widget and the inbox would drift apart the moment someone
- * added "…and my order number is 12345" after asking for a human.
+ * Called for everything the customer types and everything Windee answers, for
+ * as long as a ticket exists for the session — whether it is open with an
+ * agent or closed and back with the bot. The inbox is meant to be the whole
+ * story of a conversation, not just the stretch a human was on: an agent
+ * picking a returning customer back up needs to see what the bot told them in
+ * between, and previously that stretch was thrown away.
+ *
+ * What it deliberately does not do is treat bot chatter as work. A closed
+ * ticket stays closed and unread stays where it is — only a message typed to a
+ * *person* means somebody is waiting. Reopening is still the customer's
+ * decision, made by asking for a human.
  */
-export const ingestWindeeCustomerMessage = async (
+export const mirrorWindeeMessage = async (
   chatSessionId: string,
-  body: string,
-  imageUrl?: string | null,
+  line: MirrorableLine,
 ) => {
+  // TOOL rows are machine plumbing and empty assistant turns carry nothing.
+  if (!REPLAYABLE.includes(line.role) || !line.content.trim()) return null;
+
   const conversation = await prisma.supportConversation.findUnique({
     where: { chatSessionId },
     select: { id: true, status: true, chatSessionId: true },
   });
 
-  if (!conversation || conversation.status === SupportConversationStatus.CLOSED) return null;
+  // No ticket yet: nothing to mirror into. The first handoff replays the whole
+  // transcript, so nothing said before it is lost.
+  if (!conversation) return null;
+
+  const open = conversation.status !== SupportConversationStatus.CLOSED;
 
   const message = await appendInbound({
     conversationId: conversation.id,
-    author: SupportMessageAuthor.CUSTOMER,
-    body,
-    attachments: imageUrl
-      ? ([{ url: imageUrl, mime: "image/*", name: "attachment" }] as unknown as Prisma.InputJsonValue)
-      : undefined,
-  });
+    author:
+      line.role === ChatRole.USER ? SupportMessageAuthor.CUSTOMER : SupportMessageAuthor.BOT,
+    body: line.content,
+    attachments: attachmentsOf(line.imageUrl),
+    externalId: windeeRef(line.id),
+    createdAt: line.createdAt,
+    countsAsUnread: open && line.role === ChatRole.USER,
+  }).catch(() => null);
+
+  // A duplicate `externalId` is the expected outcome when a replay and the
+  // live mirror cover the same line; the transcript already has it.
+  if (!message) return null;
 
   broadcastMessage(conversation, shapeMessage(message));
   await broadcastConversation(conversation.id);

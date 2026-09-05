@@ -21,6 +21,53 @@ export const sortOptions: SortOption[] = [
   "Sale",
 ];
 
+
+/**
+ * How each option is written into the URL. Shared so the category listings
+ * and the search results page can't drift apart on what "Price (Low to
+ * High)" means.
+ */
+export const SORT_TO_PARAMS: Record<SortOption, Record<string, string>> = {
+  "New Arrivals": { sortBy: "createdAt", sortOrder: "desc" },
+  Popular: { sortBy: "createdAt", sortOrder: "desc" },
+  "Price (Low to High)": { sortBy: "salePrice", sortOrder: "asc" },
+  "Price (High to Low)": { sortBy: "salePrice", sortOrder: "desc" },
+  "Name (A-Z)": { sortBy: "name", sortOrder: "asc" },
+  "Name (Z-A)": { sortBy: "name", sortOrder: "desc" },
+  Sale: { sale: "true" },
+};
+
+export const resolveCurrentSort = (
+  searchParams: URLSearchParams,
+): SortOption => {
+  if (searchParams.get("sale") === "true") return "Sale";
+  const sortBy = searchParams.get("sortBy");
+  const sortOrder = searchParams.get("sortOrder") || "desc";
+  const match = sortOptions.find((option) => {
+    const mapped = SORT_TO_PARAMS[option];
+    return mapped.sortBy === sortBy && (mapped.sortOrder || "desc") === sortOrder;
+  });
+  return match || "New Arrivals";
+};
+
+/** Writes one option's params onto a URL, clearing whatever the last set. */
+export const applySort = (
+  params: URLSearchParams,
+  next: SortOption,
+): URLSearchParams => {
+  params.delete("page");
+  params.delete("limit");
+  params.delete("sortBy");
+  params.delete("sortOrder");
+  params.delete("sale");
+
+  Object.entries(SORT_TO_PARAMS[next]).forEach(([key, value]) => {
+    params.set(key, value);
+  });
+
+  return params;
+};
+
 export const lifestyleBanner =
   "/assets/prodduct-page-cover.png";
 
